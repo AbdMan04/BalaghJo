@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import '../../core/strings.dart';
 import '../../core/theme.dart';
 import '../../state/auth_state.dart';
 import '../home/main_shell.dart';
@@ -35,17 +36,22 @@ class _RegisterScreenState extends State<RegisterScreen> {
       await context.read<AuthState>().register(
             firstName: _first.text.trim(),
             lastName: _last.text.trim(),
-            email: _email.text.trim(),
+            email: _usePhone ? null : _email.text.trim().toLowerCase(),
             password: _pass.text,
-            phone: _phone.text.trim().isEmpty ? null : _phone.text.trim(),
+            phone: _usePhone ? _phone.text.trim() : null,
           );
       if (!mounted) return;
       Navigator.of(context).pushAndRemoveUntil(
           fadeSlideRoute(const MainShell()), (_) => false);
     } catch (e) {
-      setState(() => _error = e.toString());
+      setState(() => _error = _cleanError(e));
       _shake.value++;
     }
+  }
+
+  String _cleanError(Object e) {
+    final s = e.toString();
+    return s.replaceFirst(RegExp(r'^(Exception|ApiException\([^)]*\)):\s*'), '');
   }
 
   @override
@@ -74,15 +80,15 @@ class _RegisterScreenState extends State<RegisterScreen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const FadeSlideIn(
-                    child: Text('Create Account',
-                        style: TextStyle(fontSize: 28, fontWeight: FontWeight.w800)),
+                  FadeSlideIn(
+                    child: Text(context.t('register.create_account'),
+                        style: const TextStyle(fontSize: 28, fontWeight: FontWeight.w800)),
                   ),
                   const SizedBox(height: 4),
-                  const FadeSlideIn(
-                    delay: Duration(milliseconds: 80),
-                    child: Text('Join thousands reporting civic issues',
-                        style: TextStyle(color: AppColors.textMuted)),
+                  FadeSlideIn(
+                    delay: const Duration(milliseconds: 80),
+                    child: Text(context.t('register.subtitle'),
+                        style: const TextStyle(color: AppColors.textMuted)),
                   ),
                   const SizedBox(height: 24),
                   FadeSlideIn(
@@ -102,37 +108,39 @@ class _RegisterScreenState extends State<RegisterScreen> {
                               key: const ValueKey('phone'),
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
-                                _label('PHONE NUMBER'),
+                                _label(context.t('register.phone_label')),
                                 TextFormField(
                                   controller: _phone,
-                                  decoration: const InputDecoration(
-                                    hintText: '+962 7X XXX XXXX',
-                                    prefixIcon: Icon(Icons.phone_android, color: AppColors.textMuted),
+                                  decoration: InputDecoration(
+                                    hintText: context.t('register.phone_hint'),
+                                    prefixIcon: const Icon(Icons.phone_android, color: AppColors.textMuted),
                                   ),
                                   keyboardType: TextInputType.phone,
+                                  validator: (v) =>
+                                      (v == null || v.trim().length < 6) ? context.t('login.invalid_phone') : null,
                                 ),
                               ],
                             )
-                          : const SizedBox.shrink(key: ValueKey('nophone')),
-                    ),
-                  ),
-                  FadeSlideIn(
-                    delay: const Duration(milliseconds: 200),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        _label('EMAIL'),
-                        TextFormField(
-                          controller: _email,
-                          decoration: const InputDecoration(
-                            hintText: 'you@example.com',
-                            prefixIcon: Icon(Icons.mail_outline, color: AppColors.textMuted),
-                          ),
-                          keyboardType: TextInputType.emailAddress,
-                          validator: (v) =>
-                              (v == null || !v.contains('@')) ? 'Enter a valid email' : null,
-                        ),
-                      ],
+                          : Column(
+                              key: const ValueKey('email'),
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                _label(context.t('register.email_label')),
+                                TextFormField(
+                                  controller: _email,
+                                  decoration: InputDecoration(
+                                    hintText: context.t('register.email_hint'),
+                                    prefixIcon: const Icon(Icons.mail_outline, color: AppColors.textMuted),
+                                  ),
+                                  keyboardType: TextInputType.emailAddress,
+                                  validator: (v) {
+                                    final s = v?.trim() ?? '';
+                                    final ok = RegExp(r'^[^\s@]+@[^\s@]+\.[^\s@]+$').hasMatch(s);
+                                    return ok ? null : context.t('login.invalid_email');
+                                  },
+                                ),
+                              ],
+                            ),
                     ),
                   ),
                   FadeSlideIn(
@@ -143,11 +151,11 @@ class _RegisterScreenState extends State<RegisterScreen> {
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              _label('FIRST NAME'),
+                              _label(context.t('register.first_name')),
                               TextFormField(
                                 controller: _first,
-                                decoration: const InputDecoration(hintText: 'First'),
-                                validator: (v) => (v == null || v.trim().isEmpty) ? 'Required' : null,
+                                decoration: InputDecoration(hintText: context.t('register.first_hint')),
+                                validator: (v) => (v == null || v.trim().isEmpty) ? context.t('common.required') : null,
                               ),
                             ],
                           ),
@@ -157,11 +165,11 @@ class _RegisterScreenState extends State<RegisterScreen> {
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              _label('LAST NAME'),
+                              _label(context.t('register.last_name')),
                               TextFormField(
                                 controller: _last,
-                                decoration: const InputDecoration(hintText: 'Last'),
-                                validator: (v) => (v == null || v.trim().isEmpty) ? 'Required' : null,
+                                decoration: InputDecoration(hintText: context.t('register.last_hint')),
+                                validator: (v) => (v == null || v.trim().isEmpty) ? context.t('common.required') : null,
                               ),
                             ],
                           ),
@@ -174,11 +182,11 @@ class _RegisterScreenState extends State<RegisterScreen> {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        _label('PASSWORD'),
+                        _label(context.t('register.password')),
                         TextFormField(
                           controller: _pass,
                           decoration: InputDecoration(
-                            hintText: 'Create a password',
+                            hintText: context.t('register.password_hint'),
                             prefixIcon: const Icon(Icons.lock_outline, color: AppColors.textMuted),
                             suffixIcon: IconButton(
                               icon: Icon(_obscure ? Icons.visibility_off_outlined : Icons.visibility_outlined,
@@ -187,7 +195,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                             ),
                           ),
                           obscureText: _obscure,
-                          validator: (v) => (v == null || v.length < 6) ? 'Min 6 characters' : null,
+                          validator: (v) => (v == null || v.length < 6) ? context.t('register.password_min') : null,
                         ),
                       ],
                     ),
@@ -250,10 +258,10 @@ class _RegisterScreenState extends State<RegisterScreen> {
                                   width: 20,
                                   child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
                                 )
-                              : const Text(
-                                  'Send Verification Code',
-                                  key: ValueKey('t'),
-                                  style: TextStyle(color: Colors.white, fontWeight: FontWeight.w800, fontSize: 15),
+                              : Text(
+                                  context.t('register.sign_up'),
+                                  key: const ValueKey('t'),
+                                  style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w800, fontSize: 15),
                                 ),
                         ),
                       ),
@@ -264,9 +272,9 @@ class _RegisterScreenState extends State<RegisterScreen> {
                     child: GestureDetector(
                       onTap: () => Navigator.of(context).pushReplacement(
                           fadeSlideRoute(const LoginScreen())),
-                      child: const Text.rich(TextSpan(children: [
-                        TextSpan(text: 'Already have an account? ', style: TextStyle(color: AppColors.textMuted)),
-                        TextSpan(text: 'Sign In', style: TextStyle(color: AppColors.blue, fontWeight: FontWeight.w700)),
+                      child: Text.rich(TextSpan(children: [
+                        TextSpan(text: context.t('register.have_account'), style: const TextStyle(color: AppColors.textMuted)),
+                        TextSpan(text: context.t('register.sign_in_link'), style: const TextStyle(color: AppColors.blue, fontWeight: FontWeight.w700)),
                       ])),
                     ),
                   ),
@@ -319,12 +327,14 @@ class _SegmentedToggle extends StatelessWidget {
               ),
             ),
           ),
-          Row(
-            children: [
-              _seg('Phone', Icons.phone_android, isPhone, () => onChanged(true)),
-              _seg('Email', Icons.mail_outline, !isPhone, () => onChanged(false)),
-            ],
-          ),
+          Builder(builder: (ctx) {
+            return Row(
+              children: [
+                _seg(ctx.t('register.toggle_phone'), Icons.phone_android, isPhone, () => onChanged(true)),
+                _seg(ctx.t('register.toggle_email'), Icons.mail_outline, !isPhone, () => onChanged(false)),
+              ],
+            );
+          }),
         ],
       ),
     );
@@ -364,3 +374,4 @@ class _SegmentedToggle extends StatelessWidget {
     );
   }
 }
+

@@ -31,10 +31,10 @@ class AuthState extends ChangeNotifier {
     notifyListeners();
   }
 
-  Future<void> login(String email, String password) async {
+  Future<void> login(String identifier, String password) async {
     _setLoading(true);
     try {
-      final res = await _api.login(email, password);
+      final res = await _api.login(identifier, password);
       await _persist(res.token, res.user);
     } finally {
       _setLoading(false);
@@ -44,7 +44,7 @@ class AuthState extends ChangeNotifier {
   Future<void> register({
     required String firstName,
     required String lastName,
-    required String email,
+    String? email,
     required String password,
     String? phone,
   }) async {
@@ -58,6 +58,39 @@ class AuthState extends ChangeNotifier {
         phone: phone,
       );
       await _persist(res.token, res.user);
+    } finally {
+      _setLoading(false);
+    }
+  }
+
+  Future<void> changePassword({
+    required String currentPassword,
+    required String newPassword,
+  }) async {
+    _setLoading(true);
+    try {
+      await _api.changePassword(
+        currentPassword: currentPassword,
+        newPassword: newPassword,
+      );
+    } finally {
+      _setLoading(false);
+    }
+  }
+
+  Future<void> updateProfile({
+    String? firstName,
+    String? lastName,
+    String? phone,
+  }) async {
+    _setLoading(true);
+    try {
+      _user = await _api.updateProfile(
+        firstName: firstName,
+        lastName: lastName,
+        phone: phone,
+      );
+      notifyListeners();
     } finally {
       _setLoading(false);
     }

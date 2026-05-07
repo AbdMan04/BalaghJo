@@ -1,10 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import '../../core/strings.dart';
 import '../../core/theme.dart';
 import '../../data/api/report_api.dart';
 import '../../data/models/report.dart';
 import '../../state/auth_state.dart';
 import '../reports/report_detail_screen.dart';
+import '../reports/reports_map_screen.dart';
+import '../reports/submit_report_screen.dart';
 import '../widgets/animations.dart';
 import '../widgets/category_icon.dart';
 import '../widgets/status_badge.dart';
@@ -28,15 +31,52 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   Future<void> _refresh() async {
-    setState(() => _future = _api.summary());
+    setState(() {
+      _future = _api.summary();
+    });
     await _future;
   }
 
-  String get _greeting {
-    final h = DateTime.now().hour;
-    if (h < 12) return 'Good morning';
-    if (h < 17) return 'Good afternoon';
-    return 'Good evening';
+  Future<bool> _deleteReport(Report r) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(AppRadius.md)),
+        title: Text(context.t('home.delete_title'), style: const TextStyle(fontWeight: FontWeight.w800)),
+        content: Text(
+          '${context.t('home.delete_body_prefix')}${r.title.isNotEmpty ? r.title : r.reportId}${context.t('home.delete_body_suffix')}',
+        ),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(ctx, false), child: Text(context.t('common.cancel'))),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(backgroundColor: AppColors.danger),
+            onPressed: () => Navigator.pop(ctx, true),
+            child: Text(context.t('common.delete')),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true) return false;
+    try {
+      await _api.delete(r.id);
+      if (!mounted) return true;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          behavior: SnackBarBehavior.floating,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(AppRadius.md)),
+          content: Text(context.t('home.deleted_toast')),
+        ),
+      );
+      await _refresh();
+      return true;
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Failed to delete: $e')),
+        );
+      }
+      return false;
+    }
   }
 
   @override
@@ -68,32 +108,8 @@ class _HomeScreenState extends State<HomeScreen> {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         FadeSlideIn(
-                          child: Row(
-                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                            children: [
-                              Text('$_greeting 👋',
-                                  style: const TextStyle(color: Colors.white70, fontSize: 13)),
-                              PressableScale(
-                                onTap: () {
-                                  ScaffoldMessenger.of(context).showSnackBar(
-                                    SnackBar(
-                                      behavior: SnackBarBehavior.floating,
-                                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(AppRadius.md)),
-                                      content: const Text('No new notifications'),
-                                    ),
-                                  );
-                                },
-                                child: Container(
-                                  padding: const EdgeInsets.all(8),
-                                  decoration: BoxDecoration(
-                                    color: Colors.white.withValues(alpha: 0.12),
-                                    borderRadius: BorderRadius.circular(AppRadius.sm),
-                                  ),
-                                  child: const Icon(Icons.notifications_outlined, color: Colors.white, size: 20),
-                                ),
-                              ),
-                            ],
-                          ),
+                          child: Text(context.t('home.welcome'),
+                              style: const TextStyle(color: Colors.white70, fontSize: 13)),
                         ),
                         const SizedBox(height: 4),
                         FadeSlideIn(
@@ -117,11 +133,11 @@ class _HomeScreenState extends State<HomeScreen> {
                                 ),
                                 child: Row(
                                   children: [
-                                    _stat('Total', s?.total ?? 0),
+                                    _stat(context.t('home.stat_total'), s?.total ?? 0),
                                     _divider(),
-                                    _stat('Resolved', s?.resolved ?? 0),
+                                    _stat(context.t('home.stat_resolved'), s?.resolved ?? 0),
                                     _divider(),
-                                    _stat('Active', s?.active ?? 0),
+                                    _stat(context.t('home.stat_active'), s?.active ?? 0),
                                   ],
                                 ),
                               );
@@ -176,19 +192,94 @@ class _HomeScreenState extends State<HomeScreen> {
                             child: const Icon(Icons.add, color: Colors.white, size: 20),
                           ),
                           const SizedBox(width: 14),
-                          const Expanded(
+                          Expanded(
                             child: Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
-                                Text('Report an Issue',
-                                    style: TextStyle(color: Colors.white, fontWeight: FontWeight.w800, fontSize: 15)),
-                                SizedBox(height: 2),
-                                Text('Potholes, waste, lighting…',
-                                    style: TextStyle(color: Colors.white60, fontSize: 12)),
+                                Text(context.t('home.report_issue'),
+                                    style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w800, fontSize: 15)),
+                                const SizedBox(height: 2),
+                                Text(context.t('home.report_issue_sub'),
+                                    style: const TextStyle(color: Colors.white60, fontSize: 12)),
                               ],
                             ),
                           ),
                           const Icon(Icons.chevron_right, color: Colors.white70),
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 28),
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 20),
+                child: FadeSlideIn(
+                  delay: const Duration(milliseconds: 320),
+                  child: Align(
+                    alignment: AlignmentDirectional.centerStart,
+                    child: Text(context.t('home.quick_report'),
+                        style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 16)),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 12),
+              const _CategoriesGrid(),
+              const SizedBox(height: 20),
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 20),
+                child: FadeSlideIn(
+                  delay: const Duration(milliseconds: 600),
+                  child: PressableScale(
+                    onTap: () => Navigator.of(context).push(
+                      fadeSlideRoute(const ReportsMapScreen()),
+                    ),
+                    child: Container(
+                      padding: const EdgeInsets.all(14),
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        borderRadius: BorderRadius.circular(AppRadius.md),
+                        border: Border.all(color: AppColors.border),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.black.withValues(alpha: 0.03),
+                            blurRadius: 10,
+                            offset: const Offset(0, 4),
+                          ),
+                        ],
+                      ),
+                      child: Row(
+                        children: [
+                          Container(
+                            padding: const EdgeInsets.all(10),
+                            decoration: BoxDecoration(
+                              gradient: const LinearGradient(
+                                colors: [AppColors.blue, AppColors.sky],
+                              ),
+                              borderRadius: BorderRadius.circular(AppRadius.sm),
+                              boxShadow: [
+                                BoxShadow(
+                                  color: AppColors.blue.withValues(alpha: 0.35),
+                                  blurRadius: 10,
+                                ),
+                              ],
+                            ),
+                            child: const Icon(Icons.map_outlined, color: Colors.white, size: 20),
+                          ),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(context.t('home.explore_map'),
+                                    style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 14)),
+                                const SizedBox(height: 2),
+                                Text(context.t('home.explore_map_sub'),
+                                    style: const TextStyle(color: AppColors.textMuted, fontSize: 12)),
+                              ],
+                            ),
+                          ),
+                          const Icon(Icons.chevron_right, color: AppColors.textMuted),
                         ],
                       ),
                     ),
@@ -201,11 +292,11 @@ class _HomeScreenState extends State<HomeScreen> {
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    const Text('Recent Reports', style: TextStyle(fontWeight: FontWeight.w800, fontSize: 16)),
+                    Text(context.t('home.recent_reports'), style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 16)),
                     GestureDetector(
                       onTap: () => MainShellScope.of(context)?.goTo(2),
-                      child: const Text('View all',
-                          style: TextStyle(color: AppColors.blue, fontWeight: FontWeight.w700, fontSize: 12)),
+                      child: Text(context.t('home.view_all'),
+                          style: const TextStyle(color: AppColors.blue, fontWeight: FontWeight.w700, fontSize: 12)),
                     ),
                   ],
                 ),
@@ -215,9 +306,11 @@ class _HomeScreenState extends State<HomeScreen> {
                 future: _future,
                 builder: (_, snap) {
                   if (snap.connectionState == ConnectionState.waiting) {
-                    return const Padding(
-                      padding: EdgeInsets.all(40),
-                      child: Center(child: CircularProgressIndicator(color: AppColors.blue)),
+                    return Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 20),
+                      child: Column(
+                        children: List.generate(3, (i) => const _SkeletonTile()),
+                      ),
                     );
                   }
                   if (snap.hasError) {
@@ -236,11 +329,11 @@ class _HomeScreenState extends State<HomeScreen> {
                           Icon(Icons.inbox_outlined,
                               size: 56, color: AppColors.textMuted.withValues(alpha: 0.5)),
                           const SizedBox(height: 12),
-                          const Text('No reports yet',
-                              style: TextStyle(fontWeight: FontWeight.w700)),
+                          Text(context.t('home.no_reports_yet'),
+                              style: const TextStyle(fontWeight: FontWeight.w700)),
                           const SizedBox(height: 4),
-                          const Text('Submit your first one!',
-                              style: TextStyle(color: AppColors.textMuted, fontSize: 12)),
+                          Text(context.t('home.submit_first'),
+                              style: const TextStyle(color: AppColors.textMuted, fontSize: 12)),
                         ],
                       ),
                     );
@@ -249,7 +342,10 @@ class _HomeScreenState extends State<HomeScreen> {
                     children: List.generate(reports.length, (i) {
                       return FadeSlideIn(
                         delay: Duration(milliseconds: 80 * i),
-                        child: _ReportTile(report: reports[i]),
+                        child: _ReportTile(
+                          report: reports[i],
+                          onDelete: () => _deleteReport(reports[i]),
+                        ),
                       );
                     }),
                   );
@@ -281,65 +377,211 @@ class _HomeScreenState extends State<HomeScreen> {
 
 class _ReportTile extends StatelessWidget {
   final Report report;
-  const _ReportTile({required this.report});
+  final Future<bool> Function() onDelete;
+  const _ReportTile({required this.report, required this.onDelete});
 
   @override
   Widget build(BuildContext context) {
     return Padding(
       padding: const EdgeInsets.fromLTRB(20, 6, 20, 6),
-      child: PressableScale(
-        onTap: () => Navigator.of(context).push(
-            fadeSlideRoute(ReportDetailScreen(reportId: report.id))),
-        child: Container(
-          padding: const EdgeInsets.all(14),
-          decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(AppRadius.md),
-            border: Border.all(color: AppColors.border),
-            boxShadow: [
-              BoxShadow(color: Colors.black.withValues(alpha: 0.02), blurRadius: 8, offset: const Offset(0, 2)),
-            ],
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(AppRadius.md),
+        child: Dismissible(
+          key: ValueKey('home-tile-${report.id}'),
+          direction: DismissDirection.endToStart,
+          confirmDismiss: (_) => onDelete(),
+          background: Container(
+            alignment: AlignmentDirectional.centerEnd,
+            padding: const EdgeInsets.symmetric(horizontal: 22),
+            decoration: BoxDecoration(
+              color: AppColors.danger,
+              borderRadius: BorderRadius.circular(AppRadius.md),
+            ),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const Icon(Icons.delete_outline, color: Colors.white, size: 20),
+                const SizedBox(width: 6),
+                Text(context.t('home.delete_swipe_label'),
+                    style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w800)),
+              ],
+            ),
           ),
-          child: Row(
-            children: [
-              Hero(
-                tag: 'report-icon-${report.id}',
-                child: Container(
-                  padding: const EdgeInsets.all(10),
-                  decoration: BoxDecoration(
-                    color: AppColors.warning.withValues(alpha: 0.12),
-                    borderRadius: BorderRadius.circular(AppRadius.sm),
-                  ),
-                  child: Icon(iconForCategory(report.category), color: AppColors.warning),
-                ),
+          child: PressableScale(
+            onTap: () => Navigator.of(context).push(
+                fadeSlideRoute(ReportDetailScreen(reportId: report.id))),
+            child: Container(
+              padding: const EdgeInsets.all(14),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(AppRadius.md),
+                border: Border.all(color: AppColors.border),
+                boxShadow: [
+                  BoxShadow(color: Colors.black.withValues(alpha: 0.02), blurRadius: 8, offset: const Offset(0, 2)),
+                ],
               ),
-              const SizedBox(width: 12),
-              Expanded(
+              child: Row(
+                children: [
+                  Hero(
+                    tag: 'report-icon-${report.id}',
+                    child: Container(
+                      padding: const EdgeInsets.all(10),
+                      decoration: BoxDecoration(
+                        color: colorForCategory(report.category).withValues(alpha: 0.12),
+                        borderRadius: BorderRadius.circular(AppRadius.sm),
+                      ),
+                      child: Icon(iconForCategory(report.category),
+                          color: colorForCategory(report.category)),
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          report.title.isNotEmpty ? report.title : labelForCategory(report.category, context),
+                          style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 14),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                        const SizedBox(height: 2),
+                        Text(
+                          report.address.isNotEmpty ? report.address : 'Location pending',
+                          style: const TextStyle(color: AppColors.textMuted, fontSize: 12),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                        const SizedBox(height: 6),
+                        StatusBadge(report.status),
+                      ],
+                    ),
+                  ),
+                  const Icon(Icons.chevron_right, color: AppColors.textMuted),
+                ],
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _SkeletonTile extends StatelessWidget {
+  const _SkeletonTile();
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 12),
+      child: Container(
+        padding: const EdgeInsets.all(14),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(AppRadius.md),
+          border: Border.all(color: AppColors.border),
+        ),
+        child: const Row(
+          children: [
+            SkeletonBox(
+              height: 44,
+              width: 44,
+              borderRadius: BorderRadius.all(Radius.circular(AppRadius.sm)),
+            ),
+            SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  SkeletonBox(height: 12, width: 160),
+                  SizedBox(height: 8),
+                  SkeletonBox(height: 10, width: 110),
+                  SizedBox(height: 10),
+                  SkeletonBox(
+                    height: 16,
+                    width: 70,
+                    borderRadius: BorderRadius.all(Radius.circular(20)),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _CategoriesGrid extends StatelessWidget {
+  const _CategoriesGrid();
+
+  static const _items = [
+    ('pothole', 'cat.pothole', Icons.warning_amber_rounded),
+    ('waste', 'cat.waste', Icons.delete_outline),
+    ('lighting', 'cat.lighting', Icons.lightbulb_outline),
+    ('road_crack', 'cat.road_crack', Icons.alt_route),
+  ];
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 20),
+      child: GridView.count(
+        crossAxisCount: 4,
+        mainAxisSpacing: 10,
+        crossAxisSpacing: 10,
+        childAspectRatio: 0.92,
+        shrinkWrap: true,
+        physics: const NeverScrollableScrollPhysics(),
+        children: List.generate(_items.length, (i) {
+          final item = _items[i];
+          final tint = colorForCategory(item.$1);
+          return FadeSlideIn(
+            delay: Duration(milliseconds: 360 + i * 60),
+            child: PressableScale(
+              onTap: () => Navigator.of(context).push(
+                fadeSlideRoute(SubmitReportScreen(initialCategory: item.$1)),
+              ),
+              child: Container(
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(AppRadius.md),
+                  border: Border.all(color: AppColors.border),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withValues(alpha: 0.025),
+                      blurRadius: 8,
+                      offset: const Offset(0, 2),
+                    ),
+                  ],
+                ),
                 child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    Text(
-                      report.title.isNotEmpty ? report.title : labelForCategory(report.category),
-                      style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 14),
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
+                    Container(
+                      padding: const EdgeInsets.all(10),
+                      decoration: BoxDecoration(
+                        color: tint.withValues(alpha: 0.12),
+                        borderRadius: BorderRadius.circular(AppRadius.sm),
+                      ),
+                      child: Icon(item.$3, color: tint, size: 22),
                     ),
-                    const SizedBox(height: 2),
+                    const SizedBox(height: 8),
                     Text(
-                      report.address.isNotEmpty ? report.address : 'Location pending',
-                      style: const TextStyle(color: AppColors.textMuted, fontSize: 12),
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
+                      context.t(item.$2),
+                      style: const TextStyle(
+                        fontSize: 11,
+                        fontWeight: FontWeight.w700,
+                        color: AppColors.navy,
+                      ),
                     ),
-                    const SizedBox(height: 6),
-                    StatusBadge(report.status),
                   ],
                 ),
               ),
-              const Icon(Icons.chevron_right, color: AppColors.textMuted),
-            ],
-          ),
-        ),
+            ),
+          );
+        }),
       ),
     );
   }

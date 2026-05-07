@@ -13,27 +13,53 @@ class AuthApi {
   Future<AuthResult> register({
     required String firstName,
     required String lastName,
-    required String email,
+    String? email,
     required String password,
     String? phone,
   }) async {
     final res = await _api.post('/api/auth/register', {
       'firstName': firstName,
       'lastName': lastName,
-      'email': email,
+      if (email != null && email.isNotEmpty) 'email': email,
       'password': password,
       if (phone != null && phone.isNotEmpty) 'phone': phone,
     });
     return AuthResult(res['token'], AppUser.fromJson(res['user']));
   }
 
-  Future<AuthResult> login(String email, String password) async {
-    final res = await _api.post('/api/auth/login', {'email': email, 'password': password});
+  Future<AuthResult> login(String identifier, String password) async {
+    final res = await _api.post('/api/auth/login', {
+      'identifier': identifier,
+      'password': password,
+    });
     return AuthResult(res['token'], AppUser.fromJson(res['user']));
   }
 
   Future<AppUser> me() async {
     final res = await _api.get('/api/auth/me');
+    return AppUser.fromJson(res['user']);
+  }
+
+  Future<void> changePassword({
+    required String currentPassword,
+    required String newPassword,
+  }) async {
+    await _api.patch('/api/auth/password', {
+      'currentPassword': currentPassword,
+      'newPassword': newPassword,
+    });
+  }
+
+  Future<AppUser> updateProfile({
+    String? firstName,
+    String? lastName,
+    String? phone,
+  }) async {
+    final body = <String, dynamic>{};
+    if (firstName != null) body['firstName'] = firstName;
+    if (lastName != null) body['lastName'] = lastName;
+    if (phone != null) body['phone'] = phone;
+    final res = await _api.patch('/api/auth/profile', body);
     return AppUser.fromJson(res['user']);
   }
 }

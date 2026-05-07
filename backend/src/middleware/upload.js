@@ -14,9 +14,13 @@ const storage = multer.diskStorage({
   },
 });
 
+const IMAGE_EXTS = /\.(jpe?g|png|gif|webp|bmp|tiff?|heic|heif|avif|svg|ico)$/i;
+
 const fileFilter = (_req, file, cb) => {
-  if (!/^image\/(jpeg|jpg|png|webp)$/.test(file.mimetype)) {
-    return cb(new Error('Only JPG/PNG/WEBP images allowed'));
+  const okMime = /^image\//i.test(file.mimetype || '');
+  const okExt = IMAGE_EXTS.test(file.originalname || '');
+  if (!okMime && !okExt) {
+    return cb(new Error('Only image files are allowed'));
   }
   cb(null, true);
 };

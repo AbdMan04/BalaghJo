@@ -2,12 +2,16 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:image_picker/image_picker.dart';
+import '../../core/strings.dart';
 import '../../core/theme.dart';
 import '../../data/api/report_api.dart';
 import '../widgets/animations.dart';
+import '../widgets/category_icon.dart';
+import 'map_picker_screen.dart';
 
 class SubmitReportScreen extends StatefulWidget {
-  const SubmitReportScreen({super.key});
+  final String? initialCategory;
+  const SubmitReportScreen({super.key, this.initialCategory});
 
   @override
   State<SubmitReportScreen> createState() => _SubmitReportScreenState();
@@ -17,7 +21,7 @@ class _SubmitReportScreenState extends State<SubmitReportScreen> {
   final _api = ReportApi();
   final _description = TextEditingController();
   final _address = TextEditingController();
-  String _category = 'pothole';
+  late String _category = widget.initialCategory ?? 'pothole';
   File? _photo;
   double? _lat;
   double? _lng;
@@ -26,16 +30,33 @@ class _SubmitReportScreenState extends State<SubmitReportScreen> {
   String? _error;
 
   static const _cats = [
-    ('pothole', 'Pothole', Icons.warning_amber_rounded),
-    ('waste', 'Waste', Icons.delete_outline),
-    ('lighting', 'Lighting', Icons.lightbulb_outline),
-    ('road_crack', 'Road Crack', Icons.alt_route),
+    ('pothole', 'cat.pothole', Icons.warning_amber_rounded),
+    ('waste', 'cat.waste', Icons.delete_outline),
+    ('lighting', 'cat.lighting', Icons.lightbulb_outline),
+    ('road_crack', 'cat.road_crack', Icons.alt_route),
   ];
 
   Future<void> _pickPhoto() async {
     final picker = ImagePicker();
     final x = await picker.pickImage(source: ImageSource.gallery, maxWidth: 1600, imageQuality: 85);
     if (x != null) setState(() => _photo = File(x.path));
+  }
+
+  Future<void> _openMap() async {
+    final picked = await Navigator.of(context).push<PickedLocation>(
+      MaterialPageRoute(
+        builder: (_) => MapPickerScreen(initialLat: _lat, initialLng: _lng),
+      ),
+    );
+    if (picked != null) {
+      setState(() {
+        _lat = picked.lat;
+        _lng = picked.lng;
+        if (picked.address != null && picked.address!.isNotEmpty && _address.text.trim().isEmpty) {
+          _address.text = picked.address!;
+        }
+      });
+    }
   }
 
   Future<void> _captureLocation() async {
@@ -53,7 +74,7 @@ class _SubmitReportScreenState extends State<SubmitReportScreen> {
 
   Future<void> _submit() async {
     if (_description.text.trim().length < 5) {
-      setState(() => _error = 'Please add a longer description (5+ chars)');
+      setState(() => _error = context.t('submit.desc_min'));
       return;
     }
     setState(() {
@@ -79,10 +100,10 @@ class _SubmitReportScreenState extends State<SubmitReportScreen> {
           backgroundColor: AppColors.success,
           behavior: SnackBarBehavior.floating,
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(AppRadius.md)),
-          content: const Row(children: [
-            Icon(Icons.check_circle, color: Colors.white, size: 20),
-            SizedBox(width: 8),
-            Text('Report submitted successfully'),
+          content: Row(children: [
+            const Icon(Icons.check_circle, color: Colors.white, size: 20),
+            const SizedBox(width: 8),
+            Text(context.t('submit.success')),
           ]),
         ),
       );
@@ -110,7 +131,7 @@ class _SubmitReportScreenState extends State<SubmitReportScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Submit Report', style: TextStyle(fontWeight: FontWeight.w800))),
+      appBar: AppBar(title: Text(context.t('submit.title'), style: const TextStyle(fontWeight: FontWeight.w800))),
       body: Stack(
         children: [
           SingleChildScrollView(
@@ -118,7 +139,7 @@ class _SubmitReportScreenState extends State<SubmitReportScreen> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                FadeSlideIn(child: _label('PHOTO')),
+                FadeSlideIn(child: _label(context.t('submit.photo'))),
                 FadeSlideIn(
                   delay: const Duration(milliseconds: 60),
                   child: PressableScale(
@@ -156,17 +177,17 @@ class _SubmitReportScreenState extends State<SubmitReportScreen> {
                                     child: const Icon(Icons.camera_alt_outlined, size: 28, color: AppColors.blue),
                                   ),
                                   const SizedBox(height: 8),
-                                  const Text('Tap to add photo', style: TextStyle(fontWeight: FontWeight.w700)),
+                                  Text(context.t('submit.tap_photo'), style: const TextStyle(fontWeight: FontWeight.w700)),
                                   const SizedBox(height: 2),
-                                  const Text('JPG, PNG up to 10MB',
-                                      style: TextStyle(color: AppColors.textMuted, fontSize: 11)),
+                                  Text(context.t('submit.photo_hint'),
+                                      style: const TextStyle(color: AppColors.textMuted, fontSize: 11)),
                                 ],
                               ),
                       ),
                     ),
                   ),
                 ),
-                FadeSlideIn(delay: const Duration(milliseconds: 120), child: _label('PROBLEM TYPE')),
+                FadeSlideIn(delay: const Duration(milliseconds: 120), child: _label(context.t('submit.problem_type'))),
                 FadeSlideIn(
                   delay: const Duration(milliseconds: 160),
                   child: Wrap(
@@ -174,6 +195,7 @@ class _SubmitReportScreenState extends State<SubmitReportScreen> {
                     runSpacing: 10,
                     children: _cats.map((c) {
                       final selected = _category == c.$1;
+                      final tint = colorForCategory(c.$1);
                       return PressableScale(
                         onTap: () => setState(() => _category = c.$1),
                         child: AnimatedContainer(
@@ -181,14 +203,14 @@ class _SubmitReportScreenState extends State<SubmitReportScreen> {
                           curve: Curves.easeOutCubic,
                           padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
                           decoration: BoxDecoration(
-                            color: selected ? AppColors.blue.withValues(alpha: 0.1) : Colors.white,
+                            color: selected ? tint.withValues(alpha: 0.12) : Colors.white,
                             border: Border.all(
-                              color: selected ? AppColors.blue : AppColors.border,
+                              color: selected ? tint : AppColors.border,
                               width: selected ? 1.5 : 1,
                             ),
                             borderRadius: BorderRadius.circular(AppRadius.sm),
                             boxShadow: selected
-                                ? [BoxShadow(color: AppColors.blue.withValues(alpha: 0.2), blurRadius: 10)]
+                                ? [BoxShadow(color: tint.withValues(alpha: 0.25), blurRadius: 10)]
                                 : null,
                           ),
                           child: Row(
@@ -199,17 +221,17 @@ class _SubmitReportScreenState extends State<SubmitReportScreen> {
                                 child: Icon(c.$3,
                                     key: ValueKey('${c.$1}-$selected'),
                                     size: 16,
-                                    color: selected ? AppColors.blue : AppColors.navy),
+                                    color: selected ? tint : AppColors.navy),
                               ),
                               const SizedBox(width: 6),
                               AnimatedDefaultTextStyle(
                                 duration: const Duration(milliseconds: 220),
                                 style: TextStyle(
                                   fontWeight: FontWeight.w700,
-                                  color: selected ? AppColors.blue : AppColors.navy,
+                                  color: selected ? tint : AppColors.navy,
                                   fontSize: 13,
                                 ),
-                                child: Text(c.$2),
+                                child: Text(context.t(c.$2)),
                               ),
                             ],
                           ),
@@ -218,46 +240,86 @@ class _SubmitReportScreenState extends State<SubmitReportScreen> {
                     }).toList(),
                   ),
                 ),
-                FadeSlideIn(delay: const Duration(milliseconds: 200), child: _label('DESCRIPTION')),
+                FadeSlideIn(delay: const Duration(milliseconds: 200), child: _label(context.t('submit.description'))),
                 FadeSlideIn(
                   delay: const Duration(milliseconds: 240),
                   child: TextField(
                     controller: _description,
                     maxLines: 4,
-                    decoration: const InputDecoration(hintText: 'Describe the problem in detail…'),
+                    decoration: InputDecoration(hintText: context.t('submit.description_hint')),
                   ),
                 ),
-                FadeSlideIn(delay: const Duration(milliseconds: 280), child: _label('LOCATION')),
+                FadeSlideIn(delay: const Duration(milliseconds: 280), child: _label(context.t('submit.location'))),
                 FadeSlideIn(
                   delay: const Duration(milliseconds: 320),
                   child: TextField(
                     controller: _address,
                     decoration: InputDecoration(
-                      hintText: 'Al-Yamouk Street, Block 5',
+                      hintText: context.t('submit.address_hint'),
                       prefixIcon: const Icon(Icons.location_on_outlined, color: AppColors.blue),
-                      suffixIcon: IconButton(
-                        icon: const Icon(Icons.my_location, size: 20, color: AppColors.blue),
-                        onPressed: _captureLocation,
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 10),
+                FadeSlideIn(
+                  delay: const Duration(milliseconds: 360),
+                  child: PressableScale(
+                    onTap: _openMap,
+                    child: Container(
+                      padding: const EdgeInsets.all(14),
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        borderRadius: BorderRadius.circular(AppRadius.md),
+                        border: Border.all(
+                          color: _lat != null ? AppColors.blue : AppColors.border,
+                          width: _lat != null ? 1.5 : 1,
+                        ),
+                      ),
+                      child: Row(
+                        children: [
+                          Container(
+                            padding: const EdgeInsets.all(10),
+                            decoration: BoxDecoration(
+                              color: AppColors.blue.withValues(alpha: 0.1),
+                              borderRadius: BorderRadius.circular(AppRadius.sm),
+                            ),
+                            child: const Icon(Icons.map_outlined, color: AppColors.blue, size: 22),
+                          ),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(_lat == null ? context.t('submit.pick_on_map') : context.t('submit.location_selected'),
+                                    style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 14)),
+                                const SizedBox(height: 2),
+                                Text(
+                                  _lat == null
+                                      ? context.t('submit.pick_on_map_hint')
+                                      : 'Lat ${_lat!.toStringAsFixed(4)}, Lng ${_lng!.toStringAsFixed(4)}',
+                                  style: const TextStyle(color: AppColors.textMuted, fontSize: 12),
+                                ),
+                              ],
+                            ),
+                          ),
+                          const Icon(Icons.chevron_right, color: AppColors.textMuted),
+                        ],
                       ),
                     ),
                   ),
                 ),
-                AnimatedSwitcher(
-                  duration: const Duration(milliseconds: 280),
-                  child: _lat != null
-                      ? Padding(
-                          key: const ValueKey('gps'),
-                          padding: const EdgeInsets.only(top: 8),
-                          child: Row(
-                            children: [
-                              const Icon(Icons.gps_fixed, size: 14, color: AppColors.success),
-                              const SizedBox(width: 6),
-                              Text('GPS: ${_lat!.toStringAsFixed(5)}, ${_lng!.toStringAsFixed(5)}',
-                                  style: const TextStyle(color: AppColors.textMuted, fontSize: 11)),
-                            ],
-                          ),
-                        )
-                      : const SizedBox.shrink(),
+                const SizedBox(height: 8),
+                FadeSlideIn(
+                  delay: const Duration(milliseconds: 400),
+                  child: Align(
+                    alignment: Alignment.centerLeft,
+                    child: TextButton.icon(
+                      onPressed: _captureLocation,
+                      icon: const Icon(Icons.my_location, size: 16, color: AppColors.blue),
+                      label: Text(context.t('submit.use_my_location'),
+                          style: const TextStyle(color: AppColors.blue, fontWeight: FontWeight.w700)),
+                    ),
+                  ),
                 ),
                 AnimatedSwitcher(
                   duration: const Duration(milliseconds: 250),
@@ -317,14 +379,14 @@ class _SubmitReportScreenState extends State<SubmitReportScreen> {
                                 width: 22,
                                 child: CircularProgressIndicator(strokeWidth: 2.5, color: Colors.white),
                               )
-                            : const Row(
-                                key: ValueKey('t'),
+                            : Row(
+                                key: const ValueKey('t'),
                                 mainAxisAlignment: MainAxisAlignment.center,
                                 children: [
-                                  Icon(Icons.send_rounded, color: Colors.white, size: 18),
-                                  SizedBox(width: 8),
-                                  Text('Submit Report',
-                                      style: TextStyle(color: Colors.white, fontWeight: FontWeight.w800, fontSize: 15)),
+                                  const Icon(Icons.send_rounded, color: Colors.white, size: 18),
+                                  const SizedBox(width: 8),
+                                  Text(context.t('submit.submit_button'),
+                                      style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w800, fontSize: 15)),
                                 ],
                               ),
                       ),

@@ -32,9 +32,23 @@ class ReportApi {
         .toList();
   }
 
+  Future<List<Report>> publicList({String? status, String? category}) async {
+    final query = <String, String>{};
+    if (status != null) query['status'] = status;
+    if (category != null) query['category'] = category;
+    final res = await _api.get('/api/reports/public', query: query.isEmpty ? null : query);
+    return ((res['reports'] as List?) ?? [])
+        .map((e) => Report.fromJson(e as Map<String, dynamic>))
+        .toList();
+  }
+
   Future<Report> get(String id) async {
     final res = await _api.get('/api/reports/$id');
     return Report.fromJson(res['report']);
+  }
+
+  Future<void> delete(String id) async {
+    await _api.delete('/api/reports/$id');
   }
 
   Future<Report> create({

@@ -5,6 +5,7 @@ class AppUser {
   final String email;
   final String? phone;
   final String role;
+  final String provider;
   final int sentReports;
   final int solvedReports;
 
@@ -14,12 +15,14 @@ class AppUser {
     required this.lastName,
     required this.email,
     required this.role,
+    required this.provider,
     this.phone,
     this.sentReports = 0,
     this.solvedReports = 0,
   });
 
   String get fullName => '$firstName $lastName'.trim();
+  bool get isAdmin => role == 'admin';
 
   factory AppUser.fromJson(Map<String, dynamic> j) => AppUser(
         id: j['id'] ?? j['_id'] ?? '',
@@ -27,7 +30,8 @@ class AppUser {
         lastName: j['lastName'] ?? '',
         email: j['email'] ?? '',
         phone: j['phone'],
-        role: j['role'] ?? 'citizen',
+        role: j['role'] ?? 'user',
+        provider: j['provider'] ?? 'email',
         sentReports: (j['sentReports'] ?? 0) as int,
         solvedReports: (j['solvedReports'] ?? 0) as int,
       );

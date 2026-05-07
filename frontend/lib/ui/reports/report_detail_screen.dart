@@ -1,8 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:intl/intl.dart';
+import 'package:url_launcher/url_launcher.dart';
 import '../../core/config.dart';
+import '../../core/strings.dart';
 import '../../core/theme.dart';
+import '../../data/api/geocoding_api.dart';
 import '../../data/api/report_api.dart';
 import '../../data/models/report.dart';
 import '../widgets/animations.dart';
@@ -29,7 +32,7 @@ class _ReportDetailScreenState extends State<ReportDetailScreen> {
 
   void _share(Report r) {
     final text = 'Report ${r.reportId}\n'
-        '${r.title.isNotEmpty ? r.title : labelForCategory(r.category)}\n'
+        '${r.title.isNotEmpty ? r.title : labelForCategory(r.category, context)}\n'
         'Status: ${r.status.label}\n'
         '${r.address.isNotEmpty ? r.address : ""}\n'
         '${r.description}';
@@ -64,7 +67,7 @@ class _ReportDetailScreenState extends State<ReportDetailScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Report Detail', style: TextStyle(fontWeight: FontWeight.w800)),
+        title: Text(context.t('detail.title'), style: const TextStyle(fontWeight: FontWeight.w800)),
       ),
       body: FutureBuilder<Report>(
         future: _future,
@@ -93,9 +96,22 @@ class _ReportDetailScreenState extends State<ReportDetailScreen> {
                         ],
                       ),
                       child: r.photoUrl.isEmpty
-                          ? Center(
-                              child: Icon(iconForCategory(r.category),
-                                  size: 64, color: AppColors.textMuted.withValues(alpha: 0.6)),
+                          ? Container(
+                              decoration: BoxDecoration(
+                                gradient: LinearGradient(
+                                  colors: [
+                                    colorForCategory(r.category).withValues(alpha: 0.18),
+                                    colorForCategory(r.category).withValues(alpha: 0.05),
+                                  ],
+                                  begin: Alignment.topLeft,
+                                  end: Alignment.bottomRight,
+                                ),
+                                borderRadius: BorderRadius.circular(AppRadius.lg),
+                              ),
+                              child: Center(
+                                child: Icon(iconForCategory(r.category),
+                                    size: 72, color: colorForCategory(r.category)),
+                              ),
                             )
                           : ClipRRect(
                               borderRadius: BorderRadius.circular(AppRadius.lg),
@@ -116,7 +132,7 @@ class _ReportDetailScreenState extends State<ReportDetailScreen> {
                   child: Row(
                     children: [
                       Expanded(
-                        child: Text(r.title.isNotEmpty ? r.title : labelForCategory(r.category),
+                        child: Text(r.title.isNotEmpty ? r.title : labelForCategory(r.category, context),
                             style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 20)),
                       ),
                       StatusBadge(r.status),
@@ -142,24 +158,38 @@ class _ReportDetailScreenState extends State<ReportDetailScreen> {
                       children: [
                         const Icon(Icons.location_on, size: 16, color: AppColors.blue),
                         const SizedBox(width: 6),
-                        Expanded(
-                          child: Text(r.address.isNotEmpty ? r.address : 'Location not provided',
-                              style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600)),
-                        ),
+                        Expanded(child: _LocationText(report: r)),
                       ],
                     ),
                   ),
                 ),
-                const SizedBox(height: 22),
-                FadeSlideIn(delay: const Duration(milliseconds: 260), child: _section('REPORT INFO')),
-                FadeSlideIn(delay: const Duration(milliseconds: 300), child: _kv('Category', labelForCategory(r.category))),
-                FadeSlideIn(delay: const Duration(milliseconds: 340), child: _kv('Submitted', DateFormat.yMMMd().format(r.createdAt))),
-                if (r.assignedTo.isNotEmpty)
-                  FadeSlideIn(delay: const Duration(milliseconds: 380), child: _kv('Assigned to', r.assignedTo)),
-                if (r.estimatedFix != null)
-                  FadeSlideIn(delay: const Duration(milliseconds: 420), child: _kv('Est. Fix', DateFormat.yMMMd().format(r.estimatedFix!))),
                 const SizedBox(height: 18),
-                FadeSlideIn(delay: const Duration(milliseconds: 460), child: _section('USER DESCRIPTION')),
+                FadeSlideIn(
+                  delay: const Duration(milliseconds: 230),
+                  child: _StatusTimeline(
+                    status: r.status,
+                    submittedAt: r.createdAt,
+                    estimatedFix: r.estimatedFix,
+                  ),
+                ),
+                const SizedBox(height: 22),
+                FadeSlideIn(delay: const Duration(milliseconds: 260), child: _section(context.t('detail.report_info'))),
+                FadeSlideIn(delay: const Duration(milliseconds: 300), child: _kv(context.t('detail.category'), context.t('cat.${r.category}'))),
+                FadeSlideIn(delay: const Duration(milliseconds: 340), child: _kv(context.t('detail.submitted_on'), DateFormat.yMMMd().format(r.createdAt))),
+                if (r.assignedTo.isNotEmpty)
+                  FadeSlideIn(delay: const Duration(milliseconds: 380), child: _kv(context.t('detail.assigned_to'), r.assignedTo)),
+                if (r.estimatedFix != null)
+                  FadeSlideIn(delay: const Duration(milliseconds: 420), child: _kv(context.t('detail.est_fix'), DateFormat.yMMMd().format(r.estimatedFix!))),
+                const SizedBox(height: 18),
+                if (r.reporterPhone.isNotEmpty || r.reporterName.isNotEmpty || r.reporterEmail.isNotEmpty) ...[
+                  FadeSlideIn(delay: const Duration(milliseconds: 440), child: _section(context.t('detail.reporter_contact'))),
+                  FadeSlideIn(
+                    delay: const Duration(milliseconds: 470),
+                    child: _ReporterCard(report: r),
+                  ),
+                  const SizedBox(height: 18),
+                ],
+                FadeSlideIn(delay: const Duration(milliseconds: 460), child: _section(context.t('detail.user_description'))),
                 FadeSlideIn(
                   delay: const Duration(milliseconds: 500),
                   child: Container(
@@ -187,12 +217,12 @@ class _ReportDetailScreenState extends State<ReportDetailScreen> {
                               border: Border.all(color: AppColors.border),
                               borderRadius: BorderRadius.circular(AppRadius.md),
                             ),
-                            child: const Row(
+                            child: Row(
                               mainAxisAlignment: MainAxisAlignment.center,
                               children: [
-                                Icon(Icons.share_outlined, size: 18, color: AppColors.navy),
-                                SizedBox(width: 6),
-                                Text('Share', style: TextStyle(fontWeight: FontWeight.w700)),
+                                const Icon(Icons.share_outlined, size: 18, color: AppColors.navy),
+                                const SizedBox(width: 6),
+                                Text(context.t('common.share'), style: const TextStyle(fontWeight: FontWeight.w700)),
                               ],
                             ),
                           ),
@@ -221,7 +251,7 @@ class _ReportDetailScreenState extends State<ReportDetailScreen> {
                                 ),
                                 const SizedBox(width: 6),
                                 Text(
-                                  _following ? 'Following' : 'Follow',
+                                  _following ? context.t('detail.following') : context.t('detail.follow'),
                                   style: TextStyle(
                                     color: _following ? Colors.white : AppColors.blue,
                                     fontWeight: FontWeight.w700,
@@ -262,4 +292,329 @@ class _ReportDetailScreenState extends State<ReportDetailScreen> {
           ],
         ),
       );
+}
+
+class _ReporterCard extends StatelessWidget {
+  final Report report;
+  const _ReporterCard({required this.report});
+
+  Future<void> _call(BuildContext context) async {
+    final uri = Uri(scheme: 'tel', path: report.reporterPhone);
+    final ok = await launchUrl(uri);
+    if (!ok && context.mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Could not open dialer')),
+      );
+    }
+  }
+
+  Future<void> _copyPhone(BuildContext context) async {
+    await Clipboard.setData(ClipboardData(text: report.reporterPhone));
+    if (!context.mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        behavior: SnackBarBehavior.floating,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(AppRadius.md)),
+        content: const Text('Phone number copied'),
+      ),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final hasPhone = report.reporterPhone.isNotEmpty;
+    return Container(
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(AppRadius.md),
+        border: Border.all(color: AppColors.border),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(10),
+                decoration: BoxDecoration(
+                  color: AppColors.blue.withValues(alpha: 0.1),
+                  borderRadius: BorderRadius.circular(AppRadius.sm),
+                ),
+                child: const Icon(Icons.person, color: AppColors.blue, size: 20),
+              ),
+              const SizedBox(width: 10),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      report.reporterName.isNotEmpty ? report.reporterName : 'Reporter',
+                      style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 14),
+                    ),
+                    if (report.reporterEmail.isNotEmpty)
+                      Text(report.reporterEmail,
+                          style: const TextStyle(color: AppColors.textMuted, fontSize: 11)),
+                  ],
+                ),
+              ),
+            ],
+          ),
+          if (hasPhone) ...[
+            const SizedBox(height: 12),
+            Container(height: 1, color: AppColors.border),
+            const SizedBox(height: 12),
+            Row(
+              children: [
+                const Icon(Icons.phone, size: 16, color: AppColors.success),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text(report.reporterPhone,
+                      style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 14)),
+                ),
+                PressableScale(
+                  onTap: () => _copyPhone(context),
+                  child: Container(
+                    padding: const EdgeInsets.all(8),
+                    decoration: BoxDecoration(
+                      color: AppColors.surface,
+                      borderRadius: BorderRadius.circular(AppRadius.sm),
+                    ),
+                    child: const Icon(Icons.copy, size: 16, color: AppColors.navy),
+                  ),
+                ),
+                const SizedBox(width: 8),
+                PressableScale(
+                  onTap: () => _call(context),
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                    decoration: BoxDecoration(
+                      gradient: const LinearGradient(
+                        colors: [AppColors.success, Color(0xFF16A34A)],
+                      ),
+                      borderRadius: BorderRadius.circular(AppRadius.sm),
+                      boxShadow: [
+                        BoxShadow(
+                          color: AppColors.success.withValues(alpha: 0.35),
+                          blurRadius: 10,
+                          offset: const Offset(0, 4),
+                        ),
+                      ],
+                    ),
+                    child: const Row(
+                      children: [
+                        Icon(Icons.phone, color: Colors.white, size: 16),
+                        SizedBox(width: 6),
+                        Text('Call',
+                            style: TextStyle(color: Colors.white, fontWeight: FontWeight.w800)),
+                      ],
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ] else ...[
+            const SizedBox(height: 8),
+            const Text(
+              'No phone number on file for this reporter.',
+              style: TextStyle(color: AppColors.textMuted, fontSize: 12),
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+}
+
+class _LocationText extends StatefulWidget {
+  final Report report;
+  const _LocationText({required this.report});
+
+  @override
+  State<_LocationText> createState() => _LocationTextState();
+}
+
+class _LocationTextState extends State<_LocationText> {
+  String? _resolved;
+  bool _loading = false;
+
+  @override
+  void initState() {
+    super.initState();
+    final r = widget.report;
+    final hasCoords = r.lat != 0 || r.lng != 0;
+    if (r.address.isEmpty && hasCoords) {
+      _loading = true;
+      GeocodingApi().reverseLookup(r.lat, r.lng).then((name) {
+        if (!mounted) return;
+        setState(() {
+          _resolved = name;
+          _loading = false;
+        });
+      });
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final r = widget.report;
+    final hasAddress = r.address.isNotEmpty;
+    final hasCoords = r.lat != 0 || r.lng != 0;
+
+    if (!hasAddress && !hasCoords) {
+      return const Text('Location not provided',
+          style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600));
+    }
+
+    final primary = hasAddress
+        ? r.address
+        : (_loading
+            ? 'Looking up address…'
+            : (_resolved != null && _resolved!.isNotEmpty
+                ? _resolved!
+                : 'Unnamed location near GPS ${r.lat.toStringAsFixed(4)}, ${r.lng.toStringAsFixed(4)}'));
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          children: [
+            Expanded(
+              child: Text(primary,
+                  style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w700)),
+            ),
+            if (_loading)
+              const SizedBox(
+                width: 12,
+                height: 12,
+                child: CircularProgressIndicator(strokeWidth: 1.5, color: AppColors.blue),
+              ),
+          ],
+        ),
+      ],
+    );
+  }
+}
+
+class _StatusTimeline extends StatelessWidget {
+  final ReportStatus status;
+  final DateTime submittedAt;
+  final DateTime? estimatedFix;
+  const _StatusTimeline({
+    required this.status,
+    required this.submittedAt,
+    this.estimatedFix,
+  });
+
+  int get _activeIndex => switch (status) {
+        ReportStatus.pending => 0,
+        ReportStatus.inProgress => 1,
+        ReportStatus.resolved => 2,
+      };
+
+  @override
+  Widget build(BuildContext context) {
+    final steps = [
+      (
+        label: context.t('detail.status_submitted'),
+        icon: Icons.send_rounded,
+        sub: DateFormat.MMMd().format(submittedAt),
+      ),
+      (
+        label: context.t('detail.status_processing'),
+        icon: Icons.sync_rounded,
+        sub: estimatedFix != null
+            ? '${context.t('detail.eta_prefix')}${DateFormat.MMMd().format(estimatedFix!)}'
+            : context.t('detail.in_review'),
+      ),
+      (
+        label: context.t('detail.status_resolved'),
+        icon: Icons.check_circle_rounded,
+        sub: status == ReportStatus.resolved ? context.t('detail.done') : context.t('detail.pending'),
+      ),
+    ];
+    final active = _activeIndex;
+
+    return Container(
+      padding: const EdgeInsets.fromLTRB(14, 16, 14, 14),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(AppRadius.md),
+        border: Border.all(color: AppColors.border),
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: List.generate(steps.length * 2 - 1, (i) {
+          if (i.isOdd) {
+            final beforeIndex = i ~/ 2;
+            final reached = active > beforeIndex;
+            return Expanded(
+              child: Padding(
+                padding: const EdgeInsets.only(top: 17),
+                child: AnimatedContainer(
+                  duration: const Duration(milliseconds: 320),
+                  height: 2,
+                  color: reached ? AppColors.success : AppColors.border,
+                ),
+              ),
+            );
+          }
+          final idx = i ~/ 2;
+          final step = steps[idx];
+          final isActive = idx == active;
+          final isDone = idx < active;
+          final tint = isDone
+              ? AppColors.success
+              : isActive
+                  ? AppColors.blue
+                  : AppColors.textMuted.withValues(alpha: 0.6);
+          return Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              AnimatedContainer(
+                duration: const Duration(milliseconds: 320),
+                width: isActive ? 38 : 32,
+                height: isActive ? 38 : 32,
+                decoration: BoxDecoration(
+                  color: isDone || isActive ? tint : Colors.white,
+                  border: Border.all(color: tint, width: isActive ? 2 : 1.5),
+                  shape: BoxShape.circle,
+                  boxShadow: isActive
+                      ? [
+                          BoxShadow(
+                            color: tint.withValues(alpha: 0.35),
+                            blurRadius: 12,
+                          ),
+                        ]
+                      : null,
+                ),
+                child: Icon(
+                  isDone ? Icons.check_rounded : step.icon,
+                  color: isDone || isActive ? Colors.white : tint,
+                  size: isActive ? 20 : 16,
+                ),
+              ),
+              const SizedBox(height: 8),
+              Text(
+                step.label,
+                style: TextStyle(
+                  fontSize: 11,
+                  fontWeight: FontWeight.w800,
+                  color: isActive || isDone ? AppColors.navy : AppColors.textMuted,
+                ),
+              ),
+              const SizedBox(height: 2),
+              Text(
+                step.sub,
+                style: const TextStyle(
+                  fontSize: 10,
+                  color: AppColors.textMuted,
+                ),
+              ),
+            ],
+          );
+        }),
+      ),
+    );
+  }
 }

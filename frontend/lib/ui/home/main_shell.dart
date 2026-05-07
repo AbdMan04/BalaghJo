@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../core/strings.dart';
 import '../../core/theme.dart';
 import '../profile/profile_screen.dart';
 import '../reports/my_reports_screen.dart';
@@ -90,7 +91,7 @@ class _BottomBar extends StatelessWidget {
               _NavItem(
                 icon: Icons.home_outlined,
                 activeIcon: Icons.home_rounded,
-                label: 'Home',
+                label: context.t('nav.home'),
                 active: index == 0,
                 onTap: () => onTap(0),
               ),
@@ -98,14 +99,14 @@ class _BottomBar extends StatelessWidget {
               _NavItem(
                 icon: Icons.description_outlined,
                 activeIcon: Icons.description,
-                label: 'My Reports',
+                label: context.t('nav.my_reports'),
                 active: index == 2,
                 onTap: () => onTap(2),
               ),
               _NavItem(
                 icon: Icons.person_outline,
                 activeIcon: Icons.person,
-                label: 'Profile',
+                label: context.t('nav.profile'),
                 active: index == 3,
                 onTap: () => onTap(3),
               ),
@@ -217,8 +218,10 @@ class _ReportFab extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 4),
-          const Text('Report',
-              style: TextStyle(fontSize: 10, fontWeight: FontWeight.w700, color: AppColors.textMuted)),
+          Builder(
+            builder: (ctx) => Text(ctx.t('nav.report'),
+                style: const TextStyle(fontSize: 10, fontWeight: FontWeight.w700, color: AppColors.textMuted)),
+          ),
         ],
       ),
     );

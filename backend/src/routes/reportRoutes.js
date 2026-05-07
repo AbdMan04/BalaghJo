@@ -7,6 +7,7 @@ const upload = require('../middleware/upload');
 router.use(authRequired);
 
 router.get('/summary', ctrl.summary);
+router.get('/public', ctrl.listPublicReports);
 router.get('/', ctrl.listMyReports);
 router.get('/:id', ctrl.getReport);
 
@@ -21,6 +22,8 @@ router.post(
   ],
   ctrl.createReport
 );
+
+router.delete('/:id', ctrl.deleteReport);
 
 router.patch('/:id/status', adminOnly, ctrl.updateStatus);
 

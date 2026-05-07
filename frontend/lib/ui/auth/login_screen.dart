@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import '../../core/strings.dart';
 import '../../core/theme.dart';
 import '../../state/auth_state.dart';
 import '../home/main_shell.dart';
@@ -15,7 +16,7 @@ class LoginScreen extends StatefulWidget {
 
 class _LoginScreenState extends State<LoginScreen> {
   final _form = GlobalKey<FormState>();
-  final _email = TextEditingController();
+  final _identifier = TextEditingController();
   final _pass = TextEditingController();
   final _shake = ValueNotifier<int>(0);
   bool _obscure = true;
@@ -28,19 +29,26 @@ class _LoginScreenState extends State<LoginScreen> {
     }
     setState(() => _error = null);
     try {
-      await context.read<AuthState>().login(_email.text.trim(), _pass.text);
+      final raw = _identifier.text.trim();
+      final identifier = raw.contains('@') ? raw.toLowerCase() : raw;
+      await context.read<AuthState>().login(identifier, _pass.text);
       if (!mounted) return;
       Navigator.of(context).pushAndRemoveUntil(
           fadeSlideRoute(const MainShell()), (_) => false);
     } catch (e) {
-      setState(() => _error = e.toString());
+      setState(() => _error = _cleanError(e));
       _shake.value++;
     }
   }
 
+  String _cleanError(Object e) {
+    final s = e.toString();
+    return s.replaceFirst(RegExp(r'^(Exception|ApiException\([^)]*\)):\s*'), '');
+  }
+
   @override
   void dispose() {
-    _email.dispose();
+    _identifier.dispose();
     _pass.dispose();
     _shake.dispose();
     super.dispose();
@@ -89,16 +97,16 @@ class _LoginScreenState extends State<LoginScreen> {
                     ),
                   ),
                   const SizedBox(height: 24),
-                  const FadeSlideIn(
-                    delay: Duration(milliseconds: 80),
-                    child: Text('Welcome Back',
-                        style: TextStyle(fontSize: 28, fontWeight: FontWeight.w800)),
+                  FadeSlideIn(
+                    delay: const Duration(milliseconds: 80),
+                    child: Text(context.t('login.welcome_back'),
+                        style: const TextStyle(fontSize: 28, fontWeight: FontWeight.w800)),
                   ),
                   const SizedBox(height: 4),
-                  const FadeSlideIn(
-                    delay: Duration(milliseconds: 140),
-                    child: Text('Sign in to continue reporting',
-                        style: TextStyle(color: AppColors.textMuted)),
+                  FadeSlideIn(
+                    delay: const Duration(milliseconds: 140),
+                    child: Text(context.t('login.subtitle'),
+                        style: const TextStyle(color: AppColors.textMuted)),
                   ),
                   const SizedBox(height: 28),
                   FadeSlideIn(
@@ -106,16 +114,23 @@ class _LoginScreenState extends State<LoginScreen> {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        _label('EMAIL'),
+                        _label(context.t('login.identifier_label')),
                         TextFormField(
-                          controller: _email,
-                          decoration: const InputDecoration(
-                            hintText: 'you@example.com',
-                            prefixIcon: Icon(Icons.mail_outline, color: AppColors.textMuted),
+                          controller: _identifier,
+                          decoration: InputDecoration(
+                            hintText: context.t('login.identifier_hint'),
+                            prefixIcon: const Icon(Icons.person_outline, color: AppColors.textMuted),
                           ),
                           keyboardType: TextInputType.emailAddress,
-                          validator: (v) =>
-                              (v == null || !v.contains('@')) ? 'Enter a valid email' : null,
+                          validator: (v) {
+                            final s = v?.trim() ?? '';
+                            if (s.isEmpty) return context.t('login.enter_identifier');
+                            if (s.contains('@')) {
+                              final ok = RegExp(r'^[^@\s]+@[^@\s]+\.[^@\s]+$').hasMatch(s);
+                              return ok ? null : context.t('login.invalid_email');
+                            }
+                            return s.length >= 6 ? null : context.t('login.invalid_phone');
+                          },
                         ),
                       ],
                     ),
@@ -125,11 +140,11 @@ class _LoginScreenState extends State<LoginScreen> {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        _label('PASSWORD'),
+                        _label(context.t('login.password_label')),
                         TextFormField(
                           controller: _pass,
                           decoration: InputDecoration(
-                            hintText: 'Your password',
+                            hintText: context.t('login.password_hint'),
                             prefixIcon: const Icon(Icons.lock_outline, color: AppColors.textMuted),
                             suffixIcon: IconButton(
                               icon: Icon(_obscure ? Icons.visibility_off_outlined : Icons.visibility_outlined,
@@ -138,7 +153,7 @@ class _LoginScreenState extends State<LoginScreen> {
                             ),
                           ),
                           obscureText: _obscure,
-                          validator: (v) => (v == null || v.isEmpty) ? 'Required' : null,
+                          validator: (v) => (v == null || v.isEmpty) ? context.t('common.required') : null,
                         ),
                       ],
                     ),
@@ -197,10 +212,10 @@ class _LoginScreenState extends State<LoginScreen> {
                                   width: 20,
                                   child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
                                 )
-                              : const Text(
-                                  'Sign In',
-                                  key: ValueKey('t'),
-                                  style: TextStyle(color: Colors.white, fontWeight: FontWeight.w800, fontSize: 15),
+                              : Text(
+                                  context.t('login.sign_in'),
+                                  key: const ValueKey('t'),
+                                  style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w800, fontSize: 15),
                                 ),
                         ),
                       ),
@@ -211,9 +226,9 @@ class _LoginScreenState extends State<LoginScreen> {
                     child: GestureDetector(
                       onTap: () => Navigator.of(context).pushReplacement(
                           fadeSlideRoute(const RegisterScreen())),
-                      child: const Text.rich(TextSpan(children: [
-                        TextSpan(text: "Don't have an account? ", style: TextStyle(color: AppColors.textMuted)),
-                        TextSpan(text: 'Sign Up', style: TextStyle(color: AppColors.blue, fontWeight: FontWeight.w700)),
+                      child: Text.rich(TextSpan(children: [
+                        TextSpan(text: context.t('login.no_account'), style: const TextStyle(color: AppColors.textMuted)),
+                        TextSpan(text: context.t('login.sign_up_link'), style: const TextStyle(color: AppColors.blue, fontWeight: FontWeight.w700)),
                       ])),
                     ),
                   ),

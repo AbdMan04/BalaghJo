@@ -33,6 +33,9 @@ class Report {
   final String assignedTo;
   final DateTime? estimatedFix;
   final DateTime createdAt;
+  final String reporterName;
+  final String reporterPhone;
+  final String reporterEmail;
 
   Report({
     required this.id,
@@ -49,11 +52,15 @@ class Report {
     required this.assignedTo,
     required this.createdAt,
     this.estimatedFix,
+    this.reporterName = '',
+    this.reporterPhone = '',
+    this.reporterEmail = '',
   });
 
   factory Report.fromJson(Map<String, dynamic> j) {
     final loc = (j['location'] as Map?)?.cast<String, dynamic>();
     final coords = (loc?['coordinates'] as List?)?.cast<num>() ?? const [0, 0];
+    final reporter = (j['reporter'] as Map?)?.cast<String, dynamic>() ?? const {};
     return Report(
       id: j['id'] ?? j['_id'] ?? '',
       reportId: j['reportId'] ?? '',
@@ -69,6 +76,9 @@ class Report {
       assignedTo: j['assignedTo'] ?? '',
       estimatedFix: j['estimatedFix'] != null ? DateTime.tryParse(j['estimatedFix']) : null,
       createdAt: DateTime.tryParse(j['createdAt'] ?? '') ?? DateTime.now(),
+      reporterName: reporter['fullName'] ?? '',
+      reporterPhone: reporter['phone'] ?? '',
+      reporterEmail: reporter['email'] ?? '',
     );
   }
 }

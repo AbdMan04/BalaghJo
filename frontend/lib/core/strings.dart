@@ -1,0 +1,168 @@
+import 'package:flutter/widgets.dart';
+
+class AppStrings {
+  static const _en = <String, String>{
+    // common
+    'common.cancel': 'Cancel',
+    'common.save': 'Save',
+    'common.delete': 'Delete',
+    'common.close': 'Close',
+    'common.share': 'Share',
+    'common.update': 'Update',
+    'common.retry': 'Retry',
+    'common.required': 'Required',
+    'common.error': 'Error',
+    'common.loading': 'Loading…',
+
+    // nav
+    'nav.home': 'Home',
+    'nav.my_reports': 'My Reports',
+    'nav.profile': 'Profile',
+    'nav.report': 'Report',
+
+    // auth - login
+    'login.welcome_back': 'Welcome Back',
+    'login.subtitle': 'Sign in to continue reporting',
+    'login.identifier_label': 'EMAIL OR PHONE',
+    'login.identifier_hint': 'you@example.com or +962 7X XXX XXXX',
+    'login.password_label': 'PASSWORD',
+    'login.password_hint': 'Your password',
+    'login.sign_in': 'Sign In',
+    'login.no_account': "Don't have an account? ",
+    'login.sign_up_link': 'Sign Up',
+    'login.invalid_email': 'Enter a valid email address',
+    'login.invalid_phone': 'Enter a valid phone number',
+    'login.enter_identifier': 'Enter your email or phone',
+
+    // auth - register
+    'register.create_account': 'Create Account',
+    'register.subtitle': 'Join thousands reporting civic issues',
+    'register.toggle_phone': 'Phone',
+    'register.toggle_email': 'Email',
+    'register.phone_label': 'PHONE NUMBER',
+    'register.phone_hint': '+962 7X XXX XXXX',
+    'register.email_label': 'EMAIL',
+    'register.email_hint': 'you@example.com',
+    'register.first_name': 'FIRST NAME',
+    'register.first_hint': 'First',
+    'register.last_name': 'LAST NAME',
+    'register.last_hint': 'Last',
+    'register.password': 'PASSWORD',
+    'register.password_hint': 'Create a password',
+    'register.password_min': 'Min 6 characters',
+    'register.sign_up': 'Sign Up',
+    'register.have_account': 'Already have an account? ',
+    'register.sign_in_link': 'Sign In',
+
+    // home
+    'home.welcome': 'Welcome',
+    'home.stat_total': 'Total',
+    'home.stat_resolved': 'Resolved',
+    'home.stat_active': 'Active',
+    'home.report_issue': 'Report an Issue',
+    'home.report_issue_sub': 'Potholes, waste, lighting…',
+    'home.quick_report': 'Quick Report',
+    'home.explore_map': 'Explore on map',
+    'home.explore_map_sub': 'See community reports near you',
+    'home.recent_reports': 'Recent Reports',
+    'home.view_all': 'View all',
+    'home.no_reports_yet': 'No reports yet',
+    'home.submit_first': 'Submit your first one!',
+    'home.delete_swipe_label': 'Delete',
+    'home.delete_title': 'Delete Report?',
+    'home.delete_body_prefix': 'Permanently delete "',
+    'home.delete_body_suffix': '"? This cannot be undone.',
+    'home.deleted_toast': 'Report deleted',
+
+    // categories
+    'cat.pothole': 'Pothole',
+    'cat.waste': 'Waste',
+    'cat.lighting': 'Lighting',
+    'cat.road_crack': 'Road Crack',
+    'cat.other': 'Other',
+    'cat.all': 'All categories',
+
+    // status
+    'status.sent': 'Sent',
+    'status.processing': 'Processing',
+    'status.resolved': 'Resolved',
+    'status.all': 'All',
+    'status.all_status': 'All status',
+
+    // my reports
+    'my.title': 'My Reports',
+    'my.search_hint': 'Search by title, address, or ID',
+    'my.no_matches': 'No matches',
+    'my.try_other': 'Try a different search or filter',
+    'my.sort_title': 'Sort by',
+    'my.sort_newest': 'Newest first',
+    'my.sort_oldest': 'Oldest first',
+
+    // submit
+    'submit.title': 'Submit Report',
+    'submit.photo': 'PHOTO',
+    'submit.tap_photo': 'Tap to add photo',
+    'submit.photo_hint': 'Any image format · up to 10MB',
+    'submit.problem_type': 'PROBLEM TYPE',
+    'submit.description': 'DESCRIPTION',
+    'submit.description_hint': 'Describe the problem in detail…',
+    'submit.location': 'LOCATION',
+    'submit.address_hint': 'Al-Yamouk Street, Block 5',
+    'submit.pick_on_map': 'Pick on map',
+    'submit.pick_on_map_hint': 'Tap to choose the spot on the map',
+    'submit.location_selected': 'Location selected',
+    'submit.use_my_location': 'Use my current location',
+    'submit.submit_button': 'Submit Report',
+    'submit.success': 'Report submitted successfully',
+    'submit.desc_min': 'Please add a longer description (5+ chars)',
+
+    // detail
+    'detail.title': 'Report Detail',
+    'detail.status_submitted': 'Submitted',
+    'detail.status_processing': 'Processing',
+    'detail.status_resolved': 'Resolved',
+    'detail.in_review': 'In review',
+    'detail.eta_prefix': 'ETA ',
+    'detail.done': 'Done',
+    'detail.pending': 'Pending',
+    'detail.report_info': 'REPORT INFO',
+    'detail.category': 'Category',
+    'detail.submitted_on': 'Submitted',
+    'detail.assigned_to': 'Assigned to',
+    'detail.est_fix': 'Est. Fix',
+    'detail.reporter_contact': 'REPORTER CONTACT',
+    'detail.user_description': 'USER DESCRIPTION',
+    'detail.follow': 'Follow',
+    'detail.following': 'Following',
+    'detail.location_pending': 'Location not provided',
+
+    // map
+    'map.title': 'Reports Map',
+    'map.loading': 'Loading reports…',
+    'map.no_match': 'No reports match your filters',
+    'map.open_details': 'Open Details',
+
+    // profile
+    'profile.title': 'Profile',
+    'profile.sent_reports': 'Sent Reports',
+    'profile.solved_reports': 'Solved Reports',
+    'profile.change_password': 'Change Password',
+    'profile.notifications': 'Notifications',
+    'profile.privacy_legal': 'Privacy & Legal',
+    'profile.log_out': 'Log Out',
+    'profile.edit_profile': 'Edit Profile',
+    'profile.edit_subtitle': 'Update your personal information',
+    'profile.save_changes': 'Save Changes',
+    'profile.profile_updated': 'Profile updated',
+    'profile.password_updated': 'Password updated',
+    'profile.current_password': 'Current password',
+    'profile.new_password': 'New password',
+    'profile.confirm_new': 'Confirm new password',
+  };
+
+  static String of(BuildContext context, String key) => _en[key] ?? key;
+}
+
+extension AppStringsX on BuildContext {
+  String t(String key) => AppStrings.of(this, key);
+}
