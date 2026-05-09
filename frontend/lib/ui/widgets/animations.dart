@@ -34,7 +34,6 @@ class _FadeSlideInState extends State<FadeSlideIn>
       if (mounted) _c.forward();
     });
   }
-
   @override
   void dispose() {
     _c.dispose();

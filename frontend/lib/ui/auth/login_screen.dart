@@ -1,11 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import '../../core/identifier_validator.dart';
 import '../../core/strings.dart';
 import '../../core/theme.dart';
 import '../../state/auth_state.dart';
 import '../home/main_shell.dart';
 import '../widgets/animations.dart';
 import 'register_screen.dart';
+import 'verification_screen.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -33,8 +35,12 @@ class _LoginScreenState extends State<LoginScreen> {
       final identifier = raw.contains('@') ? raw.toLowerCase() : raw;
       await context.read<AuthState>().login(identifier, _pass.text);
       if (!mounted) return;
+      final user = context.read<AuthState>().user;
+      final next = (user?.isVerified == false)
+          ? const VerificationScreen()
+          : const MainShell();
       Navigator.of(context).pushAndRemoveUntil(
-          fadeSlideRoute(const MainShell()), (_) => false);
+          fadeSlideRoute(next), (_) => false);
     } catch (e) {
       setState(() => _error = _cleanError(e));
       _shake.value++;
@@ -122,15 +128,7 @@ class _LoginScreenState extends State<LoginScreen> {
                             prefixIcon: const Icon(Icons.person_outline, color: AppColors.textMuted),
                           ),
                           keyboardType: TextInputType.emailAddress,
-                          validator: (v) {
-                            final s = v?.trim() ?? '';
-                            if (s.isEmpty) return context.t('login.enter_identifier');
-                            if (s.contains('@')) {
-                              final ok = RegExp(r'^[^@\s]+@[^@\s]+\.[^@\s]+$').hasMatch(s);
-                              return ok ? null : context.t('login.invalid_email');
-                            }
-                            return s.length >= 6 ? null : context.t('login.invalid_phone');
-                          },
+                          validator: (v) => validateIdentifier(context, v),
                         ),
                       ],
                     ),

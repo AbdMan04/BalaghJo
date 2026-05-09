@@ -22,6 +22,10 @@ const userSchema = new mongoose.Schema(
     },
     sentReports: { type: Number, default: 0 },
     solvedReports: { type: Number, default: 0 },
+    isVerified: { type: Boolean, default: false },
+    verifiedChannel: { type: String, enum: ['email', 'phone', null], default: null },
+    verificationCodeHash: { type: String, select: false },
+    verificationCodeExpiresAt: { type: Date, select: false },
   },
   { timestamps: true }
 );
@@ -47,6 +51,8 @@ userSchema.methods.toPublicJSON = function () {
     role: this.role,
     sentReports: this.sentReports,
     solvedReports: this.solvedReports,
+    isVerified: this.isVerified,
+    verifiedChannel: this.verifiedChannel,
     createdAt: this.createdAt,
   };
 };

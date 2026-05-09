@@ -2,7 +2,6 @@ import 'package:flutter/widgets.dart';
 
 class AppStrings {
   static const _en = <String, String>{
-    // common
     'common.cancel': 'Cancel',
     'common.save': 'Save',
     'common.delete': 'Delete',
@@ -14,13 +13,11 @@ class AppStrings {
     'common.error': 'Error',
     'common.loading': 'Loading…',
 
-    // nav
     'nav.home': 'Home',
     'nav.my_reports': 'My Reports',
     'nav.profile': 'Profile',
     'nav.report': 'Report',
 
-    // auth - login
     'login.welcome_back': 'Welcome Back',
     'login.subtitle': 'Sign in to continue reporting',
     'login.identifier_label': 'EMAIL OR PHONE',
@@ -34,7 +31,22 @@ class AppStrings {
     'login.invalid_phone': 'Enter a valid phone number',
     'login.enter_identifier': 'Enter your email or phone',
 
-    // auth - register
+    'verify.title': 'Verify your account',
+    'verify.subtitle_email': 'We sent a 6-digit code to your email',
+    'verify.subtitle_phone': 'We sent a 6-digit code to your phone',
+    'verify.subtitle_generic': 'We sent a 6-digit code',
+    'verify.code_label': 'VERIFICATION CODE',
+    'verify.code_hint': '6-digit code',
+    'verify.confirm': 'Verify',
+    'verify.resend': 'Resend code',
+    'verify.resend_sent': 'A new code has been sent',
+    'verify.invalid': 'Enter the 6-digit code',
+    'verify.success': 'Account verified',
+    'verify.signed_out': 'Sign out',
+    'verify.demo_hint':
+        'Demo build: the code is printed in the backend console.',
+
+
     'register.create_account': 'Create Account',
     'register.subtitle': 'Join thousands reporting civic issues',
     'register.toggle_phone': 'Phone',
@@ -54,7 +66,6 @@ class AppStrings {
     'register.have_account': 'Already have an account? ',
     'register.sign_in_link': 'Sign In',
 
-    // home
     'home.welcome': 'Welcome',
     'home.stat_total': 'Total',
     'home.stat_resolved': 'Resolved',
@@ -74,7 +85,6 @@ class AppStrings {
     'home.delete_body_suffix': '"? This cannot be undone.',
     'home.deleted_toast': 'Report deleted',
 
-    // categories
     'cat.pothole': 'Pothole',
     'cat.waste': 'Waste',
     'cat.lighting': 'Lighting',
@@ -82,14 +92,12 @@ class AppStrings {
     'cat.other': 'Other',
     'cat.all': 'All categories',
 
-    // status
     'status.sent': 'Sent',
     'status.processing': 'Processing',
     'status.resolved': 'Resolved',
     'status.all': 'All',
     'status.all_status': 'All status',
 
-    // my reports
     'my.title': 'My Reports',
     'my.search_hint': 'Search by title, address, or ID',
     'my.no_matches': 'No matches',
@@ -98,7 +106,6 @@ class AppStrings {
     'my.sort_newest': 'Newest first',
     'my.sort_oldest': 'Oldest first',
 
-    // submit
     'submit.title': 'Submit Report',
     'submit.photo': 'PHOTO',
     'submit.tap_photo': 'Tap to add photo',
@@ -116,7 +123,6 @@ class AppStrings {
     'submit.success': 'Report submitted successfully',
     'submit.desc_min': 'Please add a longer description (5+ chars)',
 
-    // detail
     'detail.title': 'Report Detail',
     'detail.status_submitted': 'Submitted',
     'detail.status_processing': 'Processing',
@@ -136,13 +142,11 @@ class AppStrings {
     'detail.following': 'Following',
     'detail.location_pending': 'Location not provided',
 
-    // map
     'map.title': 'Reports Map',
     'map.loading': 'Loading reports…',
     'map.no_match': 'No reports match your filters',
     'map.open_details': 'Open Details',
 
-    // profile
     'profile.title': 'Profile',
     'profile.sent_reports': 'Sent Reports',
     'profile.solved_reports': 'Solved Reports',

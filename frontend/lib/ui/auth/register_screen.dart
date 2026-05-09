@@ -3,9 +3,9 @@ import 'package:provider/provider.dart';
 import '../../core/strings.dart';
 import '../../core/theme.dart';
 import '../../state/auth_state.dart';
-import '../home/main_shell.dart';
 import '../widgets/animations.dart';
 import 'login_screen.dart';
+import 'verification_screen.dart';
 
 class RegisterScreen extends StatefulWidget {
   const RegisterScreen({super.key});
@@ -42,7 +42,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
           );
       if (!mounted) return;
       Navigator.of(context).pushAndRemoveUntil(
-          fadeSlideRoute(const MainShell()), (_) => false);
+          fadeSlideRoute(const VerificationScreen()), (_) => false);
     } catch (e) {
       setState(() => _error = _cleanError(e));
       _shake.value++;

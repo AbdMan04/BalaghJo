@@ -5,6 +5,7 @@ import '../../state/auth_state.dart';
 import '../home/main_shell.dart';
 import '../widgets/animations.dart';
 import 'onboarding_screen.dart';
+import 'verification_screen.dart';
 
 class SplashScreen extends StatefulWidget {
   const SplashScreen({super.key});
@@ -43,9 +44,15 @@ class _SplashScreenState extends State<SplashScreen>
     await Future.delayed(const Duration(milliseconds: 1400));
     if (!mounted) return;
     final auth = context.read<AuthState>();
-    Navigator.of(context).pushReplacement(
-      fadeSlideRoute(auth.isAuthenticated ? const MainShell() : const OnboardingScreen()),
-    );
+    final Widget next;
+    if (!auth.isAuthenticated) {
+      next = const OnboardingScreen();
+    } else if (auth.user?.isVerified == false) {
+      next = const VerificationScreen();
+    } else {
+      next = const MainShell();
+    }
+    Navigator.of(context).pushReplacement(fadeSlideRoute(next));
   }
 
   @override
