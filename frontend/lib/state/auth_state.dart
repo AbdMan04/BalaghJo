@@ -63,6 +63,20 @@ class AuthState extends ChangeNotifier {
     }
   }
 
+  Future<void> verify(String code) async {
+    _setLoading(true);
+    try {
+      _user = await _api.verify(code);
+      notifyListeners();
+    } finally {
+      _setLoading(false);
+    }
+  }
+
+  Future<void> resendCode() async {
+    await _api.resendCode();
+  }
+
   Future<void> changePassword({
     required String currentPassword,
     required String newPassword,

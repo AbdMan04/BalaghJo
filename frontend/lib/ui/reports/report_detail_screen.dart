@@ -139,12 +139,6 @@ class _ReportDetailScreenState extends State<ReportDetailScreen> {
                     ],
                   ),
                 ),
-                const SizedBox(height: 6),
-                FadeSlideIn(
-                  delay: const Duration(milliseconds: 140),
-                  child: Text('Report ID: ${r.reportId} · ${r.priority} priority',
-                      style: const TextStyle(color: AppColors.textMuted, fontSize: 12)),
-                ),
                 const SizedBox(height: 10),
                 FadeSlideIn(
                   delay: const Duration(milliseconds: 200),
