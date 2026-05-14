@@ -1,12 +1,3 @@
-/**
- * Strategy Pattern (Behavioral) — login identifier resolution.
- *
- * Each strategy encapsulates how a particular identifier shape (email, phone)
- * is detected and converted into a Mongo query. Adding a new identifier type
- * (e.g. username) means adding one class — no changes to the controller.
- *
- * Reference: Strategy Pattern, slides 39–43.
- */
 
 class IdentifierStrategy {
   matches(_raw) {
