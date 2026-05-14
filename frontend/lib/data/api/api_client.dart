@@ -1,3 +1,11 @@
+// ApiClient — Singleton design pattern.
+//
+// One HTTP client instance for the whole app, reached via
+// ApiClient.instance. Holds the JWT, base URL, and shared http.Client.
+// All resource-specific API classes (AuthApi, ReportApi, GeocodingApi)
+// go through this client, so the auth header and base URL are
+// configured in exactly one place. Throws ApiException on non-2xx
+// responses with a parsed error message.
 import 'dart:async';
 import 'dart:convert';
 import 'dart:io';

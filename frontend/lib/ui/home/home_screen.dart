@@ -531,7 +531,7 @@ class _CategoriesGrid extends StatelessWidget {
         crossAxisCount: 4,
         mainAxisSpacing: 10,
         crossAxisSpacing: 10,
-        childAspectRatio: 0.92,
+        childAspectRatio: 0.82,
         shrinkWrap: true,
         physics: const NeverScrollableScrollPhysics(),
         children: List.generate(_items.length, (i) {
@@ -568,12 +568,21 @@ class _CategoriesGrid extends StatelessWidget {
                       child: Icon(item.$3, color: tint, size: 22),
                     ),
                     const SizedBox(height: 8),
-                    Text(
-                      context.t(item.$2),
-                      style: const TextStyle(
-                        fontSize: 11,
-                        fontWeight: FontWeight.w700,
-                        color: AppColors.navy,
+                    Flexible(
+                      child: Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 4),
+                        child: Text(
+                          context.t(item.$2),
+                          textAlign: TextAlign.center,
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
+                          style: const TextStyle(
+                            fontSize: 11,
+                            fontWeight: FontWeight.w700,
+                            color: AppColors.navy,
+                            height: 1.15,
+                          ),
+                        ),
                       ),
                     ),
                   ],

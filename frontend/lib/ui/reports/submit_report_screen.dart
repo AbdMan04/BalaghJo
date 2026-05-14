@@ -1,3 +1,11 @@
+// SubmitReportScreen — feature F3 (submit report).
+//
+// Drives the core report-creation flow: category selection (optionally
+// pre-filled from a Quick Report card on the home screen), photo
+// capture via camera or gallery, GPS auto-detection with reverse
+// geocoding for a human-readable address, optional manual map pick,
+// title, and required description. Submits as multipart/form-data to
+// POST /api/reports and surfaces the new RPT-XXXX id on success.
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:geolocator/geolocator.dart';

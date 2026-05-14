@@ -1,3 +1,14 @@
+/**
+ * Auth controller — feature F1 (registration + verification) and F2 (login).
+ *
+ * Handles the full citizen authentication lifecycle: registration with
+ * email or phone, 6-digit code verification (simulated delivery in GP1
+ * — the code is logged to the backend console), JWT-issuing login,
+ * password change, and profile updates.
+ *
+ * Login uses the Strategy pattern in ../strategies/identifierStrategy.js
+ * to resolve whether the submitted identifier is an email or a phone.
+ */
 const jwt = require('jsonwebtoken');
 const { validationResult } = require('express-validator');
 const User = require('../models/User');

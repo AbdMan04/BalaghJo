@@ -1,3 +1,12 @@
+/**
+ * Report model — the persistence schema behind features F3–F6.
+ *
+ * Stores citizen-submitted issues with a GeoJSON Point (2dsphere
+ * indexed for the community map), category, photo URL, status, and
+ * an append-only statusHistory that drives the timeline UI on the
+ * report detail screen. The pre-save hook generates the human-readable
+ * RPT-XXXX identifier.
+ */
 const mongoose = require('mongoose');
 
 const STATUSES = ['pending', 'in_progress', 'resolved'];

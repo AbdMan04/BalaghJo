@@ -1,3 +1,11 @@
+// ReportDetailScreen — feature F5 (status timeline).
+//
+// Single-report view shown from the My Reports list or from a recent-
+// reports tile on the home screen. Renders the report photo (with a
+// shared-element Hero animation), the address with a tiny map preview,
+// and the status timeline built from the report's statusHistory:
+// Sent → Processing → Resolved, with completed steps marked done and
+// the current step highlighted.
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:intl/intl.dart';
