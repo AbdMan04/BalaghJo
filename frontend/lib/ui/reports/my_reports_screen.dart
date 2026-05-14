@@ -1,3 +1,9 @@
+// MyReportsScreen — feature F4 (personal reports list).
+//
+// Shows the authenticated user's own reports. Provides a debounced
+// text search over title/description, category filter chips, status
+// filter chips, pull-to-refresh, and swipe-to-delete with a
+// confirmation dialog. Tapping a row opens ReportDetailScreen.
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import '../../core/strings.dart';

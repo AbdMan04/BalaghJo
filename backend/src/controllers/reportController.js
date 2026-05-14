@@ -1,3 +1,12 @@
+/**
+ * Report controller — features F3 (submit report), F4 (my reports list),
+ * F5 (report detail with status history), and F6 (community map feed).
+ *
+ * Owns creation, listing, lookup, and deletion of reports. Photo uploads
+ * are received via multer middleware and stored alongside the report.
+ * The /all endpoint used by the community map omits reporter PII so
+ * citizens cannot deanonymize each other from the map.
+ */
 const { validationResult } = require('express-validator');
 const Report = require('../models/Report');
 const User = require('../models/User');

@@ -1,3 +1,9 @@
+// ProfileScreen — feature F7 (profile management).
+//
+// Shows the authenticated user's name, contact info, and aggregate
+// counters (sent vs. solved reports). Provides edit-profile, change-
+// password, notifications, privacy & legal, and log-out actions.
+// Reads AuthState reactively via Provider.
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../core/strings.dart';
@@ -96,15 +102,22 @@ class ProfileScreen extends StatelessWidget {
             child: Icon(icon, color: color, size: 22),
           ),
           const SizedBox(width: 10),
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              AnimatedCounter(
-                value: value,
-                style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 18),
-              ),
-              Text(label, style: const TextStyle(color: AppColors.textMuted, fontSize: 11)),
-            ],
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                AnimatedCounter(
+                  value: value,
+                  style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 18),
+                ),
+                Text(
+                  label,
+                  style: const TextStyle(color: AppColors.textMuted, fontSize: 11),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ],
+            ),
           ),
         ],
       ),
