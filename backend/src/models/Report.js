@@ -18,7 +18,7 @@ const reportSchema = new mongoose.Schema(
     address: { type: String, default: '' },
     status: { type: String, enum: STATUSES, default: 'pending', index: true },
     priority: { type: String, enum: ['low', 'medium', 'high'], default: 'medium' },
-    assignedTo: { type: String, default: '' },
+    assignedTo: { type: mongoose.Schema.Types.ObjectId, ref: 'User', default: null },
     estimatedFix: { type: Date },
     statusHistory: [
       {

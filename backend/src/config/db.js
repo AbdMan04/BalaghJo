@@ -19,6 +19,19 @@ async function migrateUserIndexes() {
   }
 }
 
+async function migrateReports() {
+  // assignedTo changed from String to ObjectId ref. Clear empty-string
+  // legacy values so Mongoose can cast on read without errors.
+  const Reports = mongoose.connection.collection('reports');
+  const r = await Reports.updateMany(
+    { assignedTo: '' },
+    { $set: { assignedTo: null } }
+  );
+  if (r.modifiedCount > 0) {
+    console.log(`[db] cleared ${r.modifiedCount} legacy empty assignedTo values`);
+  }
+}
+
 async function connectDB(uri) {
   mongoose.set('strictQuery', true);
   await mongoose.connect(uri);
@@ -26,6 +39,7 @@ async function connectDB(uri) {
   try {
     await migrateUsers();
     await migrateUserIndexes();
+    await migrateReports();
   } catch (err) {
     console.error('[db] migration failed:', err.message);
   }
