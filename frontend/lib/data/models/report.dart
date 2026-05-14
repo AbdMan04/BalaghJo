@@ -29,7 +29,6 @@ class Report {
   final double lat;
   final double lng;
   final ReportStatus status;
-  final String priority;
   final String assignedTo;
   final DateTime? estimatedFix;
   final DateTime createdAt;
@@ -48,7 +47,6 @@ class Report {
     required this.lat,
     required this.lng,
     required this.status,
-    required this.priority,
     required this.assignedTo,
     required this.createdAt,
     this.estimatedFix,
@@ -72,7 +70,6 @@ class Report {
       lng: coords.isNotEmpty ? coords[0].toDouble() : 0,
       lat: coords.length > 1 ? coords[1].toDouble() : 0,
       status: ReportStatusX.fromApi(j['status']),
-      priority: j['priority'] ?? 'medium',
       assignedTo: j['assignedTo'] ?? '',
       estimatedFix: j['estimatedFix'] != null ? DateTime.tryParse(j['estimatedFix']) : null,
       createdAt: DateTime.tryParse(j['createdAt'] ?? '') ?? DateTime.now(),

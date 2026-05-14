@@ -17,7 +17,6 @@ const reportSchema = new mongoose.Schema(
     },
     address: { type: String, default: '' },
     status: { type: String, enum: STATUSES, default: 'pending', index: true },
-    priority: { type: String, enum: ['low', 'medium', 'high'], default: 'medium' },
     assignedTo: { type: mongoose.Schema.Types.ObjectId, ref: 'User', default: null },
     estimatedFix: { type: Date },
     statusHistory: [
@@ -57,7 +56,6 @@ reportSchema.methods.toPublicJSON = function () {
     location: this.location,
     address: this.address,
     status: this.status,
-    priority: this.priority,
     assignedTo: this.assignedTo,
     estimatedFix: this.estimatedFix,
     createdAt: this.createdAt,
