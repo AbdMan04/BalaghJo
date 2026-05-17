@@ -1,4 +1,5 @@
-// ProfileScreen — feature F7 (profile management).
+// ProfileScreen — feature F1 (User Authentication, FR-3 view and edit
+// profile information).
 //
 // Shows the authenticated user's name, contact info, and aggregate
 // counters (sent vs. solved reports). Provides edit-profile, change-

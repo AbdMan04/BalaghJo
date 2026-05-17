@@ -1,10 +1,11 @@
-// ReportsMapScreen — feature F6 (community map).
+// ReportsMapScreen — feature F7 (Map View of Reports).
 //
 // Full-screen flutter_map view that renders every report in the
-// system as a category-colored pin over OpenStreetMap tiles. Tapping
-// a pin shows a compact card with category, status, and address.
-// Backed by GET /api/reports/all, which deliberately omits reporter
-// PII so users cannot be deanonymized from the map.
+// system as a category-colored pin (FR-18) over OpenStreetMap tiles.
+// Tapping a pin shows a compact card with category, status, and
+// address. Backed by GET /api/reports/all, which deliberately omits
+// reporter PII so users cannot be deanonymized from the map.
+// Note: clustering (FR-19) is deferred to GP2.
 import 'package:flutter/material.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:intl/intl.dart';

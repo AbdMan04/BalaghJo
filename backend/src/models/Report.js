@@ -1,11 +1,11 @@
 /**
- * Report model — the persistence schema behind features F3–F6.
+ * Report model — persistence schema behind features F2, F3, F4, and F7.
  *
  * Stores citizen-submitted issues with a GeoJSON Point (2dsphere
- * indexed for the community map), category, photo URL, status, and
- * an append-only statusHistory that drives the timeline UI on the
- * report detail screen. The pre-save hook generates the human-readable
- * RPT-XXXX identifier.
+ * indexed for the F7 community map), category, photo URL, status, and
+ * an append-only statusHistory that drives the F4 status timeline on
+ * the report detail screen. The pre-save hook generates the human-
+ * readable RPT-XXXX identifier.
  */
 const mongoose = require('mongoose');
 
