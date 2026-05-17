@@ -1,4 +1,5 @@
-// ReportDetailScreen — feature F5 (status timeline).
+// ReportDetailScreen — feature F3 (Report List & History, FR-9 detail
+// view) plus feature F4 partial (FR-10 status timeline display).
 //
 // Single-report view shown from the My Reports list or from a recent-
 // reports tile on the home screen. Renders the report photo (with a

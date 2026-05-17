@@ -1,10 +1,11 @@
-// AuthState — application-level session state for features F1 and F2.
+// AuthState — application-level session state for feature F1
+// (User Authentication).
 //
 // Single source of truth for "is the user logged in, who are they,
 // and is the JWT still valid". Owns bootstrap-from-storage, login,
-// register, verify, resend, change-password, update-profile, and
-// logout. Extends ChangeNotifier so it participates in Flutter's
-// idiomatic Observer pattern via Provider — widgets call
+// register, verify, resend, change-password (FR-3), update-profile
+// (FR-3), and logout. Extends ChangeNotifier so it participates in
+// Flutter's idiomatic Observer pattern via Provider — widgets call
 // context.watch<AuthState>() and rebuild on notifyListeners().
 import 'package:flutter/foundation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
