@@ -1,17 +1,14 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_svg/flutter_svg.dart';
-import '../../core/config.dart';
 import '../../core/strings.dart';
 import '../../core/theme.dart';
 import '../../data/api/report_api.dart';
 import '../../data/models/report.dart';
-import '../reports/report_detail_screen.dart';
 import '../reports/reports_map_screen.dart';
-import '../reports/submit_report_screen.dart';
 import '../widgets/animations.dart';
-import '../widgets/category_icon.dart';
-import '../widgets/status_badge.dart';
 import 'main_shell.dart';
+import 'widgets/quick_report_list.dart';
+import 'widgets/recent_report_tile.dart';
+import 'widgets/skeleton_tile.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -211,7 +208,7 @@ class _HomeScreenState extends State<HomeScreen> {
                 ),
               ),
               const SizedBox(height: 12),
-              const _QuickReportList(),
+              const QuickReportList(),
               const SizedBox(height: 20),
               Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 20),
@@ -296,7 +293,7 @@ class _HomeScreenState extends State<HomeScreen> {
                     return Padding(
                       padding: const EdgeInsets.symmetric(horizontal: 20),
                       child: Column(
-                        children: List.generate(3, (i) => const _SkeletonTile()),
+                        children: List.generate(3, (i) => const SkeletonTile()),
                       ),
                     );
                   }
@@ -329,7 +326,7 @@ class _HomeScreenState extends State<HomeScreen> {
                     children: List.generate(reports.length, (i) {
                       return FadeSlideIn(
                         delay: Duration(milliseconds: 80 * i),
-                        child: _ReportTile(
+                        child: RecentReportTile(
                           report: reports[i],
                           onDelete: () => _deleteReport(reports[i]),
                         ),
@@ -360,256 +357,4 @@ class _HomeScreenState extends State<HomeScreen> {
       );
 
   Widget _divider() => Container(width: 1, height: 32, color: Colors.white24);
-}
-
-class _ReportTile extends StatelessWidget {
-  final Report report;
-  final Future<bool> Function() onDelete;
-  const _ReportTile({required this.report, required this.onDelete});
-
-  Widget _thumb() {
-    if (report.photoUrl.isEmpty) return _fallback();
-    return Image.network(
-      '${AppConfig.apiBaseUrl}${report.photoUrl}',
-      fit: BoxFit.cover,
-      errorBuilder: (_, __, ___) => _fallback(),
-      loadingBuilder: (_, child, progress) =>
-          progress == null ? child : _fallback(),
-    );
-  }
-
-  Widget _fallback() => Container(
-        color: colorForCategory(report.category).withValues(alpha: 0.12),
-        alignment: Alignment.center,
-        child: Icon(
-          iconForCategory(report.category),
-          color: colorForCategory(report.category),
-          size: 22,
-        ),
-      );
-
-  @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(20, 6, 20, 6),
-      child: ClipRRect(
-        borderRadius: BorderRadius.circular(AppRadius.md),
-        child: Dismissible(
-          key: ValueKey('home-tile-${report.id}'),
-          direction: DismissDirection.endToStart,
-          confirmDismiss: (_) => onDelete(),
-          background: Container(
-            alignment: AlignmentDirectional.centerEnd,
-            padding: const EdgeInsets.symmetric(horizontal: 22),
-            decoration: BoxDecoration(
-              color: AppColors.danger,
-              borderRadius: BorderRadius.circular(AppRadius.md),
-            ),
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                const Icon(Icons.delete_outline, color: Colors.white, size: 20),
-                const SizedBox(width: 6),
-                Text(context.t('home.delete_swipe_label'),
-                    style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w800)),
-              ],
-            ),
-          ),
-          child: PressableScale(
-            onTap: () => Navigator.of(context).push(
-                fadeSlideRoute(ReportDetailScreen(reportId: report.id))),
-            child: Container(
-              padding: const EdgeInsets.all(14),
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(AppRadius.md),
-                border: Border.all(color: AppColors.border),
-                boxShadow: [
-                  BoxShadow(color: Colors.black.withValues(alpha: 0.02), blurRadius: 8, offset: const Offset(0, 2)),
-                ],
-              ),
-              child: Row(
-                children: [
-                  Hero(
-                    tag: 'report-icon-${report.id}',
-                    child: ClipRRect(
-                      borderRadius: BorderRadius.circular(AppRadius.sm),
-                      child: SizedBox(width: 44, height: 44, child: _thumb()),
-                    ),
-                  ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          report.title.isNotEmpty ? report.title : labelForCategory(report.category, context),
-                          style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 14),
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                        const SizedBox(height: 2),
-                        Text(
-                          report.address.isNotEmpty ? report.address : 'Location pending',
-                          style: const TextStyle(color: AppColors.textMuted, fontSize: 12),
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                        const SizedBox(height: 6),
-                        StatusBadge(report.status),
-                      ],
-                    ),
-                  ),
-                  const Icon(Icons.chevron_right, color: AppColors.textMuted),
-                ],
-              ),
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-class _SkeletonTile extends StatelessWidget {
-  const _SkeletonTile();
-
-  @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 12),
-      child: Container(
-        padding: const EdgeInsets.all(14),
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(AppRadius.md),
-          border: Border.all(color: AppColors.border),
-        ),
-        child: const Row(
-          children: [
-            SkeletonBox(
-              height: 44,
-              width: 44,
-              borderRadius: BorderRadius.all(Radius.circular(AppRadius.sm)),
-            ),
-            SizedBox(width: 12),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  SkeletonBox(height: 12, width: 160),
-                  SizedBox(height: 8),
-                  SkeletonBox(height: 10, width: 110),
-                  SizedBox(height: 10),
-                  SkeletonBox(
-                    height: 16,
-                    width: 70,
-                    borderRadius: BorderRadius.all(Radius.circular(20)),
-                  ),
-                ],
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-class _QuickReportList extends StatelessWidget {
-  const _QuickReportList();
-
-  // Pastel tile backgrounds from the Claude Design handoff
-  // (Quick Report Icons v2 — photo-faithful).
-  static const _tileBg = {
-    'pothole': Color(0xFFFFEAC9), // peach
-    'waste': Color(0xFFDDF3E1), // mint
-    'lighting': Color(0xFFFFF1BF), // cream
-  };
-
-  static const _items = [
-    ('pothole', 'cat.pothole', 'home.quick_pothole_sub'),
-    ('waste', 'cat.waste', 'home.quick_waste_sub'),
-    ('lighting', 'cat.lighting', 'home.quick_lighting_sub'),
-  ];
-
-  @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 20),
-      child: Column(
-        children: List.generate(_items.length, (i) {
-          final item = _items[i];
-          return FadeSlideIn(
-            delay: Duration(milliseconds: 360 + i * 60),
-            child: Padding(
-              padding: const EdgeInsets.only(bottom: 10),
-              child: PressableScale(
-                onTap: () => Navigator.of(context).push(
-                  fadeSlideRoute(SubmitReportScreen(initialCategory: item.$1)),
-                ),
-                child: Container(
-                  padding: const EdgeInsets.all(14),
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    borderRadius: BorderRadius.circular(AppRadius.md),
-                    border: Border.all(color: AppColors.border),
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.black.withValues(alpha: 0.025),
-                        blurRadius: 8,
-                        offset: const Offset(0, 2),
-                      ),
-                    ],
-                  ),
-                  child: Row(
-                    children: [
-                      ClipRRect(
-                        borderRadius: BorderRadius.circular(14),
-                        child: Container(
-                          width: 60,
-                          height: 60,
-                          color: _tileBg[item.$1] ?? AppColors.surface,
-                          padding: const EdgeInsets.all(6),
-                          child: SvgPicture.asset(
-                            'assets/icons/quick_report/${item.$1}.svg',
-                            fit: BoxFit.contain,
-                          ),
-                        ),
-                      ),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              context.t(item.$2),
-                              style: const TextStyle(
-                                fontSize: 14,
-                                fontWeight: FontWeight.w800,
-                                color: AppColors.navy,
-                              ),
-                            ),
-                            const SizedBox(height: 2),
-                            Text(
-                              context.t(item.$3),
-                              style: const TextStyle(
-                                fontSize: 12,
-                                color: AppColors.textMuted,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                      const Icon(Icons.chevron_right, color: AppColors.textMuted),
-                    ],
-                  ),
-                ),
-              ),
-            ),
-          );
-        }),
-      ),
-    );
-  }
 }
