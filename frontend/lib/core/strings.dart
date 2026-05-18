@@ -43,8 +43,6 @@ class AppStrings {
     'verify.invalid': 'Enter the 6-digit code',
     'verify.success': 'Account verified',
     'verify.signed_out': 'Sign out',
-    'verify.demo_hint':
-        'Demo build: the code is printed in the backend console.',
 
 
     'register.create_account': 'Create Account',

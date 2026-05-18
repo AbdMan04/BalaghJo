@@ -1,10 +1,8 @@
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
 import '../../core/strings.dart';
 import '../../core/theme.dart';
 import '../../data/api/report_api.dart';
 import '../../data/models/report.dart';
-import '../../state/auth_state.dart';
 import '../reports/report_detail_screen.dart';
 import '../reports/reports_map_screen.dart';
 import '../reports/submit_report_screen.dart';
@@ -81,7 +79,6 @@ class _HomeScreenState extends State<HomeScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final user = context.watch<AuthState>().user;
     return Scaffold(
       body: RefreshIndicator(
         onRefresh: _refresh,
@@ -103,23 +100,11 @@ class _HomeScreenState extends State<HomeScreen> {
                       ),
                       borderRadius: BorderRadius.vertical(bottom: Radius.circular(32)),
                     ),
-                    padding: const EdgeInsets.fromLTRB(20, 56, 20, 32),
+                    padding: const EdgeInsets.fromLTRB(20, 40, 20, 32),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         FadeSlideIn(
-                          child: Text(context.t('home.welcome'),
-                              style: const TextStyle(color: Colors.white70, fontSize: 13)),
-                        ),
-                        const SizedBox(height: 4),
-                        FadeSlideIn(
-                          delay: const Duration(milliseconds: 100),
-                          child: Text(user?.firstName ?? 'Citizen',
-                              style: const TextStyle(color: Colors.white, fontSize: 24, fontWeight: FontWeight.w800)),
-                        ),
-                        const SizedBox(height: 20),
-                        FadeSlideIn(
-                          delay: const Duration(milliseconds: 200),
                           child: FutureBuilder<ReportSummary>(
                             future: _future,
                             builder: (_, snap) {
