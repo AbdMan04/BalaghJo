@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import '../../core/api_errors.dart';
 import '../../core/strings.dart';
 import '../../core/theme.dart';
 import '../../state/auth_state.dart';
@@ -44,14 +45,9 @@ class _RegisterScreenState extends State<RegisterScreen> {
       Navigator.of(context).pushAndRemoveUntil(
           fadeSlideRoute(const VerificationScreen()), (_) => false);
     } catch (e) {
-      setState(() => _error = _cleanError(e));
+      setState(() => _error = cleanErrorMessage(e));
       _shake.value++;
     }
-  }
-
-  String _cleanError(Object e) {
-    final s = e.toString();
-    return s.replaceFirst(RegExp(r'^(Exception|ApiException\([^)]*\)):\s*'), '');
   }
 
   @override

@@ -7,16 +7,14 @@
 // refresh, and swipe-to-delete with a confirmation dialog. Tapping a
 // row opens ReportDetailScreen (FR-9).
 import 'package:flutter/material.dart';
-import 'package:intl/intl.dart';
 import '../../core/strings.dart';
 import '../../core/theme.dart';
 import '../../data/api/report_api.dart';
 import '../../data/models/report.dart';
 import '../widgets/animations.dart';
 import '../widgets/category_icon.dart';
-import '../widgets/report_thumbnail.dart';
-import '../widgets/status_badge.dart';
-import 'report_detail_screen.dart';
+import 'widgets/my_reports_row.dart';
+import 'widgets/report_filter_chips.dart';
 
 class MyReportsScreen extends StatefulWidget {
   const MyReportsScreen({super.key});
@@ -124,6 +122,14 @@ class _MyReportsScreenState extends State<MyReportsScreen> {
     setState(() => _categoryFilter = c);
   }
 
+  void _selectSort(bool newestFirst) {
+    setState(() {
+      _newestFirst = newestFirst;
+      _future = _load();
+    });
+    Navigator.pop(context);
+  }
+
   void _openSortSheet() {
     showModalBottomSheet<void>(
       context: context,
@@ -149,29 +155,17 @@ class _MyReportsScreenState extends State<MyReportsScreen> {
               Text(context.t('my.sort_title'),
                   style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 16)),
               const SizedBox(height: 8),
-              RadioListTile<bool>(
-                value: true,
-                groupValue: _newestFirst,
+              ListTile(
+                contentPadding: EdgeInsets.zero,
                 title: Text(context.t('my.sort_newest')),
-                onChanged: (v) {
-                  setState(() {
-                    _newestFirst = v ?? true;
-                    _future = _load();
-                  });
-                  Navigator.pop(context);
-                },
+                trailing: _newestFirst ? const Icon(Icons.check, color: AppColors.blue) : null,
+                onTap: () => _selectSort(true),
               ),
-              RadioListTile<bool>(
-                value: false,
-                groupValue: _newestFirst,
+              ListTile(
+                contentPadding: EdgeInsets.zero,
                 title: Text(context.t('my.sort_oldest')),
-                onChanged: (v) {
-                  setState(() {
-                    _newestFirst = v ?? false;
-                    _future = _load();
-                  });
-                  Navigator.pop(context);
-                },
+                trailing: !_newestFirst ? const Icon(Icons.check, color: AppColors.blue) : null,
+                onTap: () => _selectSort(false),
               ),
             ],
           ),
@@ -217,10 +211,10 @@ class _MyReportsScreenState extends State<MyReportsScreen> {
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
             child: Row(
               children: [
-                _chip(context.t('status.all'), null),
-                _chip(context.t('status.sent'), 'pending'),
-                _chip(context.t('status.processing'), 'in_progress'),
-                _chip(context.t('status.resolved'), 'resolved'),
+                StatusFilterChip(label: context.t('status.all'), active: _filter == null, onTap: () => _setFilter(null)),
+                StatusFilterChip(label: context.t('status.sent'), active: _filter == 'pending', onTap: () => _setFilter('pending')),
+                StatusFilterChip(label: context.t('status.processing'), active: _filter == 'in_progress', onTap: () => _setFilter('in_progress')),
+                StatusFilterChip(label: context.t('status.resolved'), active: _filter == 'resolved', onTap: () => _setFilter('resolved')),
               ],
             ),
           ),
@@ -229,10 +223,10 @@ class _MyReportsScreenState extends State<MyReportsScreen> {
             padding: const EdgeInsets.fromLTRB(16, 0, 16, 6),
             child: Row(
               children: [
-                _categoryChip(context.t('cat.all'), null),
-                _categoryChip(context.t('cat.pothole'), 'pothole'),
-                _categoryChip(context.t('cat.waste'), 'waste'),
-                _categoryChip(context.t('cat.lighting'), 'lighting'),
+                CategoryFilterChip(label: context.t('cat.all'), value: null, active: _categoryFilter == null, onTap: () => _setCategory(null)),
+                CategoryFilterChip(label: context.t('cat.pothole'), value: 'pothole', active: _categoryFilter == 'pothole', onTap: () => _setCategory('pothole')),
+                CategoryFilterChip(label: context.t('cat.waste'), value: 'waste', active: _categoryFilter == 'waste', onTap: () => _setCategory('waste')),
+                CategoryFilterChip(label: context.t('cat.lighting'), value: 'lighting', active: _categoryFilter == 'lighting', onTap: () => _setCategory('lighting')),
               ],
             ),
           ),
@@ -294,7 +288,7 @@ class _MyReportsScreenState extends State<MyReportsScreen> {
                     itemCount: reports.length,
                     itemBuilder: (_, i) => FadeSlideIn(
                       delay: Duration(milliseconds: 60 * i),
-                      child: _ReportRow(
+                      child: MyReportsRow(
                         report: reports[i],
                         onDelete: () => _deleteReport(reports[i]),
                       ),
@@ -305,162 +299,6 @@ class _MyReportsScreenState extends State<MyReportsScreen> {
             ),
           ),
         ],
-      ),
-    );
-  }
-
-  Widget _chip(String label, String? value) {
-    final active = _filter == value;
-    return Padding(
-      padding: const EdgeInsets.only(right: 8),
-      child: PressableScale(
-        onTap: () => _setFilter(value),
-        child: AnimatedContainer(
-          duration: const Duration(milliseconds: 240),
-          curve: Curves.easeOutCubic,
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 9),
-          decoration: BoxDecoration(
-            color: active ? AppColors.navy : Colors.white,
-            borderRadius: BorderRadius.circular(20),
-            border: Border.all(color: active ? AppColors.navy : AppColors.border),
-            boxShadow: active
-                ? [BoxShadow(color: AppColors.navy.withValues(alpha: 0.25), blurRadius: 12, offset: const Offset(0, 4))]
-                : null,
-          ),
-          child: AnimatedDefaultTextStyle(
-            duration: const Duration(milliseconds: 240),
-            style: TextStyle(
-              color: active ? Colors.white : AppColors.navy,
-              fontWeight: FontWeight.w700,
-              fontSize: 12,
-            ),
-            child: Text(label),
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget _categoryChip(String label, String? value) {
-    final active = _categoryFilter == value;
-    final tint = value == null ? AppColors.blue : colorForCategory(value);
-    return Padding(
-      padding: const EdgeInsets.only(right: 8),
-      child: PressableScale(
-        onTap: () => _setCategory(value),
-        child: AnimatedContainer(
-          duration: const Duration(milliseconds: 220),
-          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
-          decoration: BoxDecoration(
-            color: active ? tint.withValues(alpha: 0.12) : Colors.white,
-            borderRadius: BorderRadius.circular(20),
-            border: Border.all(
-              color: active ? tint : AppColors.border,
-              width: active ? 1.4 : 1,
-            ),
-          ),
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              if (value != null) ...[
-                Icon(iconForCategory(value), size: 13, color: active ? tint : AppColors.textMuted),
-                const SizedBox(width: 5),
-              ],
-              Text(
-                label,
-                style: TextStyle(
-                  color: active ? tint : AppColors.textMuted,
-                  fontWeight: FontWeight.w700,
-                  fontSize: 11,
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-class _ReportRow extends StatelessWidget {
-  final Report report;
-  final Future<bool> Function() onDelete;
-  const _ReportRow({required this.report, required this.onDelete});
-
-  @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 10),
-      child: ClipRRect(
-        borderRadius: BorderRadius.circular(AppRadius.md),
-        child: Dismissible(
-          key: ValueKey('my-reports-row-${report.id}'),
-          direction: DismissDirection.endToStart,
-          confirmDismiss: (_) => onDelete(),
-          background: Container(
-            alignment: AlignmentDirectional.centerEnd,
-            padding: const EdgeInsets.symmetric(horizontal: 22),
-            decoration: BoxDecoration(
-              color: AppColors.danger,
-              borderRadius: BorderRadius.circular(AppRadius.md),
-            ),
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                const Icon(Icons.delete_outline, color: Colors.white, size: 20),
-                const SizedBox(width: 6),
-                Text(context.t('home.delete_swipe_label'),
-                    style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w800)),
-              ],
-            ),
-          ),
-          child: PressableScale(
-            onTap: () => Navigator.of(context).push(
-                fadeSlideRoute(ReportDetailScreen(reportId: report.id))),
-            child: Container(
-              padding: const EdgeInsets.all(14),
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(AppRadius.md),
-                border: Border.all(color: AppColors.border),
-                boxShadow: [
-                  BoxShadow(color: Colors.black.withValues(alpha: 0.02), blurRadius: 8, offset: const Offset(0, 2)),
-                ],
-              ),
-              child: Row(
-                children: [
-                  Hero(
-                    tag: 'report-icon-${report.id}',
-                    child: ClipRRect(
-                      borderRadius: BorderRadius.circular(AppRadius.sm),
-                      child: ReportThumbnail(report: report),
-                    ),
-                  ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(report.title.isNotEmpty ? report.title : labelForCategory(report.category, context),
-                            style: const TextStyle(fontWeight: FontWeight.w700)),
-                        const SizedBox(height: 6),
-                        Row(
-                          children: [
-                            StatusBadge(report.status),
-                            const SizedBox(width: 8),
-                            Text(DateFormat.yMMMd().format(report.createdAt),
-                                style: const TextStyle(color: AppColors.textMuted, fontSize: 11)),
-                          ],
-                        ),
-                      ],
-                    ),
-                  ),
-                  const Icon(Icons.chevron_right, color: AppColors.textMuted),
-                ],
-              ),
-            ),
-          ),
-        ),
       ),
     );
   }

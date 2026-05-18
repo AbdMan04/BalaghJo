@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import '../../core/api_errors.dart';
 import '../../core/identifier_validator.dart';
 import '../../core/strings.dart';
 import '../../core/theme.dart';
@@ -42,14 +43,9 @@ class _LoginScreenState extends State<LoginScreen> {
       Navigator.of(context).pushAndRemoveUntil(
           fadeSlideRoute(next), (_) => false);
     } catch (e) {
-      setState(() => _error = _cleanError(e));
+      setState(() => _error = cleanErrorMessage(e));
       _shake.value++;
     }
-  }
-
-  String _cleanError(Object e) {
-    final s = e.toString();
-    return s.replaceFirst(RegExp(r'^(Exception|ApiException\([^)]*\)):\s*'), '');
   }
 
   @override

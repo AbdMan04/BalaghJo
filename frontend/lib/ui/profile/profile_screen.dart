@@ -7,6 +7,7 @@
 // Reads AuthState reactively via Provider.
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import '../../core/api_errors.dart';
 import '../../core/strings.dart';
 import '../../core/theme.dart';
 import '../../data/models/user.dart';
@@ -346,10 +347,7 @@ class _ChangePasswordDialogState extends State<_ChangePasswordDialog> {
     } catch (e) {
       setState(() {
         _busy = false;
-        _error = e.toString().replaceFirst(
-              RegExp(r'^(Exception|ApiException\([^)]*\)):\s*'),
-              '',
-            );
+        _error = cleanErrorMessage(e);
       });
     }
   }
@@ -500,10 +498,7 @@ class _EditProfileSheetState extends State<_EditProfileSheet> {
     } catch (e) {
       setState(() {
         _busy = false;
-        _error = e.toString().replaceFirst(
-              RegExp(r'^(Exception|ApiException\([^)]*\)):\s*'),
-              '',
-            );
+        _error = cleanErrorMessage(e);
       });
     }
   }
