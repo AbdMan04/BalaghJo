@@ -39,10 +39,9 @@ class _SubmitReportScreenState extends State<SubmitReportScreen> {
   String? _error;
 
   static const _cats = [
-    ('pothole', 'cat.pothole', Icons.warning_amber_rounded),
-    ('waste', 'cat.waste', Icons.delete_outline),
-    ('lighting', 'cat.lighting', Icons.lightbulb_outline),
-    ('road_crack', 'cat.road_crack', Icons.alt_route),
+    ('pothole', 'cat.pothole', Icons.report_problem_rounded),
+    ('waste', 'cat.waste', Icons.recycling_rounded),
+    ('lighting', 'cat.lighting', Icons.lightbulb_outline_rounded),
   ];
 
   Future<void> _pickPhoto() async {

@@ -8,6 +8,7 @@
 // row opens ReportDetailScreen (FR-9).
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
+import '../../core/config.dart';
 import '../../core/strings.dart';
 import '../../core/theme.dart';
 import '../../data/api/report_api.dart';
@@ -51,6 +52,52 @@ class _MyReportsScreenState extends State<MyReportsScreen> {
         ? b.createdAt.compareTo(a.createdAt)
         : a.createdAt.compareTo(b.createdAt));
     return list;
+  }
+
+  Future<bool> _deleteReport(Report r) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(AppRadius.md)),
+        title: Text(context.t('home.delete_title'),
+            style: const TextStyle(fontWeight: FontWeight.w800)),
+        content: Text(
+          '${context.t('home.delete_body_prefix')}${r.title.isNotEmpty ? r.title : r.reportId}${context.t('home.delete_body_suffix')}',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: Text(context.t('common.cancel')),
+          ),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(backgroundColor: AppColors.danger),
+            onPressed: () => Navigator.pop(ctx, true),
+            child: Text(context.t('common.delete')),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true) return false;
+    try {
+      await _api.delete(r.id);
+      if (!mounted) return true;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          behavior: SnackBarBehavior.floating,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(AppRadius.md)),
+          content: Text(context.t('home.deleted_toast')),
+        ),
+      );
+      setState(() => _future = _load());
+      return true;
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Failed to delete: $e')),
+        );
+      }
+      return false;
+    }
   }
 
   List<Report> _applyClientFilters(List<Report> source) {
@@ -186,7 +233,6 @@ class _MyReportsScreenState extends State<MyReportsScreen> {
                 _categoryChip(context.t('cat.pothole'), 'pothole'),
                 _categoryChip(context.t('cat.waste'), 'waste'),
                 _categoryChip(context.t('cat.lighting'), 'lighting'),
-                _categoryChip(context.t('cat.road_crack'), 'road_crack'),
               ],
             ),
           ),
@@ -248,7 +294,10 @@ class _MyReportsScreenState extends State<MyReportsScreen> {
                     itemCount: reports.length,
                     itemBuilder: (_, i) => FadeSlideIn(
                       delay: Duration(milliseconds: 60 * i),
-                      child: _ReportRow(report: reports[i]),
+                      child: _ReportRow(
+                        report: reports[i],
+                        onDelete: () => _deleteReport(reports[i]),
+                      ),
                     ),
                   ),
                 );
@@ -335,60 +384,102 @@ class _MyReportsScreenState extends State<MyReportsScreen> {
 
 class _ReportRow extends StatelessWidget {
   final Report report;
-  const _ReportRow({required this.report});
+  final Future<bool> Function() onDelete;
+  const _ReportRow({required this.report, required this.onDelete});
+
+  Widget _thumb() {
+    if (report.photoUrl.isEmpty) return _fallback();
+    return Image.network(
+      '${AppConfig.apiBaseUrl}${report.photoUrl}',
+      fit: BoxFit.cover,
+      errorBuilder: (_, __, ___) => _fallback(),
+      loadingBuilder: (_, child, progress) =>
+          progress == null ? child : _fallback(),
+    );
+  }
+
+  Widget _fallback() => Container(
+        color: colorForCategory(report.category).withValues(alpha: 0.12),
+        alignment: Alignment.center,
+        child: Icon(
+          iconForCategory(report.category),
+          color: colorForCategory(report.category),
+          size: 22,
+        ),
+      );
 
   @override
   Widget build(BuildContext context) {
     return Padding(
       padding: const EdgeInsets.only(bottom: 10),
-      child: PressableScale(
-        onTap: () => Navigator.of(context).push(
-            fadeSlideRoute(ReportDetailScreen(reportId: report.id))),
-        child: Container(
-          padding: const EdgeInsets.all(14),
-          decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(AppRadius.md),
-            border: Border.all(color: AppColors.border),
-            boxShadow: [
-              BoxShadow(color: Colors.black.withValues(alpha: 0.02), blurRadius: 8, offset: const Offset(0, 2)),
-            ],
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(AppRadius.md),
+        child: Dismissible(
+          key: ValueKey('my-reports-row-${report.id}'),
+          direction: DismissDirection.endToStart,
+          confirmDismiss: (_) => onDelete(),
+          background: Container(
+            alignment: AlignmentDirectional.centerEnd,
+            padding: const EdgeInsets.symmetric(horizontal: 22),
+            decoration: BoxDecoration(
+              color: AppColors.danger,
+              borderRadius: BorderRadius.circular(AppRadius.md),
+            ),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const Icon(Icons.delete_outline, color: Colors.white, size: 20),
+                const SizedBox(width: 6),
+                Text(context.t('home.delete_swipe_label'),
+                    style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w800)),
+              ],
+            ),
           ),
-          child: Row(
-            children: [
-              Hero(
-                tag: 'report-icon-${report.id}',
-                child: Container(
-                  padding: const EdgeInsets.all(10),
-                  decoration: BoxDecoration(
-                    color: colorForCategory(report.category).withValues(alpha: 0.12),
-                    borderRadius: BorderRadius.circular(AppRadius.sm),
-                  ),
-                  child: Icon(iconForCategory(report.category),
-                      color: colorForCategory(report.category)),
-                ),
+          child: PressableScale(
+            onTap: () => Navigator.of(context).push(
+                fadeSlideRoute(ReportDetailScreen(reportId: report.id))),
+            child: Container(
+              padding: const EdgeInsets.all(14),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(AppRadius.md),
+                border: Border.all(color: AppColors.border),
+                boxShadow: [
+                  BoxShadow(color: Colors.black.withValues(alpha: 0.02), blurRadius: 8, offset: const Offset(0, 2)),
+                ],
               ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(report.title.isNotEmpty ? report.title : labelForCategory(report.category, context),
-                        style: const TextStyle(fontWeight: FontWeight.w700)),
-                    const SizedBox(height: 6),
-                    Row(
+              child: Row(
+                children: [
+                  Hero(
+                    tag: 'report-icon-${report.id}',
+                    child: ClipRRect(
+                      borderRadius: BorderRadius.circular(AppRadius.sm),
+                      child: SizedBox(width: 44, height: 44, child: _thumb()),
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        StatusBadge(report.status),
-                        const SizedBox(width: 8),
-                        Text(DateFormat.yMMMd().format(report.createdAt),
-                            style: const TextStyle(color: AppColors.textMuted, fontSize: 11)),
+                        Text(report.title.isNotEmpty ? report.title : labelForCategory(report.category, context),
+                            style: const TextStyle(fontWeight: FontWeight.w700)),
+                        const SizedBox(height: 6),
+                        Row(
+                          children: [
+                            StatusBadge(report.status),
+                            const SizedBox(width: 8),
+                            Text(DateFormat.yMMMd().format(report.createdAt),
+                                style: const TextStyle(color: AppColors.textMuted, fontSize: 11)),
+                          ],
+                        ),
                       ],
                     ),
-                  ],
-                ),
+                  ),
+                  const Icon(Icons.chevron_right, color: AppColors.textMuted),
+                ],
               ),
-              const Icon(Icons.chevron_right, color: AppColors.textMuted),
-            ],
+            ),
           ),
         ),
       ),

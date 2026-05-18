@@ -217,7 +217,6 @@ class _FilterBar extends StatelessWidget {
               _catChip(ctx.t('cat.pothole'), 'pothole'),
               _catChip(ctx.t('cat.waste'), 'waste'),
               _catChip(ctx.t('cat.lighting'), 'lighting'),
-              _catChip(ctx.t('cat.road_crack'), 'road_crack'),
             ]);
           }),
         ],

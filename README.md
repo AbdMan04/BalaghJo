@@ -1,7 +1,7 @@
 # BalaghJo
 
 A civic-reporting mobile application that lets citizens submit issues
-(potholes, waste, lighting, road cracks) with a photo and GPS location,
+(potholes, waste, lighting) with a photo and GPS location,
 track their reports through a status timeline, and view a community map
 of nearby reports.
 
