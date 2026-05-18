@@ -214,9 +214,8 @@ class _FilterBar extends StatelessWidget {
           Builder(builder: (ctx) {
             return _scrollRow([
               _catChip(ctx.t('status.all'), null),
-              _catChip(ctx.t('cat.pothole'), 'pothole'),
-              _catChip(ctx.t('cat.waste'), 'waste'),
-              _catChip(ctx.t('cat.lighting'), 'lighting'),
+              ...ReportCategory.userSelectable
+                  .map((c) => _catChip(c.label, c.apiValue)),
             ]);
           }),
         ],

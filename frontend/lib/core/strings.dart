@@ -71,9 +71,6 @@ class AppStrings {
     'home.report_issue': 'Report an Issue',
     'home.report_issue_sub': 'Potholes, waste, lighting…',
     'home.quick_report': 'Quick Report',
-    'home.quick_pothole_sub': 'Report road damage',
-    'home.quick_waste_sub': 'Report waste issue',
-    'home.quick_lighting_sub': 'Report lighting problem',
     'home.explore_map': 'Explore on map',
     'home.explore_map_sub': 'See community reports near you',
     'home.recent_reports': 'Recent Reports',
@@ -86,10 +83,6 @@ class AppStrings {
     'home.delete_body_suffix': '"? This cannot be undone.',
     'home.deleted_toast': 'Report deleted',
 
-    'cat.pothole': 'Pothole',
-    'cat.waste': 'Waste',
-    'cat.lighting': 'Lighting',
-    'cat.other': 'Other',
     'cat.all': 'All categories',
 
     'status.sent': 'Sent',

@@ -38,12 +38,6 @@ class _SubmitReportScreenState extends State<SubmitReportScreen> {
   bool _success = false;
   String? _error;
 
-  static const _cats = [
-    ('pothole', 'cat.pothole', Icons.report_problem_rounded),
-    ('waste', 'cat.waste', Icons.recycling_rounded),
-    ('lighting', 'cat.lighting', Icons.lightbulb_outline_rounded),
-  ];
-
   Future<void> _pickPhoto() async {
     final picker = ImagePicker();
     final x = await picker.pickImage(source: ImageSource.gallery, maxWidth: 1600, imageQuality: 85);
@@ -201,24 +195,23 @@ class _SubmitReportScreenState extends State<SubmitReportScreen> {
                   child: Wrap(
                     spacing: 10,
                     runSpacing: 10,
-                    children: _cats.map((c) {
-                      final selected = _category == c.$1;
-                      final tint = colorForCategory(c.$1);
+                    children: ReportCategory.userSelectable.map((c) {
+                      final selected = _category == c.apiValue;
                       return PressableScale(
-                        onTap: () => setState(() => _category = c.$1),
+                        onTap: () => setState(() => _category = c.apiValue),
                         child: AnimatedContainer(
                           duration: const Duration(milliseconds: 240),
                           curve: Curves.easeOutCubic,
                           padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
                           decoration: BoxDecoration(
-                            color: selected ? tint.withValues(alpha: 0.12) : Colors.white,
+                            color: selected ? c.tint.withValues(alpha: 0.12) : Colors.white,
                             border: Border.all(
-                              color: selected ? tint : AppColors.border,
+                              color: selected ? c.tint : AppColors.border,
                               width: selected ? 1.5 : 1,
                             ),
                             borderRadius: BorderRadius.circular(AppRadius.sm),
                             boxShadow: selected
-                                ? [BoxShadow(color: tint.withValues(alpha: 0.25), blurRadius: 10)]
+                                ? [BoxShadow(color: c.tint.withValues(alpha: 0.25), blurRadius: 10)]
                                 : null,
                           ),
                           child: Row(
@@ -226,20 +219,20 @@ class _SubmitReportScreenState extends State<SubmitReportScreen> {
                             children: [
                               AnimatedSwitcher(
                                 duration: const Duration(milliseconds: 220),
-                                child: Icon(c.$3,
-                                    key: ValueKey('${c.$1}-$selected'),
+                                child: Icon(c.icon,
+                                    key: ValueKey('${c.apiValue}-$selected'),
                                     size: 16,
-                                    color: selected ? tint : AppColors.navy),
+                                    color: selected ? c.tint : AppColors.navy),
                               ),
                               const SizedBox(width: 6),
                               AnimatedDefaultTextStyle(
                                 duration: const Duration(milliseconds: 220),
                                 style: TextStyle(
                                   fontWeight: FontWeight.w700,
-                                  color: selected ? tint : AppColors.navy,
+                                  color: selected ? c.tint : AppColors.navy,
                                   fontSize: 13,
                                 ),
-                                child: Text(context.t(c.$2)),
+                                child: Text(c.label),
                               ),
                             ],
                           ),

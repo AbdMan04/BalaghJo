@@ -224,9 +224,14 @@ class _MyReportsScreenState extends State<MyReportsScreen> {
             child: Row(
               children: [
                 CategoryFilterChip(label: context.t('cat.all'), value: null, active: _categoryFilter == null, onTap: () => _setCategory(null)),
-                CategoryFilterChip(label: context.t('cat.pothole'), value: 'pothole', active: _categoryFilter == 'pothole', onTap: () => _setCategory('pothole')),
-                CategoryFilterChip(label: context.t('cat.waste'), value: 'waste', active: _categoryFilter == 'waste', onTap: () => _setCategory('waste')),
-                CategoryFilterChip(label: context.t('cat.lighting'), value: 'lighting', active: _categoryFilter == 'lighting', onTap: () => _setCategory('lighting')),
+                ...ReportCategory.userSelectable.map(
+                  (c) => CategoryFilterChip(
+                    label: c.label,
+                    value: c.apiValue,
+                    active: _categoryFilter == c.apiValue,
+                    onTap: () => _setCategory(c.apiValue),
+                  ),
+                ),
               ],
             ),
           ),
