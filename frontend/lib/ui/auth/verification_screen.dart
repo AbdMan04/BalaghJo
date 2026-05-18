@@ -166,30 +166,6 @@ class _VerificationScreenState extends State<VerificationScreen> {
                 ),
                 const SizedBox(height: 22),
                 FadeSlideIn(
-                  delay: const Duration(milliseconds: 200),
-                  child: Container(
-                    padding: const EdgeInsets.all(10),
-                    decoration: BoxDecoration(
-                      color: AppColors.warning.withValues(alpha: 0.08),
-                      borderRadius: BorderRadius.circular(AppRadius.sm),
-                      border: Border.all(color: AppColors.warning.withValues(alpha: 0.3)),
-                    ),
-                    child: Row(
-                      children: [
-                        const Icon(Icons.terminal, size: 16, color: AppColors.warning),
-                        const SizedBox(width: 8),
-                        Expanded(
-                          child: Text(
-                            context.t('verify.demo_hint'),
-                            style: const TextStyle(fontSize: 11, color: AppColors.warning),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-                const SizedBox(height: 22),
-                FadeSlideIn(
                   delay: const Duration(milliseconds: 260),
                   child: Padding(
                     padding: const EdgeInsets.only(bottom: 6),
