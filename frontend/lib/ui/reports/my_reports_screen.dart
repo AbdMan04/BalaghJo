@@ -8,13 +8,13 @@
 // row opens ReportDetailScreen (FR-9).
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
-import '../../core/config.dart';
 import '../../core/strings.dart';
 import '../../core/theme.dart';
 import '../../data/api/report_api.dart';
 import '../../data/models/report.dart';
 import '../widgets/animations.dart';
 import '../widgets/category_icon.dart';
+import '../widgets/report_thumbnail.dart';
 import '../widgets/status_badge.dart';
 import 'report_detail_screen.dart';
 
@@ -387,27 +387,6 @@ class _ReportRow extends StatelessWidget {
   final Future<bool> Function() onDelete;
   const _ReportRow({required this.report, required this.onDelete});
 
-  Widget _thumb() {
-    if (report.photoUrl.isEmpty) return _fallback();
-    return Image.network(
-      '${AppConfig.apiBaseUrl}${report.photoUrl}',
-      fit: BoxFit.cover,
-      errorBuilder: (_, __, ___) => _fallback(),
-      loadingBuilder: (_, child, progress) =>
-          progress == null ? child : _fallback(),
-    );
-  }
-
-  Widget _fallback() => Container(
-        color: colorForCategory(report.category).withValues(alpha: 0.12),
-        alignment: Alignment.center,
-        child: Icon(
-          iconForCategory(report.category),
-          color: colorForCategory(report.category),
-          size: 22,
-        ),
-      );
-
   @override
   Widget build(BuildContext context) {
     return Padding(
@@ -454,7 +433,7 @@ class _ReportRow extends StatelessWidget {
                     tag: 'report-icon-${report.id}',
                     child: ClipRRect(
                       borderRadius: BorderRadius.circular(AppRadius.sm),
-                      child: SizedBox(width: 44, height: 44, child: _thumb()),
+                      child: ReportThumbnail(report: report),
                     ),
                   ),
                   const SizedBox(width: 12),
