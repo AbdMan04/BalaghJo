@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
+import '../../core/api_errors.dart';
 import '../../core/strings.dart';
 import '../../core/theme.dart';
 import '../../state/auth_state.dart';
@@ -26,11 +27,6 @@ class _VerificationScreenState extends State<VerificationScreen> {
     _code.dispose();
     _shake.dispose();
     super.dispose();
-  }
-
-  String _cleanError(Object e) {
-    final s = e.toString();
-    return s.replaceFirst(RegExp(r'^(Exception|ApiException\([^)]*\)):\s*'), '');
   }
 
   Future<void> _submit() async {
@@ -61,7 +57,7 @@ class _VerificationScreenState extends State<VerificationScreen> {
         (_) => false,
       );
     } catch (e) {
-      setState(() => _error = _cleanError(e));
+      setState(() => _error = cleanErrorMessage(e));
       _shake.value++;
     }
   }
@@ -82,7 +78,7 @@ class _VerificationScreenState extends State<VerificationScreen> {
     } catch (e) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(_cleanError(e))),
+        SnackBar(content: Text(cleanErrorMessage(e))),
       );
     } finally {
       if (mounted) setState(() => _resending = false);
