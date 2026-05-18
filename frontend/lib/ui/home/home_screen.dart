@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_svg/flutter_svg.dart';
+import '../../core/config.dart';
 import '../../core/strings.dart';
 import '../../core/theme.dart';
 import '../../data/api/report_api.dart';
@@ -209,7 +211,7 @@ class _HomeScreenState extends State<HomeScreen> {
                 ),
               ),
               const SizedBox(height: 12),
-              const _CategoriesGrid(),
+              const _QuickReportList(),
               const SizedBox(height: 20),
               Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 20),
@@ -365,6 +367,27 @@ class _ReportTile extends StatelessWidget {
   final Future<bool> Function() onDelete;
   const _ReportTile({required this.report, required this.onDelete});
 
+  Widget _thumb() {
+    if (report.photoUrl.isEmpty) return _fallback();
+    return Image.network(
+      '${AppConfig.apiBaseUrl}${report.photoUrl}',
+      fit: BoxFit.cover,
+      errorBuilder: (_, __, ___) => _fallback(),
+      loadingBuilder: (_, child, progress) =>
+          progress == null ? child : _fallback(),
+    );
+  }
+
+  Widget _fallback() => Container(
+        color: colorForCategory(report.category).withValues(alpha: 0.12),
+        alignment: Alignment.center,
+        child: Icon(
+          iconForCategory(report.category),
+          color: colorForCategory(report.category),
+          size: 22,
+        ),
+      );
+
   @override
   Widget build(BuildContext context) {
     return Padding(
@@ -409,14 +432,9 @@ class _ReportTile extends StatelessWidget {
                 children: [
                   Hero(
                     tag: 'report-icon-${report.id}',
-                    child: Container(
-                      padding: const EdgeInsets.all(10),
-                      decoration: BoxDecoration(
-                        color: colorForCategory(report.category).withValues(alpha: 0.12),
-                        borderRadius: BorderRadius.circular(AppRadius.sm),
-                      ),
-                      child: Icon(iconForCategory(report.category),
-                          color: colorForCategory(report.category)),
+                    child: ClipRRect(
+                      borderRadius: BorderRadius.circular(AppRadius.sm),
+                      child: SizedBox(width: 44, height: 44, child: _thumb()),
                     ),
                   ),
                   const SizedBox(width: 12),
@@ -498,79 +516,94 @@ class _SkeletonTile extends StatelessWidget {
   }
 }
 
-class _CategoriesGrid extends StatelessWidget {
-  const _CategoriesGrid();
+class _QuickReportList extends StatelessWidget {
+  const _QuickReportList();
+
+  // Pastel tile backgrounds from the Claude Design handoff
+  // (Quick Report Icons v2 — photo-faithful).
+  static const _tileBg = {
+    'pothole': Color(0xFFFFEAC9), // peach
+    'waste': Color(0xFFDDF3E1), // mint
+    'lighting': Color(0xFFFFF1BF), // cream
+  };
 
   static const _items = [
-    ('pothole', 'cat.pothole', Icons.warning_amber_rounded),
-    ('waste', 'cat.waste', Icons.delete_outline),
-    ('lighting', 'cat.lighting', Icons.lightbulb_outline),
-    ('road_crack', 'cat.road_crack', Icons.alt_route),
+    ('pothole', 'cat.pothole', 'home.quick_pothole_sub'),
+    ('waste', 'cat.waste', 'home.quick_waste_sub'),
+    ('lighting', 'cat.lighting', 'home.quick_lighting_sub'),
   ];
 
   @override
   Widget build(BuildContext context) {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 20),
-      child: GridView.count(
-        crossAxisCount: 4,
-        mainAxisSpacing: 10,
-        crossAxisSpacing: 10,
-        childAspectRatio: 0.82,
-        shrinkWrap: true,
-        physics: const NeverScrollableScrollPhysics(),
+      child: Column(
         children: List.generate(_items.length, (i) {
           final item = _items[i];
-          final tint = colorForCategory(item.$1);
           return FadeSlideIn(
             delay: Duration(milliseconds: 360 + i * 60),
-            child: PressableScale(
-              onTap: () => Navigator.of(context).push(
-                fadeSlideRoute(SubmitReportScreen(initialCategory: item.$1)),
-              ),
-              child: Container(
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.circular(AppRadius.md),
-                  border: Border.all(color: AppColors.border),
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.black.withValues(alpha: 0.025),
-                      blurRadius: 8,
-                      offset: const Offset(0, 2),
-                    ),
-                  ],
+            child: Padding(
+              padding: const EdgeInsets.only(bottom: 10),
+              child: PressableScale(
+                onTap: () => Navigator.of(context).push(
+                  fadeSlideRoute(SubmitReportScreen(initialCategory: item.$1)),
                 ),
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Container(
-                      padding: const EdgeInsets.all(10),
-                      decoration: BoxDecoration(
-                        color: tint.withValues(alpha: 0.12),
-                        borderRadius: BorderRadius.circular(AppRadius.sm),
+                child: Container(
+                  padding: const EdgeInsets.all(14),
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(AppRadius.md),
+                    border: Border.all(color: AppColors.border),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withValues(alpha: 0.025),
+                        blurRadius: 8,
+                        offset: const Offset(0, 2),
                       ),
-                      child: Icon(item.$3, color: tint, size: 22),
-                    ),
-                    const SizedBox(height: 8),
-                    Flexible(
-                      child: Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: 4),
-                        child: Text(
-                          context.t(item.$2),
-                          textAlign: TextAlign.center,
-                          maxLines: 2,
-                          overflow: TextOverflow.ellipsis,
-                          style: const TextStyle(
-                            fontSize: 11,
-                            fontWeight: FontWeight.w700,
-                            color: AppColors.navy,
-                            height: 1.15,
+                    ],
+                  ),
+                  child: Row(
+                    children: [
+                      ClipRRect(
+                        borderRadius: BorderRadius.circular(14),
+                        child: Container(
+                          width: 60,
+                          height: 60,
+                          color: _tileBg[item.$1] ?? AppColors.surface,
+                          padding: const EdgeInsets.all(6),
+                          child: SvgPicture.asset(
+                            'assets/icons/quick_report/${item.$1}.svg',
+                            fit: BoxFit.contain,
                           ),
                         ),
                       ),
-                    ),
-                  ],
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              context.t(item.$2),
+                              style: const TextStyle(
+                                fontSize: 14,
+                                fontWeight: FontWeight.w800,
+                                color: AppColors.navy,
+                              ),
+                            ),
+                            const SizedBox(height: 2),
+                            Text(
+                              context.t(item.$3),
+                              style: const TextStyle(
+                                fontSize: 12,
+                                color: AppColors.textMuted,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      const Icon(Icons.chevron_right, color: AppColors.textMuted),
+                    ],
+                  ),
                 ),
               ),
             ),

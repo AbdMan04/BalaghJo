@@ -10,7 +10,7 @@
 const mongoose = require('mongoose');
 
 const STATUSES = ['pending', 'in_progress', 'resolved'];
-const CATEGORIES = ['pothole', 'waste', 'lighting', 'road_crack', 'other'];
+const CATEGORIES = ['pothole', 'waste', 'lighting', 'other'];
 
 const reportSchema = new mongoose.Schema(
   {

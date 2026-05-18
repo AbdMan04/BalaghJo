@@ -15,7 +15,7 @@ router.post(
   '/',
   upload.single('photo'),
   [
-    body('category').isIn(['pothole', 'waste', 'lighting', 'road_crack', 'other']),
+    body('category').isIn(['pothole', 'waste', 'lighting', 'other']),
     body('description').isString().isLength({ min: 5, max: 2000 }),
     body('lat').optional().isFloat(),
     body('lng').optional().isFloat(),

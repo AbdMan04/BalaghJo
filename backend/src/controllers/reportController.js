@@ -50,7 +50,7 @@ exports.listPublicReports = wrap(async (req, res) => {
   const { status, category } = req.query;
   const filter = {};
   if (status && ['pending', 'in_progress', 'resolved'].includes(status)) filter.status = status;
-  if (category && ['pothole', 'waste', 'lighting', 'road_crack', 'other'].includes(category)) {
+  if (category && ['pothole', 'waste', 'lighting', 'other'].includes(category)) {
     filter.category = category;
   }
   const reports = await Report.find(filter)
