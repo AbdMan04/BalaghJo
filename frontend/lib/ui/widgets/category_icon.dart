@@ -14,7 +14,7 @@ enum ReportCategory {
   pothole(
     apiValue: 'pothole',
     label: 'Pothole',
-    quickSubtitle: 'Report road damage',
+    quickSubtitle: 'حُفرة',
     icon: Icons.report_problem_rounded,
     tint: AppColors.warning,
     tileBg: AppColors.tilePothole,
@@ -23,7 +23,7 @@ enum ReportCategory {
   waste(
     apiValue: 'waste',
     label: 'Waste',
-    quickSubtitle: 'Report waste issue',
+    quickSubtitle: 'تراكُم نفايات',
     icon: Icons.recycling_rounded,
     tint: AppColors.success,
     tileBg: AppColors.tileWaste,
@@ -32,7 +32,7 @@ enum ReportCategory {
   lighting(
     apiValue: 'lighting',
     label: 'Lighting',
-    quickSubtitle: 'Report lighting problem',
+    quickSubtitle: 'إضاءة معطَّلة',
     icon: Icons.lightbulb_outline_rounded,
     tint: Color(0xFFEAB308),
     tileBg: AppColors.tileLighting,

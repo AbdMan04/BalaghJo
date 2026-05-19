@@ -120,7 +120,7 @@ class _SplashScreenState extends State<SplashScreen>
                               fontWeight: FontWeight.w800,
                               letterSpacing: 5)),
                       SizedBox(height: 8),
-                      Text('بلغ · سجل · غير',
+                      Text('بلِّغ · سجِّل · غيِّر',
                           style: TextStyle(color: Colors.white70, fontSize: 14, letterSpacing: 2)),
                     ],
                   ),

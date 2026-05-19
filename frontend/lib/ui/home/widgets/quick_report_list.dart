@@ -109,12 +109,13 @@ class _Card extends StatelessWidget {
                     const SizedBox(height: 2),
                     Text(
                       category.quickSubtitle!,
+                      textDirection: TextDirection.rtl,
                       style: const TextStyle(
-                        fontSize: 10,
+                        fontSize: 11,
                         color: AppColors.textMuted,
                         height: 1.2,
                       ),
-                      maxLines: 2,
+                      maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                     ),
                   ],

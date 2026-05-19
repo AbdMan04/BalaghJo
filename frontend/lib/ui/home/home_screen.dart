@@ -21,6 +21,7 @@ class HomeScreen extends StatefulWidget {
 class _HomeScreenState extends State<HomeScreen> {
   final _api = ReportApi();
   Future<ReportSummary>? _future;
+  final Set<String> _pendingDeletes = {};
 
   @override
   void initState() {
@@ -36,45 +37,42 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   Future<bool> _deleteReport(Report r) async {
-    final confirmed = await showDialog<bool>(
-      context: context,
-      builder: (ctx) => AlertDialog(
+    setState(() => _pendingDeletes.add(r.id));
+    final messenger = ScaffoldMessenger.of(context);
+    messenger.hideCurrentSnackBar();
+    final controller = messenger.showSnackBar(
+      SnackBar(
+        behavior: SnackBarBehavior.floating,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(AppRadius.md)),
-        title: Text(context.t('home.delete_title'), style: const TextStyle(fontWeight: FontWeight.w800)),
-        content: Text(
-          '${context.t('home.delete_body_prefix')}${r.title.isNotEmpty ? r.title : r.reportId}${context.t('home.delete_body_suffix')}',
+        duration: const Duration(seconds: 4),
+        content: Text(context.t('home.deleted_toast')),
+        action: SnackBarAction(
+          label: context.t('common.undo'),
+          textColor: Colors.white,
+          onPressed: () {
+            if (!mounted) return;
+            setState(() => _pendingDeletes.remove(r.id));
+          },
         ),
-        actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx, false), child: Text(context.t('common.cancel'))),
-          ElevatedButton(
-            style: ElevatedButton.styleFrom(backgroundColor: AppColors.danger),
-            onPressed: () => Navigator.pop(ctx, true),
-            child: Text(context.t('common.delete')),
-          ),
-        ],
       ),
     );
-    if (confirmed != true) return false;
-    try {
-      await _api.delete(r.id);
-      if (!mounted) return true;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          behavior: SnackBarBehavior.floating,
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(AppRadius.md)),
-          content: Text(context.t('home.deleted_toast')),
-        ),
-      );
-      await _refresh();
-      return true;
-    } catch (e) {
-      if (mounted) {
+    controller.closed.then((_) async {
+      if (!mounted) return;
+      if (!_pendingDeletes.contains(r.id)) return;
+      try {
+        await _api.delete(r.id);
+        if (!mounted) return;
+        _pendingDeletes.remove(r.id);
+        await _refresh();
+      } catch (e) {
+        if (!mounted) return;
+        setState(() => _pendingDeletes.remove(r.id));
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text('Failed to delete: $e')),
         );
       }
-      return false;
-    }
+    });
+    return true;
   }
 
   @override
@@ -152,8 +150,17 @@ class _HomeScreenState extends State<HomeScreen> {
                   delay: const Duration(milliseconds: 320),
                   child: Align(
                     alignment: AlignmentDirectional.centerStart,
-                    child: Text(context.t('home.quick_report'),
-                        style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 16)),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(context.t('home.quick_report'),
+                            style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 16)),
+                        const SizedBox(height: 2),
+                        Text(context.t('home.quick_report_sub'),
+                            textDirection: TextDirection.rtl,
+                            style: const TextStyle(color: AppColors.textMuted, fontSize: 12)),
+                      ],
+                    ),
                   ),
                 ),
               ),
@@ -254,7 +261,9 @@ class _HomeScreenState extends State<HomeScreen> {
                           style: const TextStyle(color: AppColors.danger)),
                     );
                   }
-                  final reports = snap.data?.recent ?? [];
+                  final reports = (snap.data?.recent ?? [])
+                      .where((r) => !_pendingDeletes.contains(r.id))
+                      .toList();
                   if (reports.isEmpty) {
                     return Padding(
                       padding: const EdgeInsets.all(32),
