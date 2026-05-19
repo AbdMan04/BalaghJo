@@ -44,8 +44,13 @@ reportSchema.index({ userId: 1, createdAt: -1 });
 
 reportSchema.pre('save', async function (next) {
   if (!this.reportId) {
-    const count = await mongoose.model('Report').countDocuments();
-    this.reportId = `RPT-${(2400 + count + 1).toString().padStart(4, '0')}`;
+    const Report = mongoose.model('Report');
+    const last = await Report.findOne({ reportId: /^RPT-\d+$/ })
+      .sort({ reportId: -1 })
+      .select('reportId')
+      .lean();
+    const lastSeq = last ? parseInt(last.reportId.slice(4), 10) : 2400;
+    this.reportId = `RPT-${(lastSeq + 1).toString().padStart(4, '0')}`;
   }
   if (this.isNew) {
     this.statusHistory.push({ status: this.status, changedBy: 'user' });
