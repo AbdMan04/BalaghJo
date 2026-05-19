@@ -19,7 +19,7 @@ class EmailIdentifierValidator implements IdentifierValidator {
 }
 
 class PhoneIdentifierValidator implements IdentifierValidator {
-  static final _re = RegExp(r'^[+0-9\s()-]+$');
+  static final _re = RegExp(r'^[0-9]{10}$');
 
   const PhoneIdentifierValidator();
 
@@ -27,9 +27,7 @@ class PhoneIdentifierValidator implements IdentifierValidator {
   bool matches(String value) => !value.contains('@');
   @override
   String? validate(BuildContext context, String value) =>
-      (value.length >= 6 && _re.hasMatch(value))
-          ? null
-          : context.t('login.invalid_phone');
+      _re.hasMatch(value) ? null : context.t('login.invalid_phone');
 }
 
 const _strategies = <IdentifierValidator>[
