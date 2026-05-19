@@ -4,6 +4,7 @@
 //Provides edit-profile, change password and log-out actions.
 
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import '../../core/api_errors.dart';
 import '../../core/strings.dart';
@@ -304,6 +305,11 @@ class _EditProfileSheetState extends State<_EditProfileSheet> {
       setState(() => _error = 'First name and last name are required');
       return;
     }
+    final phone = _phone.text.trim();
+    if (phone.isNotEmpty && phone.length != 10) {
+      setState(() => _error = context.t('login.invalid_phone'));
+      return;
+    }
     setState(() {
       _busy = true;
       _error = null;
@@ -385,7 +391,11 @@ class _EditProfileSheetState extends State<_EditProfileSheet> {
             const SizedBox(height: 12),
             TextField(
               controller: _phone,
-              keyboardType: TextInputType.phone,
+              keyboardType: TextInputType.number,
+              inputFormatters: [
+                FilteringTextInputFormatter.digitsOnly,
+                LengthLimitingTextInputFormatter(10),
+              ],
               decoration: const InputDecoration(
                 labelText: 'Phone',
                 prefixIcon: Icon(Icons.phone_outlined, color: AppColors.textMuted),

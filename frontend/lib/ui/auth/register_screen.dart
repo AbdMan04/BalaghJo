@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import '../../core/api_errors.dart';
 import '../../core/strings.dart';
@@ -111,9 +112,13 @@ class _RegisterScreenState extends State<RegisterScreen> {
                                     hintText: context.t('register.phone_hint'),
                                     prefixIcon: const Icon(Icons.phone_android, color: AppColors.textMuted),
                                   ),
-                                  keyboardType: TextInputType.phone,
+                                  keyboardType: TextInputType.number,
+                                  inputFormatters: [
+                                    FilteringTextInputFormatter.digitsOnly,
+                                    LengthLimitingTextInputFormatter(10),
+                                  ],
                                   validator: (v) =>
-                                      (v == null || v.trim().length < 6) ? context.t('login.invalid_phone') : null,
+                                      (v == null || v.trim().length != 10) ? context.t('login.invalid_phone') : null,
                                 ),
                               ],
                             )
