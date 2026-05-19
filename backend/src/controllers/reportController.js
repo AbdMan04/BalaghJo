@@ -21,7 +21,7 @@ exports.createReport = wrap(async (req, res) => {
   const { category, title, description, address, lat, lng } = req.body;
   const photoUrl = req.file ? `/uploads/${req.file.filename}` : '';
 
-  const report = await Report.create({
+  const payload = {
     userId: req.user.id,
     category,
     title: title || '',
@@ -32,7 +32,21 @@ exports.createReport = wrap(async (req, res) => {
       coordinates: [Number(lng) || 0, Number(lat) || 0],
     },
     photoUrl,
-  });
+  };
+
+  let report;
+  for (let attempt = 0; attempt < 3; attempt++) {
+    try {
+      report = await Report.create(payload);
+      break;
+    } catch (err) {
+      if (err && err.code === 11000 && err.keyPattern && err.keyPattern.reportId) {
+        if (attempt === 2) throw err;
+        continue;
+      }
+      throw err;
+    }
+  }
 
   await User.findByIdAndUpdate(req.user.id, { $inc: { sentReports: 1 } });
   res.status(201).json({ report: report.toPublicJSON() });
