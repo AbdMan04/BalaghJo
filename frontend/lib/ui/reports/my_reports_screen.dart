@@ -30,6 +30,7 @@ class _MyReportsScreenState extends State<MyReportsScreen> {
   String? _categoryFilter;
   bool _newestFirst = true;
   late Future<List<Report>> _future;
+  final Set<String> _pendingDeletes = {};
 
   @override
   void initState() {
@@ -53,54 +54,50 @@ class _MyReportsScreenState extends State<MyReportsScreen> {
   }
 
   Future<bool> _deleteReport(Report r) async {
-    final confirmed = await showDialog<bool>(
-      context: context,
-      builder: (ctx) => AlertDialog(
+    setState(() => _pendingDeletes.add(r.id));
+    final messenger = ScaffoldMessenger.of(context);
+    messenger.hideCurrentSnackBar();
+    final controller = messenger.showSnackBar(
+      SnackBar(
+        behavior: SnackBarBehavior.floating,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(AppRadius.md)),
-        title: Text(context.t('home.delete_title'),
-            style: const TextStyle(fontWeight: FontWeight.w800)),
-        content: Text(
-          '${context.t('home.delete_body_prefix')}${r.title.isNotEmpty ? r.title : r.reportId}${context.t('home.delete_body_suffix')}',
+        duration: const Duration(seconds: 4),
+        content: Text(context.t('home.deleted_toast')),
+        action: SnackBarAction(
+          label: context.t('common.undo'),
+          textColor: Colors.white,
+          onPressed: () {
+            if (!mounted) return;
+            setState(() => _pendingDeletes.remove(r.id));
+          },
         ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx, false),
-            child: Text(context.t('common.cancel')),
-          ),
-          ElevatedButton(
-            style: ElevatedButton.styleFrom(backgroundColor: AppColors.danger),
-            onPressed: () => Navigator.pop(ctx, true),
-            child: Text(context.t('common.delete')),
-          ),
-        ],
       ),
     );
-    if (confirmed != true) return false;
-    try {
-      await _api.delete(r.id);
-      if (!mounted) return true;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          behavior: SnackBarBehavior.floating,
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(AppRadius.md)),
-          content: Text(context.t('home.deleted_toast')),
-        ),
-      );
-      setState(() => _future = _load());
-      return true;
-    } catch (e) {
-      if (mounted) {
+    controller.closed.then((_) async {
+      if (!mounted) return;
+      if (!_pendingDeletes.contains(r.id)) return;
+      try {
+        await _api.delete(r.id);
+        if (!mounted) return;
+        setState(() {
+          _pendingDeletes.remove(r.id);
+          _future = _load();
+        });
+      } catch (e) {
+        if (!mounted) return;
+        setState(() => _pendingDeletes.remove(r.id));
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text('Failed to delete: $e')),
         );
       }
-      return false;
-    }
+    });
+    return true;
   }
 
   List<Report> _applyClientFilters(List<Report> source) {
     final query = _search.text.trim().toLowerCase();
     return source.where((r) {
+      if (_pendingDeletes.contains(r.id)) return false;
       if (_categoryFilter != null && r.category != _categoryFilter) return false;
       if (query.isEmpty) return true;
       return r.title.toLowerCase().contains(query) ||
