@@ -1,12 +1,9 @@
-// ReportDetailScreen — feature F3 (Report List & History, FR-9 detail
-// view) plus feature F4 partial (FR-10 status timeline display).
-//
-// Single-report view shown from the My Reports list or from a recent-
-// reports tile on the home screen. Renders the report photo (with a
-// shared-element Hero animation), the address with a tiny map preview,
-// and the status timeline built from the report's statusHistory:
-// Sent → Processing → Resolved, with completed steps marked done and
-// the current step highlighted.
+/* 
+- ReportDetailScreen — feature F3 (Report List & History, FR-9 detail
+ view) plus feature F4 partial (FR-10 status timeline display).
+- Single-report view shown from the My Reports list or from a recent-
+ reports tile on the home screen.
+*/
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:intl/intl.dart';
