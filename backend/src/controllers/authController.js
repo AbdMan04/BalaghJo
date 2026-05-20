@@ -1,14 +1,12 @@
-/**
- * Auth controller — feature F1 (User Authentication).
- *
- * Handles the full citizen authentication lifecycle: registration with
- * email or phone (FR-1), credential verification and JWT issuance (FR-2),
- * profile view and edit (FR-3), bcrypt password hashing (NFR-1), and
- * 30-minute JWT expiry (NFR-2). Also handles 6-digit code verification
- * (simulated delivery in GP1 — the code is logged to the backend console).
- *
- * Login uses the Strategy pattern in ../strategies/identifierStrategy.js
- * to resolve whether the submitted identifier is an email or a phone.
+/*
+- Auth controller — feature F1 (User Authentication).
+- Handles the full citizen authentication lifecycle: registration with
+  email or phone (FR-1), credential verification and JWT issuance (FR-2),
+  profile view and edit (FR-3), bcrypt password hashing (NFR-1), and
+  30-minute JWT expiry (NFR-2). Also handles 6-digit code verification
+  (the code is logged to the backend console).
+- Login uses the Strategy pattern in ../strategies/identifierStrategy.js
+  to resolve whether the submitted identifier is an email or a phone.
  */
 const jwt = require('jsonwebtoken');
 const { validationResult } = require('express-validator');

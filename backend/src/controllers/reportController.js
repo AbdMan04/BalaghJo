@@ -1,13 +1,9 @@
-/**
- * Report controller — features F2 (Issue Report Submission), F3 (Report
- * List & History), F4 partial (status history feed), and F7 (Map View
- * of Reports).
- *
- * Owns creation, listing, lookup, and deletion of reports. Photo uploads
- * (FR-5) are received via multer middleware and stored alongside the
- * report. The /all endpoint used by the community map (F7 — FR-18)
- * omits reporter PII so citizens cannot deanonymize each other from
- * the map.
+/*
+- Report controller / features F2 (Issue Report Submission), F3 (Report
+List & History).
+- Owns creation, listing, lookup, and deletion of reports. Photo uploads
+ (FR-5) are received via multer middleware and stored alongside the
+  report.
  */
 const { validationResult } = require('express-validator');
 const Report = require('../models/Report');

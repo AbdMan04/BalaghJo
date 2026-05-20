@@ -1,11 +1,11 @@
-// MyReportsScreen — feature F3 (Report List & History).
-//
-// Shows the authenticated user's own reports in reverse-chronological
-// order (FR-7), rendering category, submission date, and status for
-// each row (FR-8). Provides a debounced text search over title/
-// description, category filter chips, status filter chips, pull-to-
-// refresh, and swipe-to-delete with a confirmation dialog. Tapping a
-// row opens ReportDetailScreen (FR-9).
+/* MyReportsScreen — feature F3 (Report List & History).
+- Shows the authenticated user's own reports in reverse-chronological
+order (FR-7), rendering category, submission date, and status for
+each row (FR-8). Provides a debounced text search over title/
+description, category filter chips, status filter chips, pull-to-
+refresh, and swipe-to-delete with a confirmation dialog. Tapping a
+row opens ReportDetailScreen (FR-9).
+*/
 import 'package:flutter/material.dart';
 import '../../core/strings.dart';
 import '../../core/theme.dart';
