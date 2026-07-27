@@ -31,7 +31,7 @@ enum ReportCategory {
   ),
   lighting(
     apiValue: 'lighting',
-    label: 'Lighting',
+    label: 'Broken Light',
     quickSubtitle: 'إضاءة معطَّلة',
     icon: Icons.lightbulb_outline_rounded,
     tint: Color(0xFFEAB308),
@@ -70,7 +70,7 @@ enum ReportCategory {
   /// filtering the list/map. `other` is reserved as a fallback for
   /// unrecognised values returned by older clients and is not shown
   /// in pickers.
-  static const userSelectable = [pothole, waste, lighting];
+  static const userSelectable = [pothole, waste, lighting, other];
 
   /// Resolve a backend category string (e.g. "pothole") to its
   /// [ReportCategory], falling back to [other] for unknown values.
