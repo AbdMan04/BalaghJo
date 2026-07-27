@@ -90,11 +90,11 @@ exports.login = wrap(async (req, res) => {
   const raw = String(req.body.identifier || req.body.email || '').trim();
   const { password } = req.body;
   const strategy = resolveIdentifierStrategy(raw);
-  if (!strategy) return res.status(401).json({ error: 'Invalid credentials' });
+  if (!strategy) return res.status(401).json({ error: 'Incorrect password' });
 
   const user = await User.findOne(strategy.toQuery(raw)).select('+passwordHash');
   const ok = user ? await user.comparePassword(password) : false;
-  if (!user || !ok) return res.status(401).json({ error: 'Invalid credentials' });
+  if (!user || !ok) return res.status(401).json({ error: 'Incorrect password' });
 
   const token = signToken(user);
   res.json({ token, user: user.toPublicJSON() });

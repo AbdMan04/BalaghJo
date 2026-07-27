@@ -35,7 +35,7 @@ async function migrateReports() {
 async function connectDB(uri) {
   mongoose.set('strictQuery', true);
   await mongoose.connect(uri);
-  console.log('[db] connected');
+  console.log('Connected!... :)');
   try {
     await migrateUsers();
     await migrateUserIndexes();

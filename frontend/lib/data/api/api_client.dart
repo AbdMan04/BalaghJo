@@ -151,7 +151,7 @@ class ApiClient {
         if (first is Map && first['msg'] is String) return first['msg'];
       }
     }
-    if (status == 401) return 'Invalid credentials';
+    if (status == 401) return 'Incorrect password';
     if (status == 403) return 'Not authorized';
     if (status == 404) return 'Not found';
     if (status >= 500) return 'Server error. Please try again.';
