@@ -11,11 +11,9 @@ class AppColors {
   static const border = Color(0xFFE2E8F0);
   static const textMuted = Color(0xFF64748B);
 
-  // Quick Report tile backgrounds — from Claude Design handoff
-  // (Quick Report Icons v2 — photo-faithful).
-  static const tilePothole = Color(0xFFFFEAC9); // peach
-  static const tileWaste = Color(0xFFDDF3E1); // mint
-  static const tileLighting = Color(0xFFFFF1BF); // cream
+  static const tilePothole = Color(0xFFFFEAC9); 
+  static const tileWaste = Color(0xFFDDF3E1);
+  static const tileLighting = Color(0xFFFFF1BF);
 }
 
 class AppRadius {
