@@ -3,7 +3,7 @@
 //
 // Single source of truth for "is the user logged in, who are they,
 // and is the JWT still valid". Owns bootstrap-from-storage, login,
-// register, verify, resend, change-password (FR-3), update-profile
+// register, change-password (FR-3), update-profile
 // (FR-3), and logout. Extends ChangeNotifier so it participates in
 // Flutter's idiomatic Observer pattern via Provider — widgets call
 // context.watch<AuthState>() and rebuild on notifyListeners().
@@ -68,20 +68,6 @@ class AuthState extends ChangeNotifier {
     } finally {
       _setLoading(false);
     }
-  }
-
-  Future<void> verify(String code) async {
-    _setLoading(true);
-    try {
-      _user = await _api.verify(code);
-      notifyListeners();
-    } finally {
-      _setLoading(false);
-    }
-  }
-
-  Future<void> resendCode() async {
-    await _api.resendCode();
   }
 
   Future<void> changePassword({

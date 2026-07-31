@@ -5,7 +5,6 @@ import '../../state/auth_state.dart';
 import '../home/main_shell.dart';
 import '../widgets/animations.dart';
 import 'onboarding_screen.dart';
-import 'verification_screen.dart';
 
 class SplashScreen extends StatefulWidget {
   const SplashScreen({super.key});
@@ -47,8 +46,6 @@ class _SplashScreenState extends State<SplashScreen>
     final Widget next;
     if (!auth.isAuthenticated) {
       next = const OnboardingScreen();
-    } else if (auth.user?.isVerified == false) {
-      next = const VerificationScreen();
     } else {
       next = const MainShell();
     }

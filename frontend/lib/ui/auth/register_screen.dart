@@ -5,9 +5,9 @@ import '../../core/api_errors.dart';
 import '../../core/strings.dart';
 import '../../core/theme.dart';
 import '../../state/auth_state.dart';
+import '../home/main_shell.dart';
 import '../widgets/animations.dart';
 import 'login_screen.dart';
-import 'verification_screen.dart';
 
 class RegisterScreen extends StatefulWidget {
   const RegisterScreen({super.key});
@@ -41,7 +41,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
           );
       if (!mounted) return;
       Navigator.of(context).pushAndRemoveUntil(
-          fadeSlideRoute(const VerificationScreen()), (_) => false);
+          fadeSlideRoute(const MainShell()), (_) => false);
     } catch (e) {
       setState(() => _error = cleanErrorMessage(e));
       _shake.value++;

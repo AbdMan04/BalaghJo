@@ -7,8 +7,6 @@ class AppUser {
   final String provider;
   final int sentReports;
   final int solvedReports;
-  final bool isVerified;
-  final String? verifiedChannel;
 
   AppUser({
     required this.id,
@@ -19,15 +17,10 @@ class AppUser {
     this.phone,
     this.sentReports = 0,
     this.solvedReports = 0,
-    this.isVerified = false,
-    this.verifiedChannel,
   });
 
   String get fullName => '$firstName $lastName'.trim();
   bool get isAdmin => role == 'admin';
-
-  String? get verificationDestination =>
-      verifiedChannel == 'phone' ? phone : null;
 
   factory AppUser.fromJson(Map<String, dynamic> j) => AppUser(
         id: j['id'] ?? j['_id'] ?? '',
@@ -38,7 +31,5 @@ class AppUser {
         provider: j['provider'] ?? 'phone',
         sentReports: (j['sentReports'] ?? 0) as int,
         solvedReports: (j['solvedReports'] ?? 0) as int,
-        isVerified: (j['isVerified'] ?? false) as bool,
-        verifiedChannel: j['verifiedChannel'],
       );
 }

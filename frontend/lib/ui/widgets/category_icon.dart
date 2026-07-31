@@ -66,6 +66,9 @@ enum ReportCategory {
     required this.svgAsset,
   });
 
+  /// Arabic meaning shown next to the English label in pickers.
+  String get labelAr => quickSubtitle ?? 'أخرى';
+
   /// Categories the citizen can choose when submitting a report or
   /// filtering the list/map. `other` is reserved as a fallback for
   /// unrecognised values returned by older clients and is not shown

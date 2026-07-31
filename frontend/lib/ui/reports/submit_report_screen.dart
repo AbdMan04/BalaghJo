@@ -140,7 +140,7 @@ class _SubmitReportScreenState extends State<SubmitReportScreen> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                FadeSlideIn(child: _label(context.t('submit.photo'))),
+                FadeSlideIn(child: _label(context.t('submit.photo'), context.t('ar.photo'))),
                 FadeSlideIn(
                   delay: const Duration(milliseconds: 60),
                   child: PressableScale(
@@ -188,59 +188,30 @@ class _SubmitReportScreenState extends State<SubmitReportScreen> {
                     ),
                   ),
                 ),
-                FadeSlideIn(delay: const Duration(milliseconds: 120), child: _label(context.t('submit.problem_type'))),
+                FadeSlideIn(delay: const Duration(milliseconds: 120), child: _label(context.t('submit.problem_type'), context.t('ar.problem_type'))),
                 FadeSlideIn(
                   delay: const Duration(milliseconds: 160),
-                  child: Wrap(
-                    spacing: 10,
-                    runSpacing: 10,
-                    children: ReportCategory.userSelectable.map((c) {
-                      final selected = _category == c.apiValue;
-                      return PressableScale(
-                        onTap: () => setState(() => _category = c.apiValue),
-                        child: AnimatedContainer(
-                          duration: const Duration(milliseconds: 240),
-                          curve: Curves.easeOutCubic,
-                          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-                          decoration: BoxDecoration(
-                            color: selected ? c.tint.withValues(alpha: 0.12) : Colors.white,
-                            border: Border.all(
-                              color: selected ? c.tint : AppColors.border,
-                              width: selected ? 1.5 : 1,
-                            ),
-                            borderRadius: BorderRadius.circular(AppRadius.sm),
-                            boxShadow: selected
-                                ? [BoxShadow(color: c.tint.withValues(alpha: 0.25), blurRadius: 10)]
-                                : null,
-                          ),
-                          child: Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              AnimatedSwitcher(
-                                duration: const Duration(milliseconds: 220),
-                                child: Icon(c.icon,
-                                    key: ValueKey('${c.apiValue}-$selected'),
-                                    size: 16,
-                                    color: selected ? c.tint : AppColors.navy),
-                              ),
-                              const SizedBox(width: 6),
-                              AnimatedDefaultTextStyle(
-                                duration: const Duration(milliseconds: 220),
-                                style: TextStyle(
-                                  fontWeight: FontWeight.w700,
-                                  color: selected ? c.tint : AppColors.navy,
-                                  fontSize: 13,
-                                ),
-                                child: Text(c.label),
-                              ),
-                            ],
-                          ),
-                        ),
-                      );
-                    }).toList(),
+                  child: Column(
+                    children: [
+                      Row(
+                        children: [
+                          Expanded(child: _categoryChip(ReportCategory.pothole)),
+                          const SizedBox(width: 10),
+                          Expanded(child: _categoryChip(ReportCategory.waste)),
+                        ],
+                      ),
+                      const SizedBox(height: 10),
+                      Row(
+                        children: [
+                          Expanded(child: _categoryChip(ReportCategory.lighting)),
+                          const SizedBox(width: 10),
+                          Expanded(child: _categoryChip(ReportCategory.other)),
+                        ],
+                      ),
+                    ],
                   ),
                 ),
-                FadeSlideIn(delay: const Duration(milliseconds: 200), child: _label(context.t('submit.description'))),
+                FadeSlideIn(delay: const Duration(milliseconds: 200), child: _label(context.t('submit.description'), context.t('ar.description'))),
                 FadeSlideIn(
                   delay: const Duration(milliseconds: 240),
                   child: TextField(
@@ -249,7 +220,7 @@ class _SubmitReportScreenState extends State<SubmitReportScreen> {
                     decoration: InputDecoration(hintText: context.t('submit.description_hint')),
                   ),
                 ),
-                FadeSlideIn(delay: const Duration(milliseconds: 280), child: _label(context.t('submit.location'))),
+                FadeSlideIn(delay: const Duration(milliseconds: 280), child: _label(context.t('submit.location'), context.t('ar.location'))),
                 FadeSlideIn(
                   delay: const Duration(milliseconds: 320),
                   child: TextField(
@@ -425,10 +396,66 @@ class _SubmitReportScreenState extends State<SubmitReportScreen> {
     );
   }
 
-  Widget _label(String t) => Padding(
+  Widget _categoryChip(ReportCategory c) {
+    final selected = _category == c.apiValue;
+    return PressableScale(
+      onTap: () => setState(() => _category = c.apiValue),
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 240),
+        curve: Curves.easeOutCubic,
+        width: double.infinity,
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 10),
+        decoration: BoxDecoration(
+          color: selected ? c.tint.withValues(alpha: 0.12) : Colors.white,
+          border: Border.all(
+            color: selected ? c.tint : AppColors.border,
+            width: selected ? 1.5 : 1,
+          ),
+          borderRadius: BorderRadius.circular(AppRadius.sm),
+          boxShadow: selected
+              ? [BoxShadow(color: c.tint.withValues(alpha: 0.25), blurRadius: 10)]
+              : null,
+        ),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            AnimatedSwitcher(
+              duration: const Duration(milliseconds: 220),
+              child: Icon(c.icon,
+                  key: ValueKey('${c.apiValue}-$selected'),
+                  size: 16,
+                  color: selected ? c.tint : AppColors.navy),
+            ),
+            const SizedBox(width: 6),
+            Flexible(
+              child: Text(
+                c.labelAr,
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  fontSize: 13,
+                  fontWeight: FontWeight.w700,
+                  color: selected ? c.tint : AppColors.navy,
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _label(String en, String ar) => Padding(
         padding: const EdgeInsets.only(top: 18, bottom: 8),
-        child: Text(t,
-            style: const TextStyle(
-                fontSize: 11, fontWeight: FontWeight.w700, color: AppColors.textMuted, letterSpacing: 0.6)),
+        child: Row(
+          children: [
+            Text(en,
+                style: const TextStyle(
+                    fontSize: 11, fontWeight: FontWeight.w700, color: AppColors.textMuted, letterSpacing: 0.6)),
+            const SizedBox(width: 8),
+            Text(ar,
+                style: const TextStyle(
+                    fontSize: 11, fontWeight: FontWeight.w700, color: AppColors.textMuted)),
+          ],
+        ),
       );
 }

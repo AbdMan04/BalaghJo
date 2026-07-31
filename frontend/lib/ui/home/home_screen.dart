@@ -162,11 +162,16 @@ class _HomeScreenState extends State<HomeScreen> {
                             child: Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
-                                Text(context.t('home.report_issue'),
-                                    style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w800, fontSize: 15)),
+                                Text(
+                                  context.t('home.report_issue'),
+                                  textDirection: TextDirection.rtl,
+                                  style: const TextStyle(color: Colors.white70, fontSize: 11),
+                                ),
                                 const SizedBox(height: 2),
-                                Text(context.t('home.report_issue_sub'),
-                                    style: const TextStyle(color: Colors.white60, fontSize: 12)),
+                                Text(
+                                  context.t('home.report_issue_en'),
+                                  style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w800, fontSize: 15),
+                                ),
                               ],
                             ),
                           ),

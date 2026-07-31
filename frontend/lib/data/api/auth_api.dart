@@ -38,15 +38,6 @@ class AuthApi {
     return AppUser.fromJson(res['user']);
   }
 
-  Future<AppUser> verify(String code) async {
-    final res = await _api.post('/api/auth/verify', {'code': code});
-    return AppUser.fromJson(res['user']);
-  }
-
-  Future<void> resendCode() async {
-    await _api.post('/api/auth/resend-code', {});
-  }
-
   Future<void> changePassword({
     required String currentPassword,
     required String newPassword,

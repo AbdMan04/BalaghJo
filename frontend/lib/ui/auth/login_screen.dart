@@ -9,7 +9,6 @@ import '../../state/auth_state.dart';
 import '../home/main_shell.dart';
 import '../widgets/animations.dart';
 import 'register_screen.dart';
-import 'verification_screen.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -36,12 +35,8 @@ class _LoginScreenState extends State<LoginScreen> {
       final identifier = _identifier.text.trim();
       await context.read<AuthState>().login(identifier, _pass.text);
       if (!mounted) return;
-      final user = context.read<AuthState>().user;
-      final next = (user?.isVerified == false)
-          ? const VerificationScreen()
-          : const MainShell();
       Navigator.of(context).pushAndRemoveUntil(
-          fadeSlideRoute(next), (_) => false);
+          fadeSlideRoute(const MainShell()), (_) => false);
     } catch (e) {
       setState(() => _error = cleanErrorMessage(e));
       _shake.value++;

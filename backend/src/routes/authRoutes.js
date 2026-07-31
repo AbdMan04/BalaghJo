@@ -20,22 +20,6 @@ const loginLimiter = rateLimit({
   message: { error: 'Too many login attempts. Try again in a few minutes.' },
 });
 
-const verifyLimiter = rateLimit({
-  windowMs: 15 * 60 * 1000,
-  max: 15,
-  standardHeaders: true,
-  legacyHeaders: false,
-  message: { error: 'Too many verification attempts. Try again in a few minutes.' },
-});
-
-const resendLimiter = rateLimit({
-  windowMs: 60 * 60 * 1000,
-  max: 6,
-  standardHeaders: true,
-  legacyHeaders: false,
-  message: { error: 'Too many code requests. Try again later.' },
-});
-
 router.post(
   '/register',
   registerLimiter,
@@ -59,16 +43,6 @@ router.post(
 );
 
 router.get('/me', authRequired, ctrl.me);
-
-router.post(
-  '/verify',
-  authRequired,
-  verifyLimiter,
-  [body('code').isString().isLength({ min: 6, max: 6 })],
-  ctrl.verify
-);
-
-router.post('/resend-code', authRequired, resendLimiter, ctrl.resendCode);
 
 router.patch(
   '/password',
