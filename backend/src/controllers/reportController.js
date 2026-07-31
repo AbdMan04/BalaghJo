@@ -140,12 +140,21 @@ exports.updateStatus = wrap(async (req, res) => {
   }
   const report = await Report.findById(req.params.id);
   if (!report) return res.status(404).json({ error: 'Not found' });
-  const wasResolved = report.status === 'resolved';
-  report.status = status;
-  report.statusHistory.push({ status, changedBy: req.user.email });
+
+  const previous = report.status;
+  const wasResolved = previous === 'resolved';
+  const result = report.setStatus(status, req.user.email);
+  if (!result.ok) return res.status(400).json({ error: result.error });
+
   await report.save();
   if (status === 'resolved' && !wasResolved) {
     await User.findByIdAndUpdate(report.userId, { $inc: { solvedReports: 1 } });
   }
+
+  // NFR-6 measurement: timestamped status-change log (server side).
+  console.log(
+    `[status-update] ${new Date().toISOString()} report=${report.reportId} ${previous} -> ${status} by=${req.user.email}`
+  );
+
   res.json({ report: report.toPublicJSON() });
 });

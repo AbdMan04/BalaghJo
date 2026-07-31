@@ -6,6 +6,7 @@ description, category filter chips, status filter chips, pull-to-
 refresh, and swipe-to-delete with a confirmation dialog. Tapping a
 row opens ReportDetailScreen (FR-9).
 */
+import 'dart:async';
 import 'package:flutter/material.dart';
 import '../../core/strings.dart';
 import '../../core/theme.dart';
@@ -31,16 +32,25 @@ class _MyReportsScreenState extends State<MyReportsScreen> {
   bool _newestFirst = true;
   late Future<List<Report>> _future;
   final Set<String> _pendingDeletes = {};
+  List<Report>? _lastList;
+  Timer? _pollTimer;
+  bool _polling = false;
+
+  // F4/FR-11, NFR-6: poll every 3s so admin status changes appear in the
+  // app within ~5s without a restart. Only setState when something changed.
+  static const _pollInterval = Duration(seconds: 3);
 
   @override
   void initState() {
     super.initState();
     _search.addListener(() => setState(() {}));
     _future = _load();
+    _pollTimer = Timer.periodic(_pollInterval, (_) => _poll());
   }
 
   @override
   void dispose() {
+    _pollTimer?.cancel();
     _search.dispose();
     super.dispose();
   }
@@ -51,6 +61,24 @@ class _MyReportsScreenState extends State<MyReportsScreen> {
         ? b.createdAt.compareTo(a.createdAt)
         : a.createdAt.compareTo(b.createdAt));
     return list;
+  }
+
+  Future<void> _poll() async {
+    if (_polling) return;
+    _polling = true;
+    try {
+      final list = await _load();
+      if (!mounted) return;
+      final changed = _lastList == null || !Report.sameStatusList(_lastList!, list);
+      _lastList = list;
+      if (changed) {
+        setState(() => _future = Future.value(list));
+      }
+    } catch (_) {
+      // Keep showing the last good data on transient network errors.
+    } finally {
+      _polling = false;
+    }
   }
 
   Future<bool> _deleteReport(Report r) async {
@@ -111,6 +139,7 @@ class _MyReportsScreenState extends State<MyReportsScreen> {
   void _setFilter(String? f) {
     setState(() {
       _filter = f;
+      _lastList = null;
       _future = _load();
     });
   }

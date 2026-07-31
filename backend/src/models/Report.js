@@ -9,6 +9,14 @@ const mongoose = require('mongoose');
 const STATUSES = ['pending', 'in_progress', 'resolved'];
 const CATEGORIES = ['pothole', 'waste', 'lighting', 'other'];
 
+// F4 / FR-16 controlled workflow: a report can only move forward
+// through the lifecycle (Pending -> In Progress -> Resolved).
+const STATUS_TRANSITIONS = {
+  pending: ['in_progress'],
+  in_progress: ['resolved'],
+  resolved: [],
+};
+
 const reportSchema = new mongoose.Schema(
   {
     reportId: { type: String, unique: true, index: true },
@@ -23,6 +31,7 @@ const reportSchema = new mongoose.Schema(
     },
     address: { type: String, default: '' },
     status: { type: String, enum: STATUSES, default: 'pending', index: true },
+    statusChangedAt: { type: Date, default: null },
     assignedTo: { type: mongoose.Schema.Types.ObjectId, ref: 'User', default: null },
     estimatedFix: { type: Date },
     statusHistory: [
@@ -67,6 +76,12 @@ reportSchema.methods.toPublicJSON = function () {
     location: this.location,
     address: this.address,
     status: this.status,
+    statusChangedAt: this.statusChangedAt,
+    statusHistory: (this.statusHistory || []).map((h) => ({
+      status: h.status,
+      changedAt: h.changedAt,
+      changedBy: h.changedBy,
+    })),
     assignedTo: this.assignedTo,
     estimatedFix: this.estimatedFix,
     createdAt: this.createdAt,
@@ -74,6 +89,33 @@ reportSchema.methods.toPublicJSON = function () {
   };
 };
 
+// F4 status lifecycle: apply a forward-only transition (FR-16).
+// Rejects same-status no-ops and backwards/skipped jumps, and appends
+// an entry to the append-only statusHistory timeline.
+reportSchema.methods.setStatus = function (nextStatus, changedBy = 'system') {
+  if (this.status === nextStatus) {
+    return {
+      ok: false,
+      reason: 'already_current',
+      error: `Report is already ${nextStatus}`,
+    };
+  }
+  const allowed = STATUS_TRANSITIONS[this.status] || [];
+  if (!allowed.includes(nextStatus)) {
+    return {
+      ok: false,
+      reason: 'invalid_transition',
+      error: `Invalid status transition: ${this.status} -> ${nextStatus}`,
+    };
+  }
+  const previous = this.status;
+  this.status = nextStatus;
+  this.statusChangedAt = new Date();
+  this.statusHistory.push({ status: nextStatus, changedBy });
+  return { ok: true, previous };
+};
+
 module.exports = mongoose.model('Report', reportSchema);
 module.exports.STATUSES = STATUSES;
 module.exports.CATEGORIES = CATEGORIES;
+module.exports.STATUS_TRANSITIONS = STATUS_TRANSITIONS;

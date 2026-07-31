@@ -129,6 +129,7 @@ class AppStrings {
     'detail.report_info': 'REPORT INFO',
     'detail.category': 'Category',
     'detail.submitted_on': 'Submitted',
+    'detail.last_updated': 'Last updated',
     'detail.assigned_to': 'Assigned to',
     'detail.est_fix': 'Est. Fix',
     'detail.reporter_contact': 'REPORTER CONTACT',

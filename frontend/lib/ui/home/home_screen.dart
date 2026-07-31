@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import '../../core/strings.dart';
 import '../../core/theme.dart';
@@ -22,18 +23,51 @@ class _HomeScreenState extends State<HomeScreen> {
   final _api = ReportApi();
   Future<ReportSummary>? _future;
   final Set<String> _pendingDeletes = {};
+  List<Report>? _lastRecent;
+  Timer? _pollTimer;
+  bool _polling = false;
+
+  // F4/FR-11, NFR-6: poll every 3s so status badges on recent reports
+  // refresh within ~5s without an app restart.
+  static const _pollInterval = Duration(seconds: 3);
 
   @override
   void initState() {
     super.initState();
     _future = _api.summary();
+    _pollTimer = Timer.periodic(_pollInterval, (_) => _poll());
+  }
+
+  @override
+  void dispose() {
+    _pollTimer?.cancel();
+    super.dispose();
   }
 
   Future<void> _refresh() async {
+    _lastRecent = null;
     setState(() {
       _future = _api.summary();
     });
     await _future;
+  }
+
+  Future<void> _poll() async {
+    if (_polling) return;
+    _polling = true;
+    try {
+      final s = await _api.summary();
+      if (!mounted) return;
+      final changed = _lastRecent == null || !Report.sameStatusList(_lastRecent!, s.recent);
+      _lastRecent = s.recent;
+      if (changed) {
+        setState(() => _future = Future.value(s));
+      }
+    } catch (_) {
+      // Keep showing the last good summary on transient network errors.
+    } finally {
+      _polling = false;
+    }
   }
 
   Future<bool> _deleteReport(Report r) async {

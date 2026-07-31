@@ -1,9 +1,13 @@
 /* 
 - ReportDetailScreen — feature F3 (Report List & History, FR-9 detail
- view) plus feature F4 partial (FR-10 status timeline display).
+  view) plus feature F4 (FR-10 status timeline display and FR-11/NFR-6
+  real-time refresh). Every 3s the screen polls the single-report
+  endpoint and, when the server-side status/updatedAt changed, swaps in
+  the fresh report without an app restart.
 - Single-report view shown from the My Reports list or from a recent-
- reports tile on the home screen.
+  reports tile on the home screen.
 */
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:intl/intl.dart';
@@ -29,11 +33,45 @@ class ReportDetailScreen extends StatefulWidget {
 class _ReportDetailScreenState extends State<ReportDetailScreen> {
   late Future<Report> _future;
   bool _following = false;
+  Report? _last;
+  Timer? _pollTimer;
+  bool _polling = false;
 
   @override
   void initState() {
     super.initState();
-    _future = ReportApi().get(widget.reportId);
+    _future = _load();
+    _pollTimer = Timer.periodic(const Duration(seconds: 3), (_) => _poll());
+  }
+
+  @override
+  void dispose() {
+    _pollTimer?.cancel();
+    super.dispose();
+  }
+
+  Future<Report> _load() async {
+    final r = await ReportApi().get(widget.reportId);
+    _last = r;
+    return r;
+  }
+
+  Future<void> _poll() async {
+    if (_polling) return;
+    _polling = true;
+    try {
+      final fresh = await ReportApi().get(widget.reportId);
+      if (!mounted) return;
+      final changed = _last == null || _last!.pollKey != fresh.pollKey;
+      _last = fresh;
+      if (changed) {
+        setState(() => _future = Future.value(fresh));
+      }
+    } catch (_) {
+      // Keep showing the last good report on transient network errors.
+    } finally {
+      _polling = false;
+    }
   }
 
   void _share(Report r) {
@@ -78,7 +116,7 @@ class _ReportDetailScreenState extends State<ReportDetailScreen> {
       body: FutureBuilder<Report>(
         future: _future,
         builder: (_, snap) {
-          if (snap.connectionState == ConnectionState.waiting) {
+          if (snap.connectionState == ConnectionState.waiting && !snap.hasData) {
             return const Center(child: CircularProgressIndicator(color: AppColors.blue));
           }
           if (snap.hasError) return Center(child: Text('Error: ${snap.error}'));
@@ -168,6 +206,7 @@ class _ReportDetailScreenState extends State<ReportDetailScreen> {
                   delay: const Duration(milliseconds: 230),
                   child: _StatusTimeline(
                     status: r.status,
+                    statusHistory: r.statusHistory,
                     submittedAt: r.createdAt,
                     estimatedFix: r.estimatedFix,
                   ),
@@ -176,6 +215,8 @@ class _ReportDetailScreenState extends State<ReportDetailScreen> {
                 FadeSlideIn(delay: const Duration(milliseconds: 260), child: _section(context.t('detail.report_info'))),
                 FadeSlideIn(delay: const Duration(milliseconds: 300), child: _kv(context.t('detail.category'), context.t('cat.${r.category}'))),
                 FadeSlideIn(delay: const Duration(milliseconds: 340), child: _kv(context.t('detail.submitted_on'), DateFormat.yMMMd().format(r.createdAt))),
+                if (r.statusChangedAt != null)
+                  FadeSlideIn(delay: const Duration(milliseconds: 360), child: _kv(context.t('detail.last_updated'), DateFormat.yMMMd().add_Hm().format(r.statusChangedAt!))),
                 if (r.assignedTo.isNotEmpty)
                   FadeSlideIn(delay: const Duration(milliseconds: 380), child: _kv(context.t('detail.assigned_to'), r.assignedTo)),
                 if (r.estimatedFix != null)
@@ -498,10 +539,12 @@ class _LocationTextState extends State<_LocationText> {
 
 class _StatusTimeline extends StatelessWidget {
   final ReportStatus status;
+  final List<StatusEvent> statusHistory;
   final DateTime submittedAt;
   final DateTime? estimatedFix;
   const _StatusTimeline({
     required this.status,
+    required this.statusHistory,
     required this.submittedAt,
     this.estimatedFix,
   });
@@ -512,8 +555,19 @@ class _StatusTimeline extends StatelessWidget {
         ReportStatus.resolved => 2,
       };
 
+  // Latest recorded time a given status was reached (from the server's
+  // append-only statusHistory), so the timeline shows real timestamps.
+  DateTime? _reachedAt(ReportStatus s) {
+    for (final e in statusHistory.reversed) {
+      if (e.status == s) return e.changedAt;
+    }
+    return null;
+  }
+
   @override
   Widget build(BuildContext context) {
+    final processingAt = _reachedAt(ReportStatus.inProgress);
+    final resolvedAt = _reachedAt(ReportStatus.resolved);
     final steps = [
       (
         label: context.t('detail.status_submitted'),
@@ -523,14 +577,18 @@ class _StatusTimeline extends StatelessWidget {
       (
         label: context.t('detail.status_processing'),
         icon: Icons.sync_rounded,
-        sub: estimatedFix != null
-            ? '${context.t('detail.eta_prefix')}${DateFormat.MMMd().format(estimatedFix!)}'
-            : context.t('detail.in_review'),
+        sub: processingAt != null
+            ? DateFormat.MMMd().add_Hm().format(processingAt)
+            : (estimatedFix != null
+                ? '${context.t('detail.eta_prefix')}${DateFormat.MMMd().format(estimatedFix!)}'
+                : context.t('detail.in_review')),
       ),
       (
         label: context.t('detail.status_resolved'),
         icon: Icons.check_circle_rounded,
-        sub: status == ReportStatus.resolved ? context.t('detail.done') : context.t('detail.pending'),
+        sub: resolvedAt != null
+            ? DateFormat.MMMd().add_Hm().format(resolvedAt)
+            : (status == ReportStatus.resolved ? context.t('detail.done') : context.t('detail.pending')),
       ),
     ];
     final active = _activeIndex;

@@ -1,5 +1,10 @@
+// StatusBadge — FR-10: status shown on every report card and detail
+// screen, colour-coded and labelled in Arabic and English. Text colours
+// were picked to hold a >= 4.5:1 contrast ratio against the badge tint:
+//   pending    #1B4FD8 on #E0EAFF  -> 5.5:1
+//   in progress #92400E on #FFEDD5 -> 6.2:1
+//   resolved   #166534 on #DCFCE7  -> 6.5:1
 import 'package:flutter/material.dart';
-import '../../core/theme.dart';
 import '../../data/models/report.dart';
 
 class StatusBadge extends StatelessWidget {
@@ -7,22 +12,26 @@ class StatusBadge extends StatelessWidget {
   final bool large;
   const StatusBadge(this.status, {super.key, this.large = false});
 
+  static const _fgPending = Color(0xFF1B4FD8);
+  static const _fgInProgress = Color(0xFF92400E);
+  static const _fgResolved = Color(0xFF166534);
+
   @override
   Widget build(BuildContext context) {
     final (bg, fg, icon) = switch (status) {
       ReportStatus.pending => (
         const Color(0xFFE0EAFF),
-        AppColors.blue,
+        _fgPending,
         Icons.access_time_rounded,
       ),
       ReportStatus.inProgress => (
         const Color(0xFFFFEDD5),
-        AppColors.warning,
+        _fgInProgress,
         Icons.sync_rounded,
       ),
       ReportStatus.resolved => (
         const Color(0xFFDCFCE7),
-        AppColors.success,
+        _fgResolved,
         Icons.check_circle_rounded,
       ),
     };
@@ -42,8 +51,21 @@ class StatusBadge extends StatelessWidget {
           Icon(icon, color: fg, size: iconSize),
           const SizedBox(width: 4),
           Text(
-            status.label,
-            style: TextStyle(color: fg, fontSize: fontSize, fontWeight: FontWeight.w700),
+            status.labelAr,
+            textDirection: TextDirection.rtl,
+            style: TextStyle(
+              color: fg,
+              fontSize: fontSize,
+              fontWeight: FontWeight.w700,
+            ),
+          ),
+          Text(
+            ' · ${status.label}',
+            style: TextStyle(
+              color: fg,
+              fontSize: fontSize - 1,
+              fontWeight: FontWeight.w600,
+            ),
           ),
         ],
       ),
