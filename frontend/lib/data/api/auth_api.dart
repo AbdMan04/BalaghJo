@@ -13,16 +13,14 @@ class AuthApi {
   Future<AuthResult> register({
     required String firstName,
     required String lastName,
-    String? email,
     required String password,
-    String? phone,
+    required String phone,
   }) async {
     final res = await _api.post('/api/auth/register', {
       'firstName': firstName,
       'lastName': lastName,
-      if (email != null && email.isNotEmpty) 'email': email,
       'password': password,
-      if (phone != null && phone.isNotEmpty) 'phone': phone,
+      'phone': phone,
     });
     return AuthResult(res['token'], AppUser.fromJson(res['user']));
   }

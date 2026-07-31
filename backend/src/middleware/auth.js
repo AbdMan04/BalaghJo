@@ -8,7 +8,7 @@ function authRequired(req, res, next) {
     const payload = jwt.verify(token, process.env.JWT_SECRET);
     req.user = {
       id: payload.sub,
-      email: payload.email,
+      phone: payload.phone,
       role: payload.role,
       provider: payload.provider,
     };

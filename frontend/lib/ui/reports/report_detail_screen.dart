@@ -222,7 +222,7 @@ class _ReportDetailScreenState extends State<ReportDetailScreen> {
                 if (r.estimatedFix != null)
                   FadeSlideIn(delay: const Duration(milliseconds: 420), child: _kv(context.t('detail.est_fix'), DateFormat.yMMMd().format(r.estimatedFix!))),
                 const SizedBox(height: 18),
-                if (r.reporterPhone.isNotEmpty || r.reporterName.isNotEmpty || r.reporterEmail.isNotEmpty) ...[
+                if (r.reporterPhone.isNotEmpty || r.reporterName.isNotEmpty) ...[
                   FadeSlideIn(delay: const Duration(milliseconds: 440), child: _section(context.t('detail.reporter_contact'))),
                   FadeSlideIn(
                     delay: const Duration(milliseconds: 470),
@@ -393,9 +393,6 @@ class _ReporterCard extends StatelessWidget {
                       report.reporterName.isNotEmpty ? report.reporterName : 'Reporter',
                       style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 14),
                     ),
-                    if (report.reporterEmail.isNotEmpty)
-                      Text(report.reporterEmail,
-                          style: const TextStyle(color: AppColors.textMuted, fontSize: 11)),
                   ],
                 ),
               ),

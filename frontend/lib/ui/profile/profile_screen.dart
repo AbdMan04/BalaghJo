@@ -40,6 +40,8 @@ class ProfileScreen extends StatelessWidget {
                       Icons.logout,
                       context.t('profile.log_out'),
                       () async {
+                        final confirmed = await _confirmLogout(context);
+                        if (!confirmed || !context.mounted) return;
                         await context.read<AuthState>().logout();
                         if (!context.mounted) return;
                         Navigator.of(context).pushAndRemoveUntil(
@@ -76,6 +78,30 @@ class ProfileScreen extends StatelessWidget {
         child: const _EditProfileSheet(),
       ),
     );
+  }
+
+  Future<bool> _confirmLogout(BuildContext context) async {
+    final result = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: Text(context.t('profile.logout_title')),
+        content: Text(context.t('profile.logout_confirm')),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: Text(context.t('common.cancel')),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            child: Text(
+              context.t('profile.log_out'),
+              style: const TextStyle(color: AppColors.danger, fontWeight: FontWeight.w700),
+            ),
+          ),
+        ],
+      ),
+    );
+    return result ?? false;
   }
 
   Widget _row(IconData icon, String label, VoidCallback onTap, {Color? color}) {
@@ -483,7 +509,7 @@ class _CoverHeader extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final fullName = (user?.fullName ?? '').trim();
-    final contact = (user?.phone?.isNotEmpty ?? false) ? user!.phone! : (user?.email ?? '');
+    final contact = user?.phone ?? '';
     return Column(
       children: [
         SizedBox(

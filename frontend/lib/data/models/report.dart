@@ -57,7 +57,6 @@ class Report {
   final DateTime? updatedAt;
   final String reporterName;
   final String reporterPhone;
-  final String reporterEmail;
 
   Report({
     required this.id,
@@ -78,7 +77,6 @@ class Report {
     this.estimatedFix,
     this.reporterName = '',
     this.reporterPhone = '',
-    this.reporterEmail = '',
   });
 
   factory Report.fromJson(Map<String, dynamic> j) {
@@ -109,7 +107,6 @@ class Report {
       updatedAt: j['updatedAt'] != null ? DateTime.tryParse(j['updatedAt']) : null,
       reporterName: reporter['fullName'] ?? '',
       reporterPhone: reporter['phone'] ?? '',
-      reporterEmail: reporter['email'] ?? '',
     );
   }
 

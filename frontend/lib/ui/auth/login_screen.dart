@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import '../../core/api_errors.dart';
 import '../../core/identifier_validator.dart';
@@ -32,8 +33,7 @@ class _LoginScreenState extends State<LoginScreen> {
     }
     setState(() => _error = null);
     try {
-      final raw = _identifier.text.trim();
-      final identifier = raw.contains('@') ? raw.toLowerCase() : raw;
+      final identifier = _identifier.text.trim();
       await context.read<AuthState>().login(identifier, _pass.text);
       if (!mounted) return;
       final user = context.read<AuthState>().user;
@@ -116,14 +116,18 @@ class _LoginScreenState extends State<LoginScreen> {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        _label(context.t('login.identifier_label')),
+                        _label(context.t('login.identifier_label'), context.t('ar.phone_number')),
                         TextFormField(
                           controller: _identifier,
                           decoration: InputDecoration(
                             hintText: context.t('login.identifier_hint'),
-                            prefixIcon: const Icon(Icons.person_outline, color: AppColors.textMuted),
+                            prefixIcon: const Icon(Icons.phone_android, color: AppColors.textMuted),
                           ),
-                          keyboardType: TextInputType.emailAddress,
+                          keyboardType: TextInputType.number,
+                          inputFormatters: [
+                            FilteringTextInputFormatter.digitsOnly,
+                            LengthLimitingTextInputFormatter(10),
+                          ],
                           validator: (v) => validateIdentifier(context, v),
                         ),
                       ],
@@ -134,7 +138,7 @@ class _LoginScreenState extends State<LoginScreen> {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        _label(context.t('login.password_label')),
+                        _label(context.t('login.password_label'), context.t('ar.password')),
                         TextFormField(
                           controller: _pass,
                           decoration: InputDecoration(
@@ -235,8 +239,16 @@ class _LoginScreenState extends State<LoginScreen> {
     );
   }
 
-  Widget _label(String t) => Padding(
+  Widget _label(String en, String ar) => Padding(
         padding: const EdgeInsets.only(top: 14, bottom: 6),
-        child: Text(t, style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: AppColors.textMuted, letterSpacing: 0.6)),
+        child: Row(
+          children: [
+            Text(en,
+                style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: AppColors.textMuted, letterSpacing: 0.6)),
+            const SizedBox(width: 8),
+            Text(ar,
+                style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: AppColors.textMuted)),
+          ],
+        ),
       );
 }

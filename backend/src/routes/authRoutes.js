@@ -42,9 +42,8 @@ router.post(
   [
     body('firstName').isString().trim().notEmpty(),
     body('lastName').isString().trim().notEmpty(),
-    body('email').optional({ checkFalsy: true }).isEmail().withMessage('Enter a valid email address').normalizeEmail(),
+    body('phone').isString().trim().matches(/^\d{10}$/).withMessage('Phone must be 10 digits'),
     body('password').isString().isLength({ min: 6 }),
-    body('phone').optional({ checkFalsy: true }).isString().trim().notEmpty(),
   ],
   ctrl.register
 );
@@ -53,7 +52,7 @@ router.post(
   '/login',
   loginLimiter,
   [
-    body('identifier').isString().trim().notEmpty().withMessage('Enter your email or phone'),
+    body('identifier').isString().trim().matches(/^\d{10}$/).withMessage('Phone must be 10 digits'),
     body('password').isString().notEmpty().withMessage('Enter your password'),
   ],
   ctrl.login

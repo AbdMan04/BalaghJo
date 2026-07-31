@@ -18,13 +18,11 @@ class RegisterScreen extends StatefulWidget {
 
 class _RegisterScreenState extends State<RegisterScreen> {
   final _form = GlobalKey<FormState>();
-  final _email = TextEditingController();
   final _phone = TextEditingController();
   final _first = TextEditingController();
   final _last = TextEditingController();
   final _pass = TextEditingController();
   final _shake = ValueNotifier<int>(0);
-  bool _usePhone = true;
   bool _obscure = true;
   String? _error;
 
@@ -38,9 +36,8 @@ class _RegisterScreenState extends State<RegisterScreen> {
       await context.read<AuthState>().register(
             firstName: _first.text.trim(),
             lastName: _last.text.trim(),
-            email: _usePhone ? null : _email.text.trim().toLowerCase(),
             password: _pass.text,
-            phone: _usePhone ? _phone.text.trim() : null,
+            phone: _phone.text.trim(),
           );
       if (!mounted) return;
       Navigator.of(context).pushAndRemoveUntil(
@@ -53,7 +50,6 @@ class _RegisterScreenState extends State<RegisterScreen> {
 
   @override
   void dispose() {
-    _email.dispose();
     _phone.dispose();
     _first.dispose();
     _last.dispose();
@@ -90,58 +86,25 @@ class _RegisterScreenState extends State<RegisterScreen> {
                   const SizedBox(height: 24),
                   FadeSlideIn(
                     delay: const Duration(milliseconds: 140),
-                    child: _SegmentedToggle(
-                      isPhone: _usePhone,
-                      onChanged: (v) => setState(() => _usePhone = v),
-                    ),
-                  ),
-                  AnimatedSize(
-                    duration: const Duration(milliseconds: 280),
-                    curve: Curves.easeOutCubic,
-                    child: AnimatedSwitcher(
-                      duration: const Duration(milliseconds: 220),
-                      child: _usePhone
-                          ? Column(
-                              key: const ValueKey('phone'),
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                _label(context.t('register.phone_label')),
-                                TextFormField(
-                                  controller: _phone,
-                                  decoration: InputDecoration(
-                                    hintText: context.t('register.phone_hint'),
-                                    prefixIcon: const Icon(Icons.phone_android, color: AppColors.textMuted),
-                                  ),
-                                  keyboardType: TextInputType.number,
-                                  inputFormatters: [
-                                    FilteringTextInputFormatter.digitsOnly,
-                                    LengthLimitingTextInputFormatter(10),
-                                  ],
-                                  validator: (v) =>
-                                      (v == null || v.trim().length != 10) ? context.t('login.invalid_phone') : null,
-                                ),
-                              ],
-                            )
-                          : Column(
-                              key: const ValueKey('email'),
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                _label(context.t('register.email_label')),
-                                TextFormField(
-                                  controller: _email,
-                                  decoration: InputDecoration(
-                                    hintText: context.t('register.email_hint'),
-                                    prefixIcon: const Icon(Icons.mail_outline, color: AppColors.textMuted),
-                                  ),
-                                  keyboardType: TextInputType.emailAddress,
-                                  validator: (v) {
-                                    final s = v?.trim() ?? '';
-                                    final ok = RegExp(r'^[^\s@]+@[^\s@]+\.[^\s@]+$').hasMatch(s);
-                                    return ok ? null : context.t('login.invalid_email');
-                                  },
-                                ),
-                              ],
-                            ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        _label(context.t('register.phone_label'), context.t('ar.phone_number')),
+                        TextFormField(
+                          controller: _phone,
+                          decoration: InputDecoration(
+                            hintText: context.t('register.phone_hint'),
+                            prefixIcon: const Icon(Icons.phone_android, color: AppColors.textMuted),
+                          ),
+                          keyboardType: TextInputType.number,
+                          inputFormatters: [
+                            FilteringTextInputFormatter.digitsOnly,
+                            LengthLimitingTextInputFormatter(10),
+                          ],
+                          validator: (v) =>
+                              (v == null || v.trim().length != 10) ? context.t('login.invalid_phone') : null,
+                        ),
+                      ],
                     ),
                   ),
                   FadeSlideIn(
@@ -152,7 +115,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              _label(context.t('register.first_name')),
+                              _label(context.t('register.first_name'), context.t('ar.first_name')),
                               TextFormField(
                                 controller: _first,
                                 decoration: InputDecoration(hintText: context.t('register.first_hint')),
@@ -166,7 +129,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              _label(context.t('register.last_name')),
+                              _label(context.t('register.last_name'), context.t('ar.last_name')),
                               TextFormField(
                                 controller: _last,
                                 decoration: InputDecoration(hintText: context.t('register.last_hint')),
@@ -183,7 +146,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        _label(context.t('register.password')),
+                        _label(context.t('register.password'), context.t('ar.password')),
                         TextFormField(
                           controller: _pass,
                           decoration: InputDecoration(
@@ -288,91 +251,17 @@ class _RegisterScreenState extends State<RegisterScreen> {
     );
   }
 
-  Widget _label(String t) => Padding(
+  Widget _label(String en, String ar) => Padding(
         padding: const EdgeInsets.only(top: 14, bottom: 6),
-        child: Text(t, style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: AppColors.textMuted, letterSpacing: 0.6)),
-      );
-}
-
-class _SegmentedToggle extends StatelessWidget {
-  final bool isPhone;
-  final ValueChanged<bool> onChanged;
-  const _SegmentedToggle({required this.isPhone, required this.onChanged});
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.all(4),
-      decoration: BoxDecoration(
-        color: AppColors.surface,
-        borderRadius: BorderRadius.circular(AppRadius.md),
-        border: Border.all(color: AppColors.border),
-      ),
-      child: Stack(
-        children: [
-          AnimatedAlign(
-            duration: const Duration(milliseconds: 280),
-            curve: Curves.easeOutCubic,
-            alignment: isPhone ? Alignment.centerLeft : Alignment.centerRight,
-            child: FractionallySizedBox(
-              widthFactor: 0.5,
-              child: Container(
-                height: 38,
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.circular(AppRadius.sm),
-                  boxShadow: [
-                    BoxShadow(color: Colors.black.withValues(alpha: 0.06), blurRadius: 6),
-                  ],
-                ),
-              ),
-            ),
-          ),
-          Builder(builder: (ctx) {
-            return Row(
-              children: [
-                _seg(ctx.t('register.toggle_phone'), Icons.phone_android, isPhone, () => onChanged(true)),
-                _seg(ctx.t('register.toggle_email'), Icons.mail_outline, !isPhone, () => onChanged(false)),
-              ],
-            );
-          }),
-        ],
-      ),
-    );
-  }
-
-  Widget _seg(String label, IconData icon, bool active, VoidCallback onTap) {
-    return Expanded(
-      child: GestureDetector(
-        onTap: onTap,
-        behavior: HitTestBehavior.opaque,
-        child: Container(
-          padding: const EdgeInsets.symmetric(vertical: 10),
-          alignment: Alignment.center,
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              AnimatedSwitcher(
-                duration: const Duration(milliseconds: 250),
-                child: Icon(icon,
-                    key: ValueKey('$label-$active'),
-                    size: 16,
-                    color: active ? AppColors.navy : AppColors.textMuted),
-              ),
-              const SizedBox(width: 6),
-              AnimatedDefaultTextStyle(
-                duration: const Duration(milliseconds: 250),
-                style: TextStyle(
-                  fontWeight: FontWeight.w700,
-                  color: active ? AppColors.navy : AppColors.textMuted,
-                ),
-                child: Text(label),
-              ),
-            ],
-          ),
+        child: Row(
+          children: [
+            Text(en,
+                style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: AppColors.textMuted, letterSpacing: 0.6)),
+            const SizedBox(width: 8),
+            Text(ar,
+                style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: AppColors.textMuted)),
+          ],
         ),
-      ),
-    );
-  }
+      );
 }
 

@@ -5,13 +5,12 @@ const userSchema = new mongoose.Schema(
   {
     firstName: { type: String, required: true, trim: true },
     lastName: { type: String, required: true, trim: true },
-    email: { type: String, unique: true, sparse: true, lowercase: true, trim: true },
     phone: { type: String, unique: true, sparse: true, trim: true },
     passwordHash: { type: String, required: true, select: false },
     provider: {
       type: String,
-      enum: ['email', 'google', 'phone'],
-      default: 'email',
+      enum: ['google', 'phone'],
+      default: 'phone',
       required: true,
     },
     role: {
@@ -23,7 +22,7 @@ const userSchema = new mongoose.Schema(
     sentReports: { type: Number, default: 0 },
     solvedReports: { type: Number, default: 0 },
     isVerified: { type: Boolean, default: false },
-    verifiedChannel: { type: String, enum: ['email', 'phone', null], default: null },
+    verifiedChannel: { type: String, enum: ['phone', null], default: null },
     verificationCodeHash: { type: String, select: false },
     verificationCodeExpiresAt: { type: Date, select: false },
   },
@@ -45,7 +44,6 @@ userSchema.methods.toPublicJSON = function () {
     id: this._id,
     firstName: this.firstName,
     lastName: this.lastName,
-    email: this.email,
     phone: this.phone,
     provider: this.provider,
     role: this.role,

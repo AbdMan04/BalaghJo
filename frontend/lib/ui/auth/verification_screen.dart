@@ -86,6 +86,27 @@ class _VerificationScreenState extends State<VerificationScreen> {
   }
 
   Future<void> _signOut() async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: Text(context.t('profile.logout_title')),
+        content: Text(context.t('profile.logout_confirm')),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: Text(context.t('common.cancel')),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            child: Text(
+              context.t('profile.log_out'),
+              style: const TextStyle(color: AppColors.danger, fontWeight: FontWeight.w700),
+            ),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true || !mounted) return;
     await context.read<AuthState>().logout();
     if (!mounted) return;
     Navigator.of(context).pushAndRemoveUntil(
@@ -98,13 +119,8 @@ class _VerificationScreenState extends State<VerificationScreen> {
   Widget build(BuildContext context) {
     final user = context.watch<AuthState>().user;
     final loading = context.watch<AuthState>().loading;
-    final channel = user?.verifiedChannel ?? (user?.email.isNotEmpty == true ? 'email' : 'phone');
     final destination = user?.verificationDestination ?? '';
-    final subtitle = channel == 'email'
-        ? context.t('verify.subtitle_email')
-        : channel == 'phone'
-            ? context.t('verify.subtitle_phone')
-            : context.t('verify.subtitle_generic');
+    final subtitle = context.t('verify.subtitle_phone');
 
     return Scaffold(
       appBar: AppBar(
@@ -140,7 +156,7 @@ class _VerificationScreenState extends State<VerificationScreen> {
                         ),
                       ],
                     ),
-                    child: const Icon(Icons.mark_email_read_outlined,
+                    child: const Icon(Icons.sms_outlined,
                         color: Colors.white, size: 28),
                   ),
                 ),

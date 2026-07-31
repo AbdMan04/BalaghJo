@@ -53,16 +53,14 @@ class AuthState extends ChangeNotifier {
   Future<void> register({
     required String firstName,
     required String lastName,
-    String? email,
     required String password,
-    String? phone,
+    required String phone,
   }) async {
     _setLoading(true);
     try {
       final res = await _api.register(
         firstName: firstName,
         lastName: lastName,
-        email: email,
         password: password,
         phone: phone,
       );

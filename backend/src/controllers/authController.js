@@ -1,12 +1,12 @@
 /*
 - Auth controller — feature F1 (User Authentication).
-- Handles the full citizen authentication lifecycle: registration with
-  email or phone (FR-1), credential verification and JWT issuance (FR-2),
-  profile view and edit (FR-3), bcrypt password hashing (NFR-1), and
-  30-minute JWT expiry (NFR-2). Also handles 6-digit code verification
-  (the code is logged to the backend console).
+- Handles the full citizen authentication lifecycle: registration via
+- phone number (FR-1), credential verification and JWT issuance (FR-2),
+- profile view and edit (FR-3), bcrypt password hashing (NFR-1), and
+- 30-minute JWT expiry (NFR-2). Also handles 6-digit code verification
+- (the code is logged to the backend console).
 - Login uses the Strategy pattern in ../strategies/identifierStrategy.js
-  to resolve whether the submitted identifier is an email or a phone.
+- to resolve the submitted phone number.
  */
 const jwt = require('jsonwebtoken');
 const { validationResult } = require('express-validator');
@@ -25,7 +25,7 @@ function signToken(user) {
   return jwt.sign(
     {
       sub: user._id.toString(),
-      email: user.email,
+      phone: user.phone,
       role: user.role,
       provider: user.provider,
     },
@@ -39,27 +39,19 @@ exports.register = wrap(async (req, res) => {
   if (!errors.isEmpty()) return res.status(400).json({ errors: errors.array() });
 
   const { firstName, lastName, password } = req.body;
-  const email = req.body.email ? String(req.body.email).toLowerCase() : undefined;
-  const phone = req.body.phone || undefined;
-
-  if (!email && !phone) {
-    return res.status(400).json({ error: 'Email or phone is required' });
+  const phone = String(req.body.phone || '').trim();
+  if (!phone) {
+    return res.status(400).json({ error: 'Phone number is required' });
   }
 
-  const orFilters = [];
-  if (email) orFilters.push({ email });
-  if (phone) orFilters.push({ phone });
-  const existing = await User.findOne({ $or: orFilters });
+  const existing = await User.findOne({ phone });
   if (existing) {
-    if (email && existing.email === email) {
-      return res.status(409).json({ error: 'Email already registered' });
-    }
     return res.status(409).json({ error: 'Phone already registered' });
   }
 
   const passwordHash = await User.hashPassword(password);
-  const channel = email ? 'email' : 'phone';
-  const recipient = email || phone;
+  const channel = 'phone';
+  const recipient = phone;
   const code = generateCode();
   const verificationCodeHash = await hashCode(code);
   const verificationCodeExpiresAt = expiryFromNow();
@@ -67,7 +59,6 @@ exports.register = wrap(async (req, res) => {
   const user = await User.create({
     firstName,
     lastName,
-    email,
     phone,
     passwordHash,
     provider: channel,
@@ -87,7 +78,7 @@ exports.login = wrap(async (req, res) => {
   const errors = validationResult(req);
   if (!errors.isEmpty()) return res.status(400).json({ errors: errors.array() });
 
-  const raw = String(req.body.identifier || req.body.email || '').trim();
+  const raw = String(req.body.identifier || '').trim();
   const { password } = req.body;
   const strategy = resolveIdentifierStrategy(raw);
   if (!strategy) return res.status(401).json({ error: 'Incorrect password' });
@@ -143,8 +134,8 @@ exports.resendCode = wrap(async (req, res) => {
   if (!user) return res.status(404).json({ error: 'User not found' });
   if (user.isVerified) return res.json({ ok: true, alreadyVerified: true });
 
-  const channel = user.verifiedChannel || (user.email ? 'email' : 'phone');
-  const recipient = channel === 'email' ? user.email : user.phone;
+  const channel = user.verifiedChannel || 'phone';
+  const recipient = user.phone;
   if (!recipient) {
     return res.status(400).json({ error: 'No verification destination on file' });
   }
