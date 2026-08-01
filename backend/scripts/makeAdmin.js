@@ -5,6 +5,7 @@
 - Usage: npm run make-admin -- <phone>
  */
 require('dotenv').config({ path: require('path').resolve(__dirname, '../.env') });
+require('dns').setServers(['8.8.8.8', '1.1.1.1']);
 const mongoose = require('mongoose');
 const User = require('../src/models/User');
 

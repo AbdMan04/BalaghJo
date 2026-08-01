@@ -6,6 +6,10 @@ import '../state/auth_state.dart';
 import 'admin_dashboard_screen.dart';
 import 'admin_login_screen.dart';
 
+void main() {
+  runApp(const AdminApp());
+}
+
 class AdminApp extends StatelessWidget {
   const AdminApp({super.key});
 
