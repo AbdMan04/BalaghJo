@@ -58,7 +58,8 @@ class _HomeScreenState extends State<HomeScreen> {
     try {
       final s = await _api.summary();
       if (!mounted) return;
-      final changed = _lastRecent == null || !Report.sameStatusList(_lastRecent!, s.recent);
+      final changed =
+          _lastRecent == null || !Report.sameStatusList(_lastRecent!, s.recent);
       _lastRecent = s.recent;
       if (changed) {
         setState(() => _future = Future.value(s));
@@ -77,7 +78,8 @@ class _HomeScreenState extends State<HomeScreen> {
     final controller = messenger.showSnackBar(
       SnackBar(
         behavior: SnackBarBehavior.floating,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(AppRadius.md)),
+        shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(AppRadius.md)),
         duration: const Duration(seconds: 4),
         content: Text(context.t('home.deleted_toast')),
         action: SnackBarAction(
@@ -152,10 +154,13 @@ class _HomeScreenState extends State<HomeScreen> {
                               color: AppColors.blue,
                               borderRadius: BorderRadius.circular(AppRadius.sm),
                               boxShadow: [
-                                BoxShadow(color: AppColors.sky.withValues(alpha: 0.5), blurRadius: 12),
+                                BoxShadow(
+                                    color: AppColors.sky.withValues(alpha: 0.5),
+                                    blurRadius: 12),
                               ],
                             ),
-                            child: const Icon(Icons.add, color: Colors.white, size: 20),
+                            child: const Icon(Icons.add,
+                                color: Colors.white, size: 20),
                           ),
                           const SizedBox(width: 14),
                           Expanded(
@@ -165,17 +170,22 @@ class _HomeScreenState extends State<HomeScreen> {
                                 Text(
                                   context.t('home.report_issue'),
                                   textDirection: TextDirection.rtl,
-                                  style: const TextStyle(color: Colors.white70, fontSize: 11),
+                                  style: const TextStyle(
+                                      color: Colors.white70, fontSize: 11),
                                 ),
                                 const SizedBox(height: 2),
                                 Text(
                                   context.t('home.report_issue_en'),
-                                  style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w800, fontSize: 15),
+                                  style: const TextStyle(
+                                      color: Colors.white,
+                                      fontWeight: FontWeight.w800,
+                                      fontSize: 15),
                                 ),
                               ],
                             ),
                           ),
-                          const Icon(Icons.chevron_right, color: Colors.white70),
+                          const Icon(Icons.chevron_right,
+                              color: Colors.white70),
                         ],
                       ),
                     ),
@@ -193,11 +203,13 @@ class _HomeScreenState extends State<HomeScreen> {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(context.t('home.quick_report'),
-                            style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 16)),
+                            style: const TextStyle(
+                                fontWeight: FontWeight.w800, fontSize: 16)),
                         const SizedBox(height: 2),
                         Text(context.t('home.quick_report_sub'),
                             textDirection: TextDirection.rtl,
-                            style: const TextStyle(color: AppColors.textMuted, fontSize: 12)),
+                            style: const TextStyle(
+                                color: AppColors.textMuted, fontSize: 12)),
                       ],
                     ),
                   ),
@@ -233,18 +245,17 @@ class _HomeScreenState extends State<HomeScreen> {
                           Container(
                             padding: const EdgeInsets.all(10),
                             decoration: BoxDecoration(
-                              gradient: const LinearGradient(
-                                colors: [AppColors.blue, AppColors.sky],
-                              ),
+                              color: AppColors.navy,
                               borderRadius: BorderRadius.circular(AppRadius.sm),
                               boxShadow: [
                                 BoxShadow(
-                                  color: AppColors.blue.withValues(alpha: 0.35),
+                                  color: AppColors.navy.withValues(alpha: 0.35),
                                   blurRadius: 10,
                                 ),
                               ],
                             ),
-                            child: const Icon(Icons.map_outlined, color: Colors.white, size: 20),
+                            child: const Icon(Icons.map_outlined,
+                                color: Colors.white, size: 20),
                           ),
                           const SizedBox(width: 12),
                           Expanded(
@@ -252,14 +263,19 @@ class _HomeScreenState extends State<HomeScreen> {
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
                                 Text(context.t('home.explore_map'),
-                                    style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 14)),
+                                    style: const TextStyle(
+                                        fontWeight: FontWeight.w800,
+                                        fontSize: 14)),
                                 const SizedBox(height: 2),
                                 Text(context.t('home.explore_map_sub'),
-                                    style: const TextStyle(color: AppColors.textMuted, fontSize: 12)),
+                                    style: const TextStyle(
+                                        color: AppColors.textMuted,
+                                        fontSize: 12)),
                               ],
                             ),
                           ),
-                          const Icon(Icons.chevron_right, color: AppColors.textMuted),
+                          const Icon(Icons.chevron_right,
+                              color: AppColors.textMuted),
                         ],
                       ),
                     ),
@@ -272,11 +288,16 @@ class _HomeScreenState extends State<HomeScreen> {
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    Text(context.t('home.recent_reports'), style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 16)),
+                    Text(context.t('home.recent_reports'),
+                        style: const TextStyle(
+                            fontWeight: FontWeight.w800, fontSize: 16)),
                     GestureDetector(
                       onTap: () => MainShellScope.of(context)?.goTo(2),
                       child: Text(context.t('home.view_all'),
-                          style: const TextStyle(color: AppColors.blue, fontWeight: FontWeight.w700, fontSize: 12)),
+                          style: const TextStyle(
+                              color: AppColors.blue,
+                              fontWeight: FontWeight.w700,
+                              fontSize: 12)),
                     ),
                   ],
                 ),
@@ -309,13 +330,17 @@ class _HomeScreenState extends State<HomeScreen> {
                       child: Column(
                         children: [
                           Icon(Icons.inbox_outlined,
-                              size: 56, color: AppColors.textMuted.withValues(alpha: 0.5)),
+                              size: 56,
+                              color:
+                                  AppColors.textMuted.withValues(alpha: 0.5)),
                           const SizedBox(height: 12),
                           Text(context.t('home.no_reports_yet'),
-                              style: const TextStyle(fontWeight: FontWeight.w700)),
+                              style:
+                                  const TextStyle(fontWeight: FontWeight.w700)),
                           const SizedBox(height: 4),
                           Text(context.t('home.submit_first'),
-                              style: const TextStyle(color: AppColors.textMuted, fontSize: 12)),
+                              style: const TextStyle(
+                                  color: AppColors.textMuted, fontSize: 12)),
                         ],
                       ),
                     );
@@ -340,5 +365,4 @@ class _HomeScreenState extends State<HomeScreen> {
       ),
     );
   }
-
 }

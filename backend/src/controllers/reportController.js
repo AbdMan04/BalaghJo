@@ -8,7 +8,11 @@ List & History).
 const { validationResult } = require('express-validator');
 const Report = require('../models/Report');
 const User = require('../models/User');
+const Notification = require('../models/Notification');
+const { sendPush } = require('../config/firebase');
 const wrap = require('../utils/asyncHandler');
+
+const STATUS_LABELS = { pending: 'Pending', in_progress: 'In Progress', resolved: 'Resolved' };
 
 exports.createReport = wrap(async (req, res) => {
   const errors = validationResult(req);
@@ -82,6 +86,46 @@ exports.listPublicReports = wrap(async (req, res) => {
   });
 });
 
+// Duplicate-submission guard: returns same-category reports within
+// ~500m of the given point (no reporter PII). Used by the submit
+// screen to warn the user that the issue may already be reported.
+exports.nearbyReports = wrap(async (req, res) => {
+  const { lat, lng, category } = req.body;
+  const latN = Number(lat);
+  const lngN = Number(lng);
+  if (Number.isNaN(latN) || Number.isNaN(lngN)) {
+    return res.status(400).json({ error: 'lat and lng are required' });
+  }
+  const filter = {
+    location: {
+      $nearSphere: {
+        $geometry: { type: 'Point', coordinates: [lngN, latN] },
+        $maxDistance: 500,
+      },
+    },
+  };
+  if (category && ['pothole', 'waste', 'lighting', 'other'].includes(category)) {
+    filter.category = category;
+  }
+  const reports = await Report.find(filter)
+    .select('reportId category title status address location photoUrl createdAt')
+    .sort({ createdAt: -1 })
+    .limit(20);
+  res.json({
+    reports: reports.map((r) => ({
+      id: r._id,
+      reportId: r.reportId,
+      category: r.category,
+      title: r.title || '',
+      status: r.status,
+      address: r.address || '',
+      photoUrl: r.photoUrl || '',
+      location: r.location,
+      createdAt: r.createdAt,
+    })),
+  });
+});
+
 exports.getReport = wrap(async (req, res) => {
   const report = await Report.findById(req.params.id).populate('userId', 'firstName lastName phone');
   if (!report) return res.status(404).json({ error: 'Not found' });
@@ -117,6 +161,38 @@ exports.deleteReport = wrap(async (req, res) => {
   res.json({ ok: true });
 });
 
+// Admin dashboard: every report with full reporter info plus optional
+// status / category / text filters. Gated by adminOnly at the route.
+exports.listAllReportsAdmin = wrap(async (req, res) => {
+  const { status, category, q } = req.query;
+  const filter = {};
+  if (status && ['pending', 'in_progress', 'resolved'].includes(status)) filter.status = status;
+  if (category && ['pothole', 'waste', 'lighting', 'other'].includes(category)) {
+    filter.category = category;
+  }
+  if (q && typeof q === 'string' && q.trim()) {
+    const re = new RegExp(q.trim(), 'i');
+    filter.$or = [{ reportId: re }, { title: re }, { address: re }, { description: re }];
+  }
+  const reports = await Report.find(filter)
+    .populate('userId', 'firstName lastName phone')
+    .sort({ createdAt: -1 })
+    .limit(300);
+  res.json({
+    reports: reports.map((r) => {
+      const owner = r.userId;
+      const json = r.toPublicJSON();
+      json.reporter = owner
+        ? {
+            fullName: `${owner.firstName ?? ''} ${owner.lastName ?? ''}`.trim(),
+            phone: owner.phone || '',
+          }
+        : { fullName: '', phone: '' };
+      return json;
+    }),
+  });
+});
+
 exports.summary = wrap(async (req, res) => {
   const userId = req.user.id;
   const [total, resolved, active] = await Promise.all([
@@ -147,6 +223,34 @@ exports.updateStatus = wrap(async (req, res) => {
   await report.save();
   if (status === 'resolved' && !wasResolved) {
     await User.findByIdAndUpdate(report.userId, { $inc: { solvedReports: 1 } });
+  }
+
+  // FR-7: persist an in-app notification and fire an FCM push to the
+  // reporter's registered devices. sendPush is a no-op until
+  // FCM_SERVICE_ACCOUNT_PATH is configured.
+  if (previous !== status) {
+    const label = STATUS_LABELS[status] || status;
+    try {
+      await Notification.create({
+        user: report.userId,
+        type: 'report_status',
+        report: report._id,
+        reportId: report.reportId,
+        title: `Report ${report.reportId}`,
+        body: `Status changed to ${label}`,
+      });
+      const owner = await User.findById(report.userId).select('deviceTokens');
+      if (owner && owner.deviceTokens && owner.deviceTokens.length) {
+        sendPush({
+          tokens: owner.deviceTokens,
+          title: `Report ${report.reportId} — ${label}`,
+          body: report.title ? report.title : 'Your report status changed',
+          data: { type: 'report_status', reportId: report.reportId, status },
+        }).catch((err) => console.error('[fcm] send failed:', err.message));
+      }
+    } catch (err) {
+      console.error('[notif] failed to create notification:', err.message);
+    }
   }
 
   // NFR-6 measurement: timestamped status-change log (server side).

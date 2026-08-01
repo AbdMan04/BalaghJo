@@ -40,8 +40,8 @@ class _RegisterScreenState extends State<RegisterScreen> {
             phone: _phone.text.trim(),
           );
       if (!mounted) return;
-      Navigator.of(context).pushAndRemoveUntil(
-          fadeSlideRoute(const MainShell()), (_) => false);
+      Navigator.of(context)
+          .pushAndRemoveUntil(fadeSlideRoute(const MainShell()), (_) => false);
     } catch (e) {
       setState(() => _error = cleanErrorMessage(e));
       _shake.value++;
@@ -75,7 +75,8 @@ class _RegisterScreenState extends State<RegisterScreen> {
                 children: [
                   FadeSlideIn(
                     child: Text(context.t('register.create_account'),
-                        style: const TextStyle(fontSize: 28, fontWeight: FontWeight.w800)),
+                        style: const TextStyle(
+                            fontSize: 28, fontWeight: FontWeight.w800)),
                   ),
                   const SizedBox(height: 4),
                   FadeSlideIn(
@@ -89,20 +90,23 @@ class _RegisterScreenState extends State<RegisterScreen> {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        _label(context.t('register.phone_label'), context.t('ar.phone_number')),
+                        _label(context.t('register.phone_label'),
+                            context.t('ar.phone_number')),
                         TextFormField(
                           controller: _phone,
                           decoration: InputDecoration(
                             hintText: context.t('register.phone_hint'),
-                            prefixIcon: const Icon(Icons.phone_android, color: AppColors.textMuted),
+                            prefixIcon: const Icon(Icons.phone_android,
+                                color: AppColors.textMuted),
                           ),
                           keyboardType: TextInputType.number,
                           inputFormatters: [
                             FilteringTextInputFormatter.digitsOnly,
                             LengthLimitingTextInputFormatter(10),
                           ],
-                          validator: (v) =>
-                              (v == null || v.trim().length != 10) ? context.t('login.invalid_phone') : null,
+                          validator: (v) => (v == null || v.trim().length != 10)
+                              ? context.t('login.invalid_phone')
+                              : null,
                         ),
                       ],
                     ),
@@ -115,11 +119,16 @@ class _RegisterScreenState extends State<RegisterScreen> {
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              _label(context.t('register.first_name'), context.t('ar.first_name')),
+                              _label(context.t('register.first_name'),
+                                  context.t('ar.first_name')),
                               TextFormField(
                                 controller: _first,
-                                decoration: InputDecoration(hintText: context.t('register.first_hint')),
-                                validator: (v) => (v == null || v.trim().isEmpty) ? context.t('common.required') : null,
+                                decoration: InputDecoration(
+                                    hintText: context.t('register.first_hint')),
+                                validator: (v) =>
+                                    (v == null || v.trim().isEmpty)
+                                        ? context.t('common.required')
+                                        : null,
                               ),
                             ],
                           ),
@@ -129,11 +138,16 @@ class _RegisterScreenState extends State<RegisterScreen> {
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              _label(context.t('register.last_name'), context.t('ar.last_name')),
+                              _label(context.t('register.last_name'),
+                                  context.t('ar.last_name')),
                               TextFormField(
                                 controller: _last,
-                                decoration: InputDecoration(hintText: context.t('register.last_hint')),
-                                validator: (v) => (v == null || v.trim().isEmpty) ? context.t('common.required') : null,
+                                decoration: InputDecoration(
+                                    hintText: context.t('register.last_hint')),
+                                validator: (v) =>
+                                    (v == null || v.trim().isEmpty)
+                                        ? context.t('common.required')
+                                        : null,
                               ),
                             ],
                           ),
@@ -146,20 +160,28 @@ class _RegisterScreenState extends State<RegisterScreen> {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        _label(context.t('register.password'), context.t('ar.password')),
+                        _label(context.t('register.password'),
+                            context.t('ar.password')),
                         TextFormField(
                           controller: _pass,
                           decoration: InputDecoration(
                             hintText: context.t('register.password_hint'),
-                            prefixIcon: const Icon(Icons.lock_outline, color: AppColors.textMuted),
+                            prefixIcon: const Icon(Icons.lock_outline,
+                                color: AppColors.textMuted),
                             suffixIcon: IconButton(
-                              icon: Icon(_obscure ? Icons.visibility_off_outlined : Icons.visibility_outlined,
+                              icon: Icon(
+                                  _obscure
+                                      ? Icons.visibility_off_outlined
+                                      : Icons.visibility_outlined,
                                   color: AppColors.textMuted),
-                              onPressed: () => setState(() => _obscure = !_obscure),
+                              onPressed: () =>
+                                  setState(() => _obscure = !_obscure),
                             ),
                           ),
                           obscureText: _obscure,
-                          validator: (v) => (v == null || v.length < 6) ? context.t('register.password_min') : null,
+                          validator: (v) => (v == null || v.length < 6)
+                              ? context.t('register.password_min')
+                              : null,
                         ),
                       ],
                     ),
@@ -174,16 +196,22 @@ class _RegisterScreenState extends State<RegisterScreen> {
                               padding: const EdgeInsets.all(12),
                               decoration: BoxDecoration(
                                 color: AppColors.danger.withValues(alpha: 0.08),
-                                borderRadius: BorderRadius.circular(AppRadius.sm),
-                                border: Border.all(color: AppColors.danger.withValues(alpha: 0.3)),
+                                borderRadius:
+                                    BorderRadius.circular(AppRadius.sm),
+                                border: Border.all(
+                                    color: AppColors.danger
+                                        .withValues(alpha: 0.3)),
                               ),
                               child: Row(
                                 children: [
-                                  const Icon(Icons.error_outline, color: AppColors.danger, size: 18),
+                                  const Icon(Icons.error_outline,
+                                      color: AppColors.danger, size: 18),
                                   const SizedBox(width: 8),
                                   Expanded(
                                       child: Text(_error!,
-                                          style: const TextStyle(color: AppColors.danger, fontSize: 12))),
+                                          style: const TextStyle(
+                                              color: AppColors.danger,
+                                              fontSize: 12))),
                                 ],
                               ),
                             ),
@@ -199,15 +227,11 @@ class _RegisterScreenState extends State<RegisterScreen> {
                         height: 52,
                         alignment: Alignment.center,
                         decoration: BoxDecoration(
-                          gradient: const LinearGradient(
-                            colors: [AppColors.navy, AppColors.blue],
-                            begin: Alignment.centerLeft,
-                            end: Alignment.centerRight,
-                          ),
+                          color: AppColors.navy,
                           borderRadius: BorderRadius.circular(AppRadius.md),
                           boxShadow: [
                             BoxShadow(
-                              color: AppColors.blue.withValues(alpha: 0.35),
+                              color: AppColors.navy.withValues(alpha: 0.35),
                               blurRadius: 18,
                               offset: const Offset(0, 6),
                             ),
@@ -220,12 +244,16 @@ class _RegisterScreenState extends State<RegisterScreen> {
                                   key: ValueKey('l'),
                                   height: 20,
                                   width: 20,
-                                  child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+                                  child: CircularProgressIndicator(
+                                      strokeWidth: 2, color: Colors.white),
                                 )
                               : Text(
                                   context.t('register.sign_up'),
                                   key: const ValueKey('t'),
-                                  style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w800, fontSize: 15),
+                                  style: const TextStyle(
+                                      color: Colors.white,
+                                      fontWeight: FontWeight.w800,
+                                      fontSize: 15),
                                 ),
                         ),
                       ),
@@ -234,11 +262,17 @@ class _RegisterScreenState extends State<RegisterScreen> {
                   const SizedBox(height: 14),
                   Center(
                     child: GestureDetector(
-                      onTap: () => Navigator.of(context).pushReplacement(
-                          fadeSlideRoute(const LoginScreen())),
+                      onTap: () => Navigator.of(context)
+                          .pushReplacement(fadeSlideRoute(const LoginScreen())),
                       child: Text.rich(TextSpan(children: [
-                        TextSpan(text: context.t('register.have_account'), style: const TextStyle(color: AppColors.textMuted)),
-                        TextSpan(text: context.t('register.sign_in_link'), style: const TextStyle(color: AppColors.blue, fontWeight: FontWeight.w700)),
+                        TextSpan(
+                            text: context.t('register.have_account'),
+                            style: const TextStyle(color: AppColors.textMuted)),
+                        TextSpan(
+                            text: context.t('register.sign_in_link'),
+                            style: const TextStyle(
+                                color: AppColors.blue,
+                                fontWeight: FontWeight.w700)),
                       ])),
                     ),
                   ),
@@ -256,12 +290,18 @@ class _RegisterScreenState extends State<RegisterScreen> {
         child: Row(
           children: [
             Text(en,
-                style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: AppColors.textMuted, letterSpacing: 0.6)),
+                style: const TextStyle(
+                    fontSize: 11,
+                    fontWeight: FontWeight.w700,
+                    color: AppColors.textMuted,
+                    letterSpacing: 0.6)),
             const SizedBox(width: 8),
             Text(ar,
-                style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: AppColors.textMuted)),
+                style: const TextStyle(
+                    fontSize: 11,
+                    fontWeight: FontWeight.w700,
+                    color: AppColors.textMuted)),
           ],
         ),
       );
 }
-

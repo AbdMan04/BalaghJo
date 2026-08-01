@@ -22,6 +22,7 @@ const userSchema = new mongoose.Schema(
     sentReports: { type: Number, default: 0 },
     solvedReports: { type: Number, default: 0 },
     isVerified: { type: Boolean, default: true },
+    deviceTokens: { type: [String], default: [] },
   },
   { timestamps: true }
 );

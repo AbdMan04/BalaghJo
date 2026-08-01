@@ -11,6 +11,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:intl/intl.dart';
+import 'package:share_plus/share_plus.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../../core/config.dart';
 import '../../core/strings.dart';
@@ -74,23 +75,19 @@ class _ReportDetailScreenState extends State<ReportDetailScreen> {
     }
   }
 
-  void _share(Report r) {
-    final text = 'Report ${r.reportId}\n'
-        '${r.title.isNotEmpty ? r.title : labelForCategory(r.category, context)}\n'
-        'Status: ${r.status.label}\n'
-        '${r.address.isNotEmpty ? r.address : ""}\n'
-        '${r.description}';
-    Clipboard.setData(ClipboardData(text: text));
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        behavior: SnackBarBehavior.floating,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(AppRadius.md)),
-        content: const Row(children: [
-          Icon(Icons.check_circle, color: Colors.white, size: 18),
-          SizedBox(width: 8),
-          Text('Report details copied to clipboard'),
-        ]),
+  String _shareText(Report r) => 'Report ${r.reportId}\n'
+      '${r.title.isNotEmpty ? r.title : labelForCategory(r.category, context)}\n'
+      'Status: ${r.status.label}\n'
+      '${r.address.isNotEmpty ? r.address : ""}\n'
+      '${r.description}';
+
+  Future<void> _share(Report r) async {
+    await showModalBottomSheet<void>(
+      context: context,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
       ),
+      builder: (_) => _ShareSheet(report: r, text: _shareText(r)),
     );
   }
 
@@ -530,6 +527,140 @@ class _LocationTextState extends State<_LocationText> {
           ],
         ),
       ],
+    );
+  }
+}
+
+class _ShareSheet extends StatelessWidget {
+  final Report report;
+  final String text;
+  const _ShareSheet({required this.report, required this.text});
+
+  Future<void> _toWhatsApp(BuildContext context) async {
+    final uri = Uri.parse('https://wa.me/?text=${Uri.encodeComponent(text)}');
+    final ok = await launchUrl(uri, mode: LaunchMode.externalApplication);
+    if (!ok && context.mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Could not open WhatsApp')),
+      );
+    }
+  }
+
+  Future<void> _moreApps(BuildContext context) async {
+    await SharePlus.instance.share(
+      ShareParams(text: text, title: report.reportId, subject: report.reportId),
+    );
+  }
+
+  Future<void> _copy(BuildContext context) async {
+    await Clipboard.setData(ClipboardData(text: text));
+    if (!context.mounted) return;
+    Navigator.pop(context);
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        behavior: SnackBarBehavior.floating,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(AppRadius.md)),
+        content: const Row(children: [
+          Icon(Icons.check_circle, color: Colors.white, size: 18),
+          SizedBox(width: 8),
+          Text('Report details copied to clipboard'),
+        ]),
+      ),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return SafeArea(
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(20, 16, 20, 24),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Center(
+              child: Container(
+                width: 40,
+                height: 4,
+                margin: const EdgeInsets.only(bottom: 16),
+                decoration: BoxDecoration(
+                  color: AppColors.border,
+                  borderRadius: BorderRadius.circular(2),
+                ),
+              ),
+            ),
+            const Text('Share Report',
+                style: TextStyle(fontWeight: FontWeight.w800, fontSize: 18)),
+            const SizedBox(height: 4),
+            Text(report.reportId, style: const TextStyle(color: AppColors.textMuted, fontSize: 12)),
+            const SizedBox(height: 20),
+            Row(
+              children: [
+                Expanded(
+                  child: PressableScale(
+                    onTap: () => _toWhatsApp(context),
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(vertical: 14),
+                      alignment: Alignment.center,
+                      decoration: BoxDecoration(
+                        color: const Color(0xFF25D366),
+                        borderRadius: BorderRadius.circular(AppRadius.md),
+                      ),
+                      child: const Column(
+                        children: [
+                          Icon(Icons.chat, color: Colors.white, size: 22),
+                          SizedBox(height: 6),
+                          Text('WhatsApp',
+                              style: TextStyle(
+                                  color: Colors.white, fontWeight: FontWeight.w700, fontSize: 12)),
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: PressableScale(
+                    onTap: () => _moreApps(context),
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(vertical: 14),
+                      alignment: Alignment.center,
+                      decoration: BoxDecoration(
+                        color: AppColors.blue.withValues(alpha: 0.08),
+                        borderRadius: BorderRadius.circular(AppRadius.md),
+                      ),
+                      child: const Column(
+                        children: [
+                          Icon(Icons.ios_share, color: AppColors.blue, size: 22),
+                          SizedBox(height: 6),
+                          Text('More apps',
+                              style: TextStyle(
+                                  color: AppColors.blue, fontWeight: FontWeight.w700, fontSize: 12)),
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 12),
+            PressableScale(
+              onTap: () => _copy(context),
+              child: Container(
+                padding: const EdgeInsets.symmetric(vertical: 12),
+                width: double.infinity,
+                alignment: Alignment.center,
+                decoration: BoxDecoration(
+                  border: Border.all(color: AppColors.border),
+                  borderRadius: BorderRadius.circular(AppRadius.md),
+                ),
+                child: const Text('Copy to clipboard',
+                    style: TextStyle(fontWeight: FontWeight.w700)),
+              ),
+            ),
+          ],
+        ),
+      ),
     );
   }
 }

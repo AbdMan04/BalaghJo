@@ -119,3 +119,37 @@ exports.updateProfile = wrap(async (req, res) => {
   if (!user) return res.status(404).json({ error: 'User not found' });
   res.json({ user: user.toPublicJSON() });
 });
+
+// FCM device-token registration (FR-7 push notifications). Called on app
+// startup / login / logout so the backend can target the right devices.
+exports.registerDeviceToken = wrap(async (req, res) => {
+  const errors = validationResult(req);
+  if (!errors.isEmpty()) return res.status(400).json({ errors: errors.array() });
+
+  const token = String(req.body.token || '').trim();
+  if (!token) return res.status(400).json({ error: 'Device token is required' });
+
+  const user = await User.findByIdAndUpdate(
+    req.user.id,
+    { $addToSet: { deviceTokens: token } },
+    { new: true, runValidators: true }
+  ).select('deviceTokens');
+  if (!user) return res.status(404).json({ error: 'User not found' });
+
+  if (user.deviceTokens.length > 20) {
+    user.deviceTokens = user.deviceTokens.slice(-20);
+    await user.save();
+  }
+  res.json({ ok: true });
+});
+
+exports.unregisterDeviceToken = wrap(async (req, res) => {
+  const errors = validationResult(req);
+  if (!errors.isEmpty()) return res.status(400).json({ errors: errors.array() });
+
+  const token = String(req.body.token || '').trim();
+  if (token) {
+    await User.findByIdAndUpdate(req.user.id, { $pull: { deviceTokens: token } });
+  }
+  res.json({ ok: true });
+});

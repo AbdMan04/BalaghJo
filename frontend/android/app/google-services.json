@@ -1,0 +1,48 @@
+{
+  "project_info": {
+    "project_number": "818549551367",
+    "project_id": "balagh-jo",
+    "storage_bucket": "balagh-jo.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:818549551367:android:56492933e28a2f4dfa55a2",
+        "android_client_info": {
+          "package_name": "build.gradle.kts"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCRgrZaiBiJsrjmvh2dCPTcB_VdyxsRgcE"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    },
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:818549551367:android:86a35b734f03c7c2fa55a2",
+        "android_client_info": {
+          "package_name": "com.example.balaghjo"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCRgrZaiBiJsrjmvh2dCPTcB_VdyxsRgcE"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

@@ -1,15 +1,30 @@
 require('dotenv').config();
 const express = require('express');
 const cors = require('cors');
+const helmet = require('helmet');
 const morgan = require('morgan');
 const path = require('path');
+const rateLimit = require('express-rate-limit');
 
 const authRoutes = require('./routes/authRoutes');
 const reportRoutes = require('./routes/reportRoutes');
+const notificationRoutes = require('./routes/notificationRoutes');
 
 const app = express();
 
 app.set('trust proxy', 1);
+
+app.use(helmet());
+
+// NFR: global fallback limiter (per-route auth limiters are stricter).
+const globalLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 300,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { error: 'Too many requests, please try again later.' },
+});
+app.use(globalLimiter);
 
 const allowedOrigins = (process.env.CORS_ORIGINS || '')
   .split(',')
@@ -36,6 +51,7 @@ app.get('/health', (_req, res) => res.json({ ok: true, service: 'balaghjo-api' }
 
 app.use('/api/auth', authRoutes);
 app.use('/api/reports', reportRoutes);
+app.use('/api/notifications', notificationRoutes);
 
 app.use((err, _req, res, _next) => {
   console.error('[error]', err.stack || err.message);

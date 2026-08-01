@@ -7,8 +7,10 @@
 // (FR-3), and logout. Extends ChangeNotifier so it participates in
 // Flutter's idiomatic Observer pattern via Provider — widgets call
 // context.watch<AuthState>() and rebuild on notifyListeners().
+import 'dart:async';
 import 'package:flutter/foundation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import '../core/firebase_service.dart';
 import '../data/api/api_client.dart';
 import '../data/api/auth_api.dart';
 import '../data/models/user.dart';
@@ -35,8 +37,10 @@ class AuthState extends ChangeNotifier {
         _user = await _api.me();
       } catch (_) {
         await logout();
+        return;
       }
     }
+    _syncPush();
     notifyListeners();
   }
 
@@ -104,6 +108,7 @@ class AuthState extends ChangeNotifier {
   }
 
   Future<void> logout() async {
+    unawaited(FirebaseService.unregisterToken());
     final prefs = await SharedPreferences.getInstance();
     await prefs.remove(_kToken);
     _token = null;
@@ -118,7 +123,15 @@ class AuthState extends ChangeNotifier {
     ApiClient.instance.setToken(token);
     final prefs = await SharedPreferences.getInstance();
     await prefs.setString(_kToken, token);
+    _syncPush();
     notifyListeners();
+  }
+
+  void _syncPush() {
+    if (_token == null) return;
+    unawaited(
+      FirebaseService.init().then((_) => FirebaseService.registerToken()),
+    );
   }
 
   void _setLoading(bool v) {

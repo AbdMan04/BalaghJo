@@ -7,11 +7,13 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import '../../core/api_errors.dart';
+import '../../core/locale_state.dart';
 import '../../core/strings.dart';
 import '../../core/theme.dart';
 import '../../data/models/user.dart';
 import '../../state/auth_state.dart';
 import '../auth/onboarding_screen.dart';
+import '../notifications/notifications_screen.dart';
 import '../widgets/animations.dart';
 
 class ProfileScreen extends StatelessWidget {
@@ -31,11 +33,29 @@ class ProfileScreen extends StatelessWidget {
                 children: [
                   FadeSlideIn(
                     delay: const Duration(milliseconds: 260),
-                    child: _row(Icons.lock_outline, context.t('profile.change_password'),
+                    child: _row(
+                        Icons.lock_outline,
+                        context.t('profile.change_password'),
                         () => _showChangePassword(context)),
                   ),
                   FadeSlideIn(
+                    delay: const Duration(milliseconds: 320),
+                    child: _row(
+                      Icons.notifications_none,
+                      context.t('profile.notifications'),
+                      () => Navigator.of(context).push(
+                          fadeSlideRoute(const NotificationsScreen())),
+                    ),
+                  ),
+                  FadeSlideIn(
                     delay: const Duration(milliseconds: 380),
+                    child: _row(
+                        Icons.language_outlined,
+                        context.t('profile.language'),
+                        () => _showLanguage(context)),
+                  ),
+                  FadeSlideIn(
+                    delay: const Duration(milliseconds: 440),
                     child: _row(
                       Icons.logout,
                       context.t('profile.log_out'),
@@ -45,7 +65,8 @@ class ProfileScreen extends StatelessWidget {
                         await context.read<AuthState>().logout();
                         if (!context.mounted) return;
                         Navigator.of(context).pushAndRemoveUntil(
-                            fadeSlideRoute(const OnboardingScreen()), (_) => false);
+                            fadeSlideRoute(const OnboardingScreen()),
+                            (_) => false);
                       },
                       color: AppColors.danger,
                     ),
@@ -74,8 +95,60 @@ class ProfileScreen extends StatelessWidget {
         borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
       ),
       builder: (_) => Padding(
-        padding: EdgeInsets.only(bottom: MediaQuery.of(context).viewInsets.bottom),
+        padding:
+            EdgeInsets.only(bottom: MediaQuery.of(context).viewInsets.bottom),
         child: const _EditProfileSheet(),
+      ),
+    );
+  }
+
+  void _showLanguage(BuildContext context) {
+    showModalBottomSheet<void>(
+      context: context,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (sheetCtx) => SafeArea(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Padding(
+              padding: const EdgeInsets.fromLTRB(20, 16, 20, 8),
+              child: Align(
+                alignment: AlignmentDirectional.centerStart,
+                child: Text(context.t('profile.language_title'),
+                    style: const TextStyle(
+                        fontWeight: FontWeight.w800, fontSize: 18)),
+              ),
+            ),
+            ListTile(
+              leading: const Icon(Icons.translate, color: AppColors.blue),
+              title: Text(context.t('profile.language_en')),
+              trailing: context.watch<LocaleState>().isArabic
+                  ? null
+                  : const Icon(Icons.check_circle,
+                      color: AppColors.success, size: 20),
+              onTap: () {
+                context.read<LocaleState>().setLocale(const Locale('en'));
+                Navigator.pop(sheetCtx);
+              },
+            ),
+            ListTile(
+              leading: const Icon(Icons.translate, color: AppColors.blue),
+              title: Text(context.t('profile.language_ar'),
+                  style: const TextStyle(color: AppColors.navy)),
+              trailing: context.watch<LocaleState>().isArabic
+                  ? const Icon(Icons.check_circle,
+                      color: AppColors.success, size: 20)
+                  : null,
+              onTap: () {
+                context.read<LocaleState>().setLocale(const Locale('ar'));
+                Navigator.pop(sheetCtx);
+              },
+            ),
+            const SizedBox(height: 8),
+          ],
+        ),
       ),
     );
   }
@@ -95,7 +168,8 @@ class ProfileScreen extends StatelessWidget {
             onPressed: () => Navigator.pop(ctx, true),
             child: Text(
               context.t('profile.log_out'),
-              style: const TextStyle(color: AppColors.danger, fontWeight: FontWeight.w700),
+              style: const TextStyle(
+                  color: AppColors.danger, fontWeight: FontWeight.w700),
             ),
           ),
         ],
@@ -129,7 +203,8 @@ class ProfileScreen extends StatelessWidget {
               const SizedBox(width: 12),
               Expanded(
                 child: Text(label,
-                    style: TextStyle(fontWeight: FontWeight.w700, color: color)),
+                    style:
+                        TextStyle(fontWeight: FontWeight.w700, color: color)),
               ),
               const Icon(Icons.chevron_right, color: AppColors.textMuted),
             ],
@@ -166,19 +241,19 @@ class _ChangePasswordDialogState extends State<_ChangePasswordDialog> {
 
   Future<void> _submit() async {
     if (_current.text.isEmpty) {
-      setState(() => _error = 'Enter your current password');
+      setState(() => _error = context.t('profile.err_current_required'));
       return;
     }
     if (_next.text.length < 6) {
-      setState(() => _error = 'New password must be at least 6 characters');
+      setState(() => _error = context.t('profile.err_new_short'));
       return;
     }
     if (_next.text != _confirm.text) {
-      setState(() => _error = 'New passwords do not match');
+      setState(() => _error = context.t('profile.err_mismatch'));
       return;
     }
     if (_current.text == _next.text) {
-      setState(() => _error = 'New password must be different from current');
+      setState(() => _error = context.t('profile.err_same'));
       return;
     }
     setState(() {
@@ -196,11 +271,12 @@ class _ChangePasswordDialogState extends State<_ChangePasswordDialog> {
         SnackBar(
           backgroundColor: AppColors.success,
           behavior: SnackBarBehavior.floating,
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(AppRadius.md)),
-          content: const Row(children: [
-            Icon(Icons.check_circle, color: Colors.white, size: 18),
-            SizedBox(width: 8),
-            Text('Password updated'),
+          shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(AppRadius.md)),
+          content: Row(children: [
+            const Icon(Icons.check_circle, color: Colors.white, size: 18),
+            const SizedBox(width: 8),
+            Text(context.t('profile.password_updated')),
           ]),
         ),
       );
@@ -215,8 +291,10 @@ class _ChangePasswordDialogState extends State<_ChangePasswordDialog> {
   @override
   Widget build(BuildContext context) {
     return AlertDialog(
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(AppRadius.md)),
-      title: const Text('Change Password', style: TextStyle(fontWeight: FontWeight.w800)),
+      shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(AppRadius.md)),
+      title: Text(context.t('profile.change_password'),
+          style: const TextStyle(fontWeight: FontWeight.w800)),
       content: SingleChildScrollView(
         child: Column(
           mainAxisSize: MainAxisSize.min,
@@ -226,10 +304,14 @@ class _ChangePasswordDialogState extends State<_ChangePasswordDialog> {
               controller: _current,
               obscureText: _hideCurrent,
               decoration: InputDecoration(
-                labelText: 'Current password',
+                labelText: context.t('profile.current_password'),
                 suffixIcon: IconButton(
-                  icon: Icon(_hideCurrent ? Icons.visibility_off_outlined : Icons.visibility_outlined,
-                      size: 20, color: AppColors.textMuted),
+                  icon: Icon(
+                      _hideCurrent
+                          ? Icons.visibility_off_outlined
+                          : Icons.visibility_outlined,
+                      size: 20,
+                      color: AppColors.textMuted),
                   onPressed: () => setState(() => _hideCurrent = !_hideCurrent),
                 ),
               ),
@@ -239,10 +321,14 @@ class _ChangePasswordDialogState extends State<_ChangePasswordDialog> {
               controller: _next,
               obscureText: _hideNext,
               decoration: InputDecoration(
-                labelText: 'New password',
+                labelText: context.t('profile.new_password'),
                 suffixIcon: IconButton(
-                  icon: Icon(_hideNext ? Icons.visibility_off_outlined : Icons.visibility_outlined,
-                      size: 20, color: AppColors.textMuted),
+                  icon: Icon(
+                      _hideNext
+                          ? Icons.visibility_off_outlined
+                          : Icons.visibility_outlined,
+                      size: 20,
+                      color: AppColors.textMuted),
                   onPressed: () => setState(() => _hideNext = !_hideNext),
                 ),
               ),
@@ -251,7 +337,8 @@ class _ChangePasswordDialogState extends State<_ChangePasswordDialog> {
             TextField(
               controller: _confirm,
               obscureText: _hideNext,
-              decoration: const InputDecoration(labelText: 'Confirm new password'),
+              decoration:
+                  InputDecoration(labelText: context.t('profile.confirm_new')),
             ),
             if (_error != null) ...[
               const SizedBox(height: 12),
@@ -263,11 +350,13 @@ class _ChangePasswordDialogState extends State<_ChangePasswordDialog> {
                 ),
                 child: Row(
                   children: [
-                    const Icon(Icons.error_outline, color: AppColors.danger, size: 16),
+                    const Icon(Icons.error_outline,
+                        color: AppColors.danger, size: 16),
                     const SizedBox(width: 6),
                     Expanded(
                         child: Text(_error!,
-                            style: const TextStyle(color: AppColors.danger, fontSize: 12))),
+                            style: const TextStyle(
+                                color: AppColors.danger, fontSize: 12))),
                   ],
                 ),
               ),
@@ -278,7 +367,7 @@ class _ChangePasswordDialogState extends State<_ChangePasswordDialog> {
       actions: [
         TextButton(
           onPressed: _busy ? null : () => Navigator.pop(context),
-          child: const Text('Cancel'),
+          child: Text(context.t('common.cancel')),
         ),
         ElevatedButton(
           onPressed: _busy ? null : _submit,
@@ -286,9 +375,10 @@ class _ChangePasswordDialogState extends State<_ChangePasswordDialog> {
               ? const SizedBox(
                   height: 18,
                   width: 18,
-                  child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+                  child: CircularProgressIndicator(
+                      strokeWidth: 2, color: Colors.white),
                 )
-              : const Text('Update'),
+              : Text(context.t('common.update')),
         ),
       ],
     );
@@ -328,7 +418,7 @@ class _EditProfileSheetState extends State<_EditProfileSheet> {
 
   Future<void> _save() async {
     if (_first.text.trim().isEmpty || _last.text.trim().isEmpty) {
-      setState(() => _error = 'First name and last name are required');
+      setState(() => _error = context.t('profile.err_names_required'));
       return;
     }
     final phone = _phone.text.trim();
@@ -352,11 +442,12 @@ class _EditProfileSheetState extends State<_EditProfileSheet> {
         SnackBar(
           backgroundColor: AppColors.success,
           behavior: SnackBarBehavior.floating,
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(AppRadius.md)),
-          content: const Row(children: [
-            Icon(Icons.check_circle, color: Colors.white, size: 18),
-            SizedBox(width: 8),
-            Text('Profile updated'),
+          shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(AppRadius.md)),
+          content: Row(children: [
+            const Icon(Icons.check_circle, color: Colors.white, size: 18),
+            const SizedBox(width: 8),
+            Text(context.t('profile.profile_updated')),
           ]),
         ),
       );
@@ -388,20 +479,23 @@ class _EditProfileSheetState extends State<_EditProfileSheet> {
                 ),
               ),
             ),
-            const Text('Edit Profile',
-                style: TextStyle(fontWeight: FontWeight.w800, fontSize: 18)),
+            Text(context.t('profile.edit_profile'),
+                style:
+                    const TextStyle(fontWeight: FontWeight.w800, fontSize: 18)),
             const SizedBox(height: 4),
-            const Text('Update your personal information',
-                style: TextStyle(color: AppColors.textMuted, fontSize: 12)),
+            Text(context.t('profile.edit_subtitle'),
+                style:
+                    const TextStyle(color: AppColors.textMuted, fontSize: 12)),
             const SizedBox(height: 20),
             Row(
               children: [
                 Expanded(
                   child: TextField(
                     controller: _first,
-                    decoration: const InputDecoration(
-                      labelText: 'First name',
-                      prefixIcon: Icon(Icons.person_outline, color: AppColors.textMuted),
+                    decoration: InputDecoration(
+                      labelText: context.t('profile.first_name'),
+                      prefixIcon: const Icon(Icons.person_outline,
+                          color: AppColors.textMuted),
                     ),
                   ),
                 ),
@@ -409,7 +503,8 @@ class _EditProfileSheetState extends State<_EditProfileSheet> {
                 Expanded(
                   child: TextField(
                     controller: _last,
-                    decoration: const InputDecoration(labelText: 'Last name'),
+                    decoration: InputDecoration(
+                        labelText: context.t('profile.last_name')),
                   ),
                 ),
               ],
@@ -422,9 +517,10 @@ class _EditProfileSheetState extends State<_EditProfileSheet> {
                 FilteringTextInputFormatter.digitsOnly,
                 LengthLimitingTextInputFormatter(10),
               ],
-              decoration: const InputDecoration(
-                labelText: 'Phone',
-                prefixIcon: Icon(Icons.phone_outlined, color: AppColors.textMuted),
+              decoration: InputDecoration(
+                labelText: context.t('profile.phone'),
+                prefixIcon: const Icon(Icons.phone_outlined,
+                    color: AppColors.textMuted),
               ),
             ),
             if (_error != null) ...[
@@ -437,11 +533,13 @@ class _EditProfileSheetState extends State<_EditProfileSheet> {
                 ),
                 child: Row(
                   children: [
-                    const Icon(Icons.error_outline, color: AppColors.danger, size: 16),
+                    const Icon(Icons.error_outline,
+                        color: AppColors.danger, size: 16),
                     const SizedBox(width: 6),
                     Expanded(
                         child: Text(_error!,
-                            style: const TextStyle(color: AppColors.danger, fontSize: 12))),
+                            style: const TextStyle(
+                                color: AppColors.danger, fontSize: 12))),
                   ],
                 ),
               ),
@@ -475,12 +573,14 @@ class _EditProfileSheetState extends State<_EditProfileSheet> {
                           key: ValueKey('l'),
                           height: 20,
                           width: 20,
-                          child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+                          child: CircularProgressIndicator(
+                              strokeWidth: 2, color: Colors.white),
                         )
-                      : const Text(
-                          'Save Changes',
-                          key: ValueKey('t'),
-                          style: TextStyle(color: Colors.white, fontWeight: FontWeight.w800),
+                      : Text(
+                          context.t('profile.save_changes'),
+                          key: const ValueKey('t'),
+                          style: const TextStyle(
+                              color: Colors.white, fontWeight: FontWeight.w800),
                         ),
                 ),
               ),
@@ -520,18 +620,10 @@ class _CoverHeader extends StatelessWidget {
                 height: 200,
                 width: double.infinity,
                 decoration: const BoxDecoration(
-                  gradient: LinearGradient(
-                    colors: [AppColors.navy, Color(0xFF112A55), AppColors.blue],
-                    begin: Alignment.topLeft,
-                    end: Alignment.bottomRight,
-                  ),
-                  borderRadius: BorderRadius.vertical(bottom: Radius.circular(32)),
+                  color: AppColors.navy,
+                  borderRadius:
+                      BorderRadius.vertical(bottom: Radius.circular(32)),
                 ),
-              ),
-              Positioned(
-                top: 30,
-                right: -30,
-                child: GradientBlob(color: AppColors.sky.withValues(alpha: 0.5), size: 180),
               ),
               Positioned(
                 top: 50,
@@ -539,7 +631,10 @@ class _CoverHeader extends StatelessWidget {
                 right: 20,
                 child: Text(
                   context.t('profile.title'),
-                  style: const TextStyle(color: Colors.white, fontSize: 20, fontWeight: FontWeight.w800),
+                  style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 20,
+                      fontWeight: FontWeight.w800),
                 ),
               ),
               Positioned(
@@ -591,9 +686,13 @@ class _CoverHeader extends StatelessWidget {
                               decoration: const BoxDecoration(
                                 color: AppColors.blue,
                                 shape: BoxShape.circle,
-                                boxShadow: [BoxShadow(color: Colors.black38, blurRadius: 8)],
+                                boxShadow: [
+                                  BoxShadow(
+                                      color: Colors.black38, blurRadius: 8)
+                                ],
                               ),
-                              child: const Icon(Icons.edit, color: Colors.white, size: 16),
+                              child: const Icon(Icons.edit,
+                                  color: Colors.white, size: 16),
                             ),
                           ),
                         ),

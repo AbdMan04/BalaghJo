@@ -82,8 +82,12 @@ class ApiClient {
     return _send(() => http.post(_uri(path), headers: _headers(), body: jsonEncode(body)));
   }
 
-  Future<dynamic> delete(String path) {
-    return _send(() => http.delete(_uri(path), headers: _headers(json: false)));
+  Future<dynamic> delete(String path, {Map<String, dynamic>? body}) {
+    return _send(() => http.delete(
+          _uri(path),
+          headers: _headers(json: body != null),
+          body: body != null ? jsonEncode(body) : null,
+        ));
   }
 
   Future<dynamic> patch(String path, Map<String, dynamic> body) {

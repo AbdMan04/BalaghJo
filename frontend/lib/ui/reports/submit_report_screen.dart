@@ -13,9 +13,11 @@ import 'package:image_picker/image_picker.dart';
 import '../../core/strings.dart';
 import '../../core/theme.dart';
 import '../../data/api/report_api.dart';
+import '../../data/models/report.dart';
 import '../widgets/animations.dart';
 import '../widgets/category_icon.dart';
 import 'map_picker_screen.dart';
+import 'report_detail_screen.dart';
 
 class SubmitReportScreen extends StatefulWidget {
   final String? initialCategory;
@@ -36,10 +38,24 @@ class _SubmitReportScreenState extends State<SubmitReportScreen> {
   bool _busy = false;
   bool _success = false;
   String? _error;
+  List<Report>? _nearby;
+
+  Future<void> _checkNearby() async {
+    if (_lat == null || _lng == null) return;
+    try {
+      final matches =
+          await _api.nearby(lat: _lat!, lng: _lng!, category: _category);
+      if (!mounted) return;
+      setState(() => _nearby = matches);
+    } catch (_) {
+      // Best-effort duplicate check; never blocks submission.
+    }
+  }
 
   Future<void> _pickPhoto() async {
     final picker = ImagePicker();
-    final x = await picker.pickImage(source: ImageSource.gallery, maxWidth: 1600, imageQuality: 85);
+    final x = await picker.pickImage(
+        source: ImageSource.gallery, maxWidth: 1600, imageQuality: 85);
     if (x != null) setState(() => _photo = File(x.path));
   }
 
@@ -53,23 +69,33 @@ class _SubmitReportScreenState extends State<SubmitReportScreen> {
       setState(() {
         _lat = picked.lat;
         _lng = picked.lng;
-        if (picked.address != null && picked.address!.isNotEmpty && _address.text.trim().isEmpty) {
+        if (picked.address != null &&
+            picked.address!.isNotEmpty &&
+            _address.text.trim().isEmpty) {
           _address.text = picked.address!;
         }
       });
+      _checkNearby();
     }
   }
 
   Future<void> _captureLocation() async {
     try {
       var perm = await Geolocator.checkPermission();
-      if (perm == LocationPermission.denied) perm = await Geolocator.requestPermission();
-      if (perm == LocationPermission.denied || perm == LocationPermission.deniedForever) return;
-      final pos = await Geolocator.getCurrentPosition(timeLimit: const Duration(seconds: 10));
+      if (perm == LocationPermission.denied) {
+        perm = await Geolocator.requestPermission();
+      }
+      if (perm == LocationPermission.denied ||
+          perm == LocationPermission.deniedForever) {
+        return;
+      }
+      final pos = await Geolocator.getCurrentPosition(
+          timeLimit: const Duration(seconds: 10));
       setState(() {
         _lat = pos.latitude;
         _lng = pos.longitude;
       });
+      _checkNearby();
     } catch (_) {}
   }
 
@@ -100,7 +126,8 @@ class _SubmitReportScreenState extends State<SubmitReportScreen> {
         SnackBar(
           backgroundColor: AppColors.success,
           behavior: SnackBarBehavior.floating,
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(AppRadius.md)),
+          shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(AppRadius.md)),
           content: Row(children: [
             const Icon(Icons.check_circle, color: Colors.white, size: 20),
             const SizedBox(width: 8),
@@ -132,7 +159,9 @@ class _SubmitReportScreenState extends State<SubmitReportScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: Text(context.t('submit.title'), style: const TextStyle(fontWeight: FontWeight.w800))),
+      appBar: AppBar(
+          title: Text(context.t('submit.title'),
+              style: const TextStyle(fontWeight: FontWeight.w800))),
       body: Stack(
         children: [
           SingleChildScrollView(
@@ -140,7 +169,9 @@ class _SubmitReportScreenState extends State<SubmitReportScreen> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                FadeSlideIn(child: _label(context.t('submit.photo'), context.t('ar.photo'))),
+                FadeSlideIn(
+                    child: _label(
+                        context.t('submit.photo'), context.t('ar.photo'))),
                 FadeSlideIn(
                   delay: const Duration(milliseconds: 60),
                   child: PressableScale(
@@ -152,7 +183,9 @@ class _SubmitReportScreenState extends State<SubmitReportScreen> {
                       decoration: BoxDecoration(
                         color: Colors.white,
                         border: Border.all(
-                          color: _photo != null ? AppColors.blue : AppColors.border,
+                          color: _photo != null
+                              ? AppColors.blue
+                              : AppColors.border,
                           width: _photo != null ? 1.5 : 1,
                         ),
                         borderRadius: BorderRadius.circular(AppRadius.md),
@@ -162,8 +195,10 @@ class _SubmitReportScreenState extends State<SubmitReportScreen> {
                         child: _photo != null
                             ? ClipRRect(
                                 key: const ValueKey('photo'),
-                                borderRadius: BorderRadius.circular(AppRadius.md),
-                                child: Image.file(_photo!, fit: BoxFit.cover, width: double.infinity),
+                                borderRadius:
+                                    BorderRadius.circular(AppRadius.md),
+                                child: Image.file(_photo!,
+                                    fit: BoxFit.cover, width: double.infinity),
                               )
                             : Column(
                                 key: const ValueKey('empty'),
@@ -175,27 +210,36 @@ class _SubmitReportScreenState extends State<SubmitReportScreen> {
                                       color: AppColors.surface,
                                       shape: BoxShape.circle,
                                     ),
-                                    child: const Icon(Icons.camera_alt_outlined, size: 28, color: AppColors.blue),
+                                    child: const Icon(Icons.camera_alt_outlined,
+                                        size: 28, color: AppColors.blue),
                                   ),
                                   const SizedBox(height: 8),
-                                  Text(context.t('submit.tap_photo'), style: const TextStyle(fontWeight: FontWeight.w700)),
+                                  Text(context.t('submit.tap_photo'),
+                                      style: const TextStyle(
+                                          fontWeight: FontWeight.w700)),
                                   const SizedBox(height: 2),
                                   Text(context.t('submit.photo_hint'),
-                                      style: const TextStyle(color: AppColors.textMuted, fontSize: 11)),
+                                      style: const TextStyle(
+                                          color: AppColors.textMuted,
+                                          fontSize: 11)),
                                 ],
                               ),
                       ),
                     ),
                   ),
                 ),
-                FadeSlideIn(delay: const Duration(milliseconds: 120), child: _label(context.t('submit.problem_type'), context.t('ar.problem_type'))),
+                FadeSlideIn(
+                    delay: const Duration(milliseconds: 120),
+                    child: _label(context.t('submit.problem_type'),
+                        context.t('ar.problem_type'))),
                 FadeSlideIn(
                   delay: const Duration(milliseconds: 160),
                   child: Column(
                     children: [
                       Row(
                         children: [
-                          Expanded(child: _categoryChip(ReportCategory.pothole)),
+                          Expanded(
+                              child: _categoryChip(ReportCategory.pothole)),
                           const SizedBox(width: 10),
                           Expanded(child: _categoryChip(ReportCategory.waste)),
                         ],
@@ -203,7 +247,8 @@ class _SubmitReportScreenState extends State<SubmitReportScreen> {
                       const SizedBox(height: 10),
                       Row(
                         children: [
-                          Expanded(child: _categoryChip(ReportCategory.lighting)),
+                          Expanded(
+                              child: _categoryChip(ReportCategory.lighting)),
                           const SizedBox(width: 10),
                           Expanded(child: _categoryChip(ReportCategory.other)),
                         ],
@@ -211,23 +256,31 @@ class _SubmitReportScreenState extends State<SubmitReportScreen> {
                     ],
                   ),
                 ),
-                FadeSlideIn(delay: const Duration(milliseconds: 200), child: _label(context.t('submit.description'), context.t('ar.description'))),
+                FadeSlideIn(
+                    delay: const Duration(milliseconds: 200),
+                    child: _label(context.t('submit.description'),
+                        context.t('ar.description'))),
                 FadeSlideIn(
                   delay: const Duration(milliseconds: 240),
                   child: TextField(
                     controller: _description,
                     maxLines: 4,
-                    decoration: InputDecoration(hintText: context.t('submit.description_hint')),
+                    decoration: InputDecoration(
+                        hintText: context.t('submit.description_hint')),
                   ),
                 ),
-                FadeSlideIn(delay: const Duration(milliseconds: 280), child: _label(context.t('submit.location'), context.t('ar.location'))),
+                FadeSlideIn(
+                    delay: const Duration(milliseconds: 280),
+                    child: _label(context.t('submit.location'),
+                        context.t('ar.location'))),
                 FadeSlideIn(
                   delay: const Duration(milliseconds: 320),
                   child: TextField(
                     controller: _address,
                     decoration: InputDecoration(
                       hintText: context.t('submit.address_hint'),
-                      prefixIcon: const Icon(Icons.location_on_outlined, color: AppColors.blue),
+                      prefixIcon: const Icon(Icons.location_on_outlined,
+                          color: AppColors.blue),
                     ),
                   ),
                 ),
@@ -242,7 +295,8 @@ class _SubmitReportScreenState extends State<SubmitReportScreen> {
                         color: Colors.white,
                         borderRadius: BorderRadius.circular(AppRadius.md),
                         border: Border.all(
-                          color: _lat != null ? AppColors.blue : AppColors.border,
+                          color:
+                              _lat != null ? AppColors.blue : AppColors.border,
                           width: _lat != null ? 1.5 : 1,
                         ),
                       ),
@@ -254,26 +308,34 @@ class _SubmitReportScreenState extends State<SubmitReportScreen> {
                               color: AppColors.blue.withValues(alpha: 0.1),
                               borderRadius: BorderRadius.circular(AppRadius.sm),
                             ),
-                            child: const Icon(Icons.map_outlined, color: AppColors.blue, size: 22),
+                            child: const Icon(Icons.map_outlined,
+                                color: AppColors.blue, size: 22),
                           ),
                           const SizedBox(width: 12),
                           Expanded(
                             child: Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
-                                Text(_lat == null ? context.t('submit.pick_on_map') : context.t('submit.location_selected'),
-                                    style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 14)),
+                                Text(
+                                    _lat == null
+                                        ? context.t('submit.pick_on_map')
+                                        : context.t('submit.location_selected'),
+                                    style: const TextStyle(
+                                        fontWeight: FontWeight.w800,
+                                        fontSize: 14)),
                                 const SizedBox(height: 2),
                                 Text(
                                   _lat == null
                                       ? context.t('submit.pick_on_map_hint')
                                       : 'Lat ${_lat!.toStringAsFixed(4)}, Lng ${_lng!.toStringAsFixed(4)}',
-                                  style: const TextStyle(color: AppColors.textMuted, fontSize: 12),
+                                  style: const TextStyle(
+                                      color: AppColors.textMuted, fontSize: 12),
                                 ),
                               ],
                             ),
                           ),
-                          const Icon(Icons.chevron_right, color: AppColors.textMuted),
+                          const Icon(Icons.chevron_right,
+                              color: AppColors.textMuted),
                         ],
                       ),
                     ),
@@ -286,9 +348,12 @@ class _SubmitReportScreenState extends State<SubmitReportScreen> {
                     alignment: Alignment.centerLeft,
                     child: TextButton.icon(
                       onPressed: _captureLocation,
-                      icon: const Icon(Icons.my_location, size: 16, color: AppColors.blue),
+                      icon: const Icon(Icons.my_location,
+                          size: 16, color: AppColors.blue),
                       label: Text(context.t('submit.use_my_location'),
-                          style: const TextStyle(color: AppColors.blue, fontWeight: FontWeight.w700)),
+                          style: const TextStyle(
+                              color: AppColors.blue,
+                              fontWeight: FontWeight.w700)),
                     ),
                   ),
                 ),
@@ -303,20 +368,99 @@ class _SubmitReportScreenState extends State<SubmitReportScreen> {
                             decoration: BoxDecoration(
                               color: AppColors.danger.withValues(alpha: 0.08),
                               borderRadius: BorderRadius.circular(AppRadius.sm),
-                              border: Border.all(color: AppColors.danger.withValues(alpha: 0.3)),
+                              border: Border.all(
+                                  color:
+                                      AppColors.danger.withValues(alpha: 0.3)),
                             ),
                             child: Row(
                               children: [
-                                const Icon(Icons.error_outline, color: AppColors.danger, size: 18),
+                                const Icon(Icons.error_outline,
+                                    color: AppColors.danger, size: 18),
                                 const SizedBox(width: 8),
                                 Expanded(
                                     child: Text(_error!,
-                                        style: const TextStyle(color: AppColors.danger, fontSize: 12))),
+                                        style: const TextStyle(
+                                            color: AppColors.danger,
+                                            fontSize: 12))),
                               ],
                             ),
                           ),
                         ),
                 ),
+                if (_nearby != null && _nearby!.isNotEmpty) ...[
+                  const SizedBox(height: 12),
+                  FadeSlideIn(
+                    delay: const Duration(milliseconds: 360),
+                    child: Container(
+                      padding: const EdgeInsets.all(12),
+                      decoration: BoxDecoration(
+                        color: AppColors.warning.withValues(alpha: 0.08),
+                        borderRadius: BorderRadius.circular(AppRadius.sm),
+                        border: Border.all(
+                            color: AppColors.warning.withValues(alpha: 0.4)),
+                      ),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Row(
+                            children: [
+                              const Icon(Icons.report_gmailerrorred,
+                                  color: AppColors.warning, size: 18),
+                              const SizedBox(width: 8),
+                              Expanded(
+                                child: Text(context.t('submit.nearby_title'),
+                                    style: const TextStyle(
+                                        fontWeight: FontWeight.w800,
+                                        fontSize: 13)),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 4),
+                          Text(context.t('submit.nearby_hint'),
+                              style: const TextStyle(
+                                  color: AppColors.textMuted, fontSize: 11)),
+                          const SizedBox(height: 6),
+                          ...(_nearby!.take(3).map(
+                                (m) => Padding(
+                                  padding:
+                                      const EdgeInsets.symmetric(vertical: 2),
+                                  child: InkWell(
+                                    borderRadius:
+                                        BorderRadius.circular(AppRadius.sm),
+                                    onTap: () => Navigator.of(context).push(
+                                        fadeSlideRoute(ReportDetailScreen(
+                                            reportId: m.id))),
+                                    child: Padding(
+                                      padding: const EdgeInsets.symmetric(
+                                          vertical: 4, horizontal: 4),
+                                      child: Row(
+                                        children: [
+                                          const Icon(Icons.location_on,
+                                              size: 14,
+                                              color: AppColors.warning),
+                                          const SizedBox(width: 6),
+                                          Expanded(
+                                            child: Text(
+                                              '${m.reportId} · ${m.address.isNotEmpty ? m.address : labelForCategory(m.category, context)}',
+                                              style: const TextStyle(
+                                                  fontSize: 12,
+                                                  fontWeight: FontWeight.w600),
+                                            ),
+                                          ),
+                                          const Icon(Icons.chevron_right,
+                                              size: 16,
+                                              color: AppColors.textMuted),
+                                        ],
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                              )),
+                        ],
+                      ),
+                    ),
+                  ),
+                ],
                 const SizedBox(height: 24),
                 FadeSlideIn(
                   delay: const Duration(milliseconds: 380),
@@ -327,15 +471,11 @@ class _SubmitReportScreenState extends State<SubmitReportScreen> {
                       height: 54,
                       alignment: Alignment.center,
                       decoration: BoxDecoration(
-                        gradient: const LinearGradient(
-                          colors: [AppColors.navy, AppColors.blue],
-                          begin: Alignment.centerLeft,
-                          end: Alignment.centerRight,
-                        ),
+                        color: AppColors.navy,
                         borderRadius: BorderRadius.circular(AppRadius.md),
                         boxShadow: [
                           BoxShadow(
-                            color: AppColors.blue.withValues(alpha: 0.35),
+                            color: AppColors.navy.withValues(alpha: 0.35),
                             blurRadius: 18,
                             offset: const Offset(0, 6),
                           ),
@@ -348,16 +488,21 @@ class _SubmitReportScreenState extends State<SubmitReportScreen> {
                                 key: ValueKey('l'),
                                 height: 22,
                                 width: 22,
-                                child: CircularProgressIndicator(strokeWidth: 2.5, color: Colors.white),
+                                child: CircularProgressIndicator(
+                                    strokeWidth: 2.5, color: Colors.white),
                               )
                             : Row(
                                 key: const ValueKey('t'),
                                 mainAxisAlignment: MainAxisAlignment.center,
                                 children: [
-                                  const Icon(Icons.send_rounded, color: Colors.white, size: 18),
+                                  const Icon(Icons.send_rounded,
+                                      color: Colors.white, size: 18),
                                   const SizedBox(width: 8),
                                   Text(context.t('submit.submit_button'),
-                                      style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w800, fontSize: 15)),
+                                      style: const TextStyle(
+                                          color: Colors.white,
+                                          fontWeight: FontWeight.w800,
+                                          fontSize: 15)),
                                 ],
                               ),
                       ),
@@ -384,7 +529,8 @@ class _SubmitReportScreenState extends State<SubmitReportScreen> {
                           color: Colors.white,
                           shape: BoxShape.circle,
                         ),
-                        child: const Icon(Icons.check_circle, color: AppColors.success, size: 80),
+                        child: const Icon(Icons.check_circle,
+                            color: AppColors.success, size: 80),
                       ),
                     ),
                   ),
@@ -399,7 +545,10 @@ class _SubmitReportScreenState extends State<SubmitReportScreen> {
   Widget _categoryChip(ReportCategory c) {
     final selected = _category == c.apiValue;
     return PressableScale(
-      onTap: () => setState(() => _category = c.apiValue),
+      onTap: () {
+        setState(() => _category = c.apiValue);
+        _checkNearby();
+      },
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 240),
         curve: Curves.easeOutCubic,
@@ -413,7 +562,10 @@ class _SubmitReportScreenState extends State<SubmitReportScreen> {
           ),
           borderRadius: BorderRadius.circular(AppRadius.sm),
           boxShadow: selected
-              ? [BoxShadow(color: c.tint.withValues(alpha: 0.25), blurRadius: 10)]
+              ? [
+                  BoxShadow(
+                      color: c.tint.withValues(alpha: 0.25), blurRadius: 10)
+                ]
               : null,
         ),
         child: Row(
@@ -450,11 +602,16 @@ class _SubmitReportScreenState extends State<SubmitReportScreen> {
           children: [
             Text(en,
                 style: const TextStyle(
-                    fontSize: 11, fontWeight: FontWeight.w700, color: AppColors.textMuted, letterSpacing: 0.6)),
+                    fontSize: 11,
+                    fontWeight: FontWeight.w700,
+                    color: AppColors.textMuted,
+                    letterSpacing: 0.6)),
             const SizedBox(width: 8),
             Text(ar,
                 style: const TextStyle(
-                    fontSize: 11, fontWeight: FontWeight.w700, color: AppColors.textMuted)),
+                    fontSize: 11,
+                    fontWeight: FontWeight.w700,
+                    color: AppColors.textMuted)),
           ],
         ),
       );

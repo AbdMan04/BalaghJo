@@ -18,11 +18,16 @@ dependencies:
   shared_preferences: ^2.3.2
   image_picker: ^1.1.2
   geolocator: ^12.0.0
-  intl: ^0.19.0
+  intl: ^0.20.2
   flutter_map: ^7.0.2
   latlong2: ^0.9.1
   url_launcher: ^6.3.0
   flutter_svg: ^2.0.10+1
+  firebase_core: ^4.12.1
+  share_plus: ^13.3.0
+  flutter_localizations:
+    sdk: flutter
+  firebase_messaging: ^16.4.3
 
 dev_dependencies:
   flutter_test:
@@ -43,3 +48,11 @@ flutter_launcher_icons:
   image_path: "assets/icons/quick_report/playstore.png"
   adaptive_icon_background: "#0B7F78"
   adaptive_icon_foreground: "assets/icons/quick_report/playstore.png"
+
+  dependencies:
+  flutter:
+    sdk: flutter
+
+  firebase_core: ^4.0.0
+  firebase_messaging: ^16.0.0
+  

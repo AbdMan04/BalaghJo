@@ -5,7 +5,11 @@ import 'api_client.dart';
 class ReportSummary {
   final int total, resolved, active;
   final List<Report> recent;
-  ReportSummary({required this.total, required this.resolved, required this.active, required this.recent});
+  ReportSummary(
+      {required this.total,
+      required this.resolved,
+      required this.active,
+      required this.recent});
 }
 
 class ReportApi {
@@ -26,7 +30,8 @@ class ReportApi {
   }
 
   Future<List<Report>> list({String? status}) async {
-    final res = await _api.get('/api/reports', query: status != null ? {'status': status} : null);
+    final res = await _api.get('/api/reports',
+        query: status != null ? {'status': status} : null);
     return ((res['reports'] as List?) ?? [])
         .map((e) => Report.fromJson(e as Map<String, dynamic>))
         .toList();
@@ -36,7 +41,8 @@ class ReportApi {
     final query = <String, String>{};
     if (status != null) query['status'] = status;
     if (category != null) query['category'] = category;
-    final res = await _api.get('/api/reports/public', query: query.isEmpty ? null : query);
+    final res = await _api.get('/api/reports/public',
+        query: query.isEmpty ? null : query);
     return ((res['reports'] as List?) ?? [])
         .map((e) => Report.fromJson(e as Map<String, dynamic>))
         .toList();
@@ -45,6 +51,39 @@ class ReportApi {
   Future<Report> get(String id) async {
     final res = await _api.get('/api/reports/$id');
     return Report.fromJson(res['report']);
+  }
+
+  // Admin: fetch every report (with reporter info), filterable.
+  Future<List<Report>> adminAll({String? status, String? category, String? q}) async {
+    final query = <String, String>{};
+    if (status != null) query['status'] = status;
+    if (category != null) query['category'] = category;
+    if (q != null && q.trim().isNotEmpty) query['q'] = q.trim();
+    final res = await _api.get('/api/reports/admin/all', query: query.isEmpty ? null : query);
+    return ((res['reports'] as List?) ?? [])
+        .map((e) => Report.fromJson(e as Map<String, dynamic>))
+        .toList();
+  }
+
+  // Admin: advance a report through the status lifecycle.
+  Future<Report> updateStatus(String id, String status) async {
+    final res = await _api.patch('/api/reports/$id/status', {'status': status});
+    return Report.fromJson(res['report']);
+  }
+
+  Future<List<Report>> nearby({
+    required double lat,
+    required double lng,
+    String? category,
+  }) async {
+    final res = await _api.post('/api/reports/nearby', {
+      'lat': lat,
+      'lng': lng,
+      if (category != null) 'category': category,
+    });
+    return ((res['reports'] as List?) ?? [])
+        .map((e) => Report.fromJson(e as Map<String, dynamic>))
+        .toList();
   }
 
   Future<void> delete(String id) async {
@@ -68,7 +107,8 @@ class ReportApi {
       if (lat != null) 'lat': lat.toString(),
       if (lng != null) 'lng': lng.toString(),
     };
-    final res = await _api.multipart('/api/reports', fields: fields, file: photo);
+    final res =
+        await _api.multipart('/api/reports', fields: fields, file: photo);
     return Report.fromJson(res['report']);
   }
 }

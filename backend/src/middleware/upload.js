@@ -14,12 +14,15 @@ const storage = multer.diskStorage({
   },
 });
 
-const IMAGE_EXTS = /\.(jpe?g|png|gif|webp|bmp|tiff?|heic|heif|avif|svg|ico)$/i;
+// SVG/ICO are excluded: SVGs can carry script payloads and are served
+// statically, making them an XSS vector. Both the MIME type and the file
+// extension must match an allowed image type.
+const IMAGE_EXTS = /\.(jpe?g|png|gif|webp|bmp|tiff?|heic|heif|avif)$/i;
 
 const fileFilter = (_req, file, cb) => {
   const okMime = /^image\//i.test(file.mimetype || '');
   const okExt = IMAGE_EXTS.test(file.originalname || '');
-  if (!okMime && !okExt) {
+  if (!okMime || !okExt) {
     return cb(new Error('Only image files are allowed'));
   }
   cb(null, true);

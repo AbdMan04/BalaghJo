@@ -65,4 +65,18 @@ router.patch(
   ctrl.updateProfile
 );
 
+router.post(
+  '/device-token',
+  authRequired,
+  [body('token').isString().trim().isLength({ min: 10, max: 512 })],
+  ctrl.registerDeviceToken
+);
+
+router.delete(
+  '/device-token',
+  authRequired,
+  [body('token').isString().trim().isLength({ min: 10, max: 512 })],
+  ctrl.unregisterDeviceToken
+);
+
 module.exports = router;
