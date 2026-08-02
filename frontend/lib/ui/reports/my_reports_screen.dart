@@ -82,15 +82,57 @@ class _MyReportsScreenState extends State<MyReportsScreen> {
   }
 
   Future<bool> _deleteReport(Report r) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: Colors.white,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(AppRadius.lg)),
+        title: Text(ctx.t('home.delete_title'), style: const TextStyle(fontWeight: FontWeight.w800)),
+        content: Text(
+          '${ctx.t('home.delete_body_prefix')}'
+          '${r.title.isNotEmpty ? r.title : labelForCategory(r.category, ctx)}'
+          '${ctx.t('home.delete_body_suffix')}',
+          style: const TextStyle(color: AppColors.textMuted, height: 1.4),
+        ),
+        actions: [
+          SizedBox(
+            height: 42,
+            child: TextButton(
+              onPressed: () => Navigator.of(ctx).pop(false),
+              child: Text(ctx.t('common.cancel'),
+                  style: const TextStyle(color: AppColors.navy, fontWeight: FontWeight.w700)),
+            ),
+          ),
+          SizedBox(
+            height: 42,
+            child: ElevatedButton(
+              onPressed: () => Navigator.of(ctx).pop(true),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: AppColors.danger,
+                foregroundColor: Colors.white,
+                elevation: 0,
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(AppRadius.sm)),
+                padding: const EdgeInsets.symmetric(horizontal: 24),
+              ),
+              child: Text(ctx.t('common.delete'), style: const TextStyle(fontWeight: FontWeight.w800)),
+            ),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true) return false;
+    if (!mounted) return false;
+
     setState(() => _pendingDeletes.add(r.id));
     final messenger = ScaffoldMessenger.of(context);
     messenger.hideCurrentSnackBar();
     final controller = messenger.showSnackBar(
       SnackBar(
         behavior: SnackBarBehavior.floating,
+        backgroundColor: Colors.black,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(AppRadius.md)),
         duration: const Duration(seconds: 3),
-        content: Text(context.t('home.deleted_toast')),
+        content: Text(context.t('home.deleted_toast'), style: const TextStyle(color: Colors.white)),
         action: SnackBarAction(
           label: context.t('common.undo'),
           textColor: Colors.white,

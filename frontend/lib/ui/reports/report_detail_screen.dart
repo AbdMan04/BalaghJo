@@ -507,7 +507,7 @@ class _LocationTextState extends State<_LocationText> {
             ? 'Looking up address…'
             : (_resolved != null && _resolved!.isNotEmpty
                 ? _resolved!
-                : 'Unnamed location near GPS ${r.lat.toStringAsFixed(4)}, ${r.lng.toStringAsFixed(4)}'));
+                : context.t('map.unnamed_location')));
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,

@@ -329,9 +329,13 @@ class _SubmitReportScreenState extends State<SubmitReportScreen> {
                                 Text(
                                   _lat == null
                                       ? context.t('submit.pick_on_map_hint')
-                                      : 'Lat ${_lat!.toStringAsFixed(4)}, Lng ${_lng!.toStringAsFixed(4)}',
+                                      : (_address.text.trim().isNotEmpty
+                                          ? _address.text.trim()
+                                          : context.t('submit.pick_on_map_hint')),
                                   style: const TextStyle(
                                       color: AppColors.textMuted, fontSize: 12),
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
                                 ),
                               ],
                             ),

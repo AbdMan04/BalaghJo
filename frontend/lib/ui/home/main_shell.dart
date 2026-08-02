@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import '../../core/strings.dart';
 import '../../core/theme.dart';
 import '../profile/profile_screen.dart';
@@ -33,26 +34,71 @@ class _MainShellState extends State<MainShell> {
   Widget build(BuildContext context) {
     return MainShellScope(
       goTo: _setIndex,
-      child: Scaffold(
-        body: AnimatedSwitcher(
-          duration: const Duration(milliseconds: 280),
-          switchInCurve: Curves.easeOutCubic,
-          switchOutCurve: Curves.easeIn,
-          transitionBuilder: (child, anim) => FadeTransition(
-            opacity: anim,
-            child: SlideTransition(
-              position: Tween<Offset>(begin: const Offset(0, 0.02), end: Offset.zero).animate(anim),
-              child: child,
+      child: PopScope(
+        canPop: false,
+        onPopInvokedWithResult: (didPop, result) {
+          if (!didPop) _confirmExit(context);
+        },
+        child: Scaffold(
+          body: AnimatedSwitcher(
+            duration: const Duration(milliseconds: 280),
+            switchInCurve: Curves.easeOutCubic,
+            switchOutCurve: Curves.easeIn,
+            transitionBuilder: (child, anim) => FadeTransition(
+              opacity: anim,
+              child: SlideTransition(
+                position: Tween<Offset>(begin: const Offset(0, 0.02), end: Offset.zero).animate(anim),
+                child: child,
+              ),
+            ),
+            child: KeyedSubtree(
+              key: ValueKey(_index),
+              child: _pages[_index],
             ),
           ),
-          child: KeyedSubtree(
-            key: ValueKey(_index),
-            child: _pages[_index],
-          ),
+          bottomNavigationBar: _BottomBar(index: _index, onTap: _setIndex),
         ),
-        bottomNavigationBar: _BottomBar(index: _index, onTap: _setIndex),
       ),
     );
+  }
+
+  Future<void> _confirmExit(BuildContext context) async {
+    final leave = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: Colors.white,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(AppRadius.lg)),
+        title: Text(ctx.t('app.exit_title'), style: const TextStyle(fontWeight: FontWeight.w800)),
+        content: Text(
+          ctx.t('app.exit_message'),
+          style: const TextStyle(color: AppColors.textMuted, height: 1.4),
+        ),
+        actions: [
+          SizedBox(
+            height: 42,
+            child: TextButton(
+              onPressed: () => Navigator.of(ctx).pop(false),
+              child: Text(ctx.t('app.no'), style: const TextStyle(color: AppColors.navy, fontWeight: FontWeight.w700)),
+            ),
+          ),
+          SizedBox(
+            height: 42,
+            child: ElevatedButton(
+              onPressed: () => Navigator.of(ctx).pop(true),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: AppColors.blue,
+                foregroundColor: Colors.white,
+                elevation: 0,
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(AppRadius.sm)),
+                padding: const EdgeInsets.symmetric(horizontal: 24),
+              ),
+              child: Text(ctx.t('app.yes'), style: const TextStyle(fontWeight: FontWeight.w800)),
+            ),
+          ),
+        ],
+      ),
+    );
+    if (leave == true) SystemNavigator.pop();
   }
 }
 
@@ -203,11 +249,7 @@ class _ReportFab extends StatelessWidget {
             width: 52,
             height: 52,
             decoration: BoxDecoration(
-              gradient: const LinearGradient(
-                colors: [AppColors.navy, AppColors.blue],
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-              ),
+              color: AppColors.calmBlue,
               shape: BoxShape.circle,
               boxShadow: [
                 BoxShadow(

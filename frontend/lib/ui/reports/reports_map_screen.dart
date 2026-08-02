@@ -11,6 +11,7 @@ import 'package:flutter_map/flutter_map.dart';
 import 'package:intl/intl.dart';
 import 'package:latlong2/latlong.dart';
 import '../../core/config.dart';
+import '../../core/location_helper.dart';
 import '../../core/map_config.dart';
 import '../../core/strings.dart';
 import '../../core/theme.dart';
@@ -35,6 +36,8 @@ class _ReportsMapScreenState extends State<ReportsMapScreen> {
   String? _categoryFilter;
   String? _statusFilter;
   Report? _selected;
+  LatLng? _myLocation;
+  bool _locating = false;
 
   @override
   void initState() {
@@ -55,6 +58,29 @@ class _ReportsMapScreenState extends State<ReportsMapScreen> {
   }
 
   bool _hasCoords(Report r) => r.lat != 0 || r.lng != 0;
+
+  Future<void> _locate() async {
+    setState(() => _locating = true);
+    try {
+      final point = await LocationHelper.locateClamped();
+      if (!mounted) return;
+      if (point == null) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Location permission denied')),
+        );
+        return;
+      }
+      setState(() => _myLocation = point);
+      _map.move(point, MapConfig.locationZoom);
+    } catch (_) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Could not get your location')),
+      );
+    } finally {
+      if (mounted) setState(() => _locating = false);
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -88,21 +114,29 @@ class _ReportsMapScreenState extends State<ReportsMapScreen> {
                     alignment: Alignment.bottomLeft,
                   ),
                   MarkerLayer(
-                    markers: reports
-                        .map((r) => Marker(
-                              point: LatLng(r.lat, r.lng),
-                              width: 44,
-                              height: 44,
-                              alignment: Alignment.topCenter,
-                              child: GestureDetector(
-                                onTap: () => setState(() => _selected = r),
-                                child: _Pin(
-                                  category: r.category,
-                                  active: _selected?.id == r.id,
-                                ),
+                    markers: [
+                      if (_myLocation != null)
+                        Marker(
+                          point: _myLocation!,
+                          width: 26,
+                          height: 26,
+                          alignment: Alignment.center,
+                          child: const _YouAreHereDot(),
+                        ),
+                      ...reports.map((r) => Marker(
+                            point: LatLng(r.lat, r.lng),
+                            width: 44,
+                            height: 44,
+                            alignment: Alignment.topCenter,
+                            child: GestureDetector(
+                              onTap: () => setState(() => _selected = r),
+                              child: _Pin(
+                                category: r.category,
+                                active: _selected?.id == r.id,
                               ),
-                            ))
-                        .toList(),
+                            ),
+                          )),
+                    ],
                   ),
                 ],
               ),
@@ -147,9 +181,51 @@ class _ReportsMapScreenState extends State<ReportsMapScreen> {
                     onClose: () => setState(() => _selected = null),
                   ),
                 ),
+              Positioned(
+                right: 16,
+                bottom: _selected != null ? 188 : 24,
+                child: PressableScale(
+                  onTap: _locating ? null : _locate,
+                  child: Container(
+                    width: 48,
+                    height: 48,
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      shape: BoxShape.circle,
+                      boxShadow: [
+                        BoxShadow(color: Colors.black.withValues(alpha: 0.15), blurRadius: 10),
+                      ],
+                    ),
+                    child: _locating
+                        ? const Padding(
+                            padding: EdgeInsets.all(14),
+                            child: CircularProgressIndicator(strokeWidth: 2, color: AppColors.blue),
+                          )
+                        : const Icon(Icons.my_location, color: AppColors.blue),
+                  ),
+                ),
+              ),
             ],
           );
         },
+      ),
+    );
+  }
+}
+
+class _YouAreHereDot extends StatelessWidget {
+  const _YouAreHereDot();
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      decoration: BoxDecoration(
+        shape: BoxShape.circle,
+        color: AppColors.blue,
+        border: Border.all(color: Colors.white, width: 3),
+        boxShadow: [
+          BoxShadow(color: AppColors.blue.withValues(alpha: 0.5), blurRadius: 12),
+        ],
       ),
     );
   }
@@ -426,7 +502,7 @@ class _MarkerCard extends StatelessWidget {
                       Text(
                         report.address.isNotEmpty
                             ? report.address
-                            : '${report.lat.toStringAsFixed(4)}, ${report.lng.toStringAsFixed(4)}',
+                            : context.t('map.unnamed_location'),
                         style: const TextStyle(color: AppColors.textMuted, fontSize: 11),
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,

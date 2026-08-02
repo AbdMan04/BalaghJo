@@ -1,11 +1,12 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_map/flutter_map.dart';
-import 'package:geolocator/geolocator.dart';
 import 'package:latlong2/latlong.dart';
 import 'package:provider/provider.dart';
 import '../../core/locale_state.dart';
+import '../../core/location_helper.dart';
 import '../../core/map_config.dart';
+import '../../core/strings.dart';
 import '../../core/theme.dart';
 import '../../data/api/geocoding_api.dart';
 import '../widgets/animations.dart';
@@ -79,28 +80,15 @@ class _MapPickerScreenState extends State<MapPickerScreen> {
   Future<void> _useMyLocation() async {
     setState(() => _locating = true);
     try {
-      var perm = await Geolocator.checkPermission();
-      if (perm == LocationPermission.denied) perm = await Geolocator.requestPermission();
-      if (perm == LocationPermission.denied || perm == LocationPermission.deniedForever) {
+      final next = await LocationHelper.locateClamped();
+      if (next == null) {
         if (!mounted) return;
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('Location permission denied')),
         );
         return;
       }
-      Position pos;
-      try {
-        pos = await Geolocator.getCurrentPosition(
-          desiredAccuracy: LocationAccuracy.high,
-          timeLimit: const Duration(seconds: 10),
-        );
-      } catch (_) {
-        final last = await Geolocator.getLastKnownPosition();
-        if (last == null) rethrow;
-        pos = last;
-      }
-      final next = MapConfig.clampToBounds(LatLng(pos.latitude, pos.longitude));
-      _map.move(next, 16);
+      _map.move(next, MapConfig.locationZoom);
       _onPinChanged(next);
     } catch (_) {
       if (!mounted) return;
@@ -180,7 +168,7 @@ class _MapPickerScreenState extends State<MapPickerScreen> {
           ),
           Positioned(
             right: 16,
-            bottom: 140,
+            bottom: 195,
             child: PressableScale(
               onTap: _locating ? null : _useMyLocation,
               child: Container(
@@ -227,7 +215,7 @@ class _MapPickerScreenState extends State<MapPickerScreen> {
                         child: Text(
                           _resolving
                               ? 'Looking up address…'
-                              : (_address ?? 'Unnamed location'),
+                              : (_address ?? context.t('map.unnamed_location')),
                           style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 14),
                           maxLines: 2,
                           overflow: TextOverflow.ellipsis,
@@ -241,11 +229,6 @@ class _MapPickerScreenState extends State<MapPickerScreen> {
                         ),
                     ],
                   ),
-                  const SizedBox(height: 2),
-                  Text(
-                    '${_picked.latitude.toStringAsFixed(5)}, ${_picked.longitude.toStringAsFixed(5)}',
-                    style: const TextStyle(color: AppColors.textMuted, fontSize: 11),
-                  ),
                   const SizedBox(height: 12),
                   PressableScale(
                     onTap: _confirm,
@@ -253,11 +236,7 @@ class _MapPickerScreenState extends State<MapPickerScreen> {
                       height: 48,
                       alignment: Alignment.center,
                       decoration: BoxDecoration(
-                        gradient: const LinearGradient(
-                          colors: [AppColors.navy, AppColors.blue],
-                          begin: Alignment.centerLeft,
-                          end: Alignment.centerRight,
-                        ),
+                        color: AppColors.blue,
                         borderRadius: BorderRadius.circular(AppRadius.md),
                         boxShadow: [
                           BoxShadow(color: AppColors.blue.withValues(alpha: 0.3), blurRadius: 12, offset: const Offset(0, 4)),

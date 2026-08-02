@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 class AppColors {
   static const navy = Color(0xFF0D1F3C);
   static const blue = Color(0xFF1B4FD8);
+  static const calmBlue = Color(0xFF34558B);
   static const sky = Color(0xFF4A9EFF);
   static const success = Color(0xFF22C55E);
   static const warning = Color(0xFFF59E0B);

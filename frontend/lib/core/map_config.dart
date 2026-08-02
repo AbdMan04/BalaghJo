@@ -14,28 +14,32 @@ abstract final class MapConfig {
   );
 
   static const double minZoom = 11;
-  static const double maxZoom = 18;
+  static const double maxZoom = 20;
   static const double initialZoom = 13;
 
-  /// Esri World Street Map tiles (free to use with attribution).
-  static const String esriStreetUrl =
-      'https://server.arcgisonline.com/ArcGIS/rest/services/'
-      'World_Street_Map/MapServer/tile/{z}/{y}/{x}';
+  /// Zoom level used when recentering the map on the user's location.
+  static const double locationZoom = 17;
 
-  /// OpenStreetMap tiles, used automatically when Esri is unavailable.
+  /// Google Maps roadmap tiles (keyless public endpoint).
+  static const String googleStreetUrl =
+      'https://{s}.google.com/vt/lyrs=m&x={x}&y={y}&z={z}';
+
+  static const List<String> googleSubdomains = ['mt0', 'mt1', 'mt2', 'mt3'];
+
+  /// OpenStreetMap tiles, used automatically when Google is unavailable.
   static const String osmStreetUrl =
       'https://tile.openstreetmap.org/{z}/{x}/{y}.png';
 
   static const String attribution =
-      'Esri, Maxar, Earthstar Geographics, and the GIS User Community · '
-      '© OpenStreetMap contributors';
+      '© Google · © OpenStreetMap contributors';
 
-  /// A [TileLayer] rendering Esri street tiles with an OSM fallback.
+  /// A [TileLayer] rendering Google street tiles with an OSM fallback.
   static TileLayer tileLayer() => TileLayer(
-        urlTemplate: esriStreetUrl,
+        urlTemplate: googleStreetUrl,
+        subdomains: googleSubdomains,
         fallbackUrl: osmStreetUrl,
         maxZoom: maxZoom,
-        maxNativeZoom: 19,
+        maxNativeZoom: maxZoom.toInt(),
         userAgentPackageName: 'com.balaghjo.app',
       );
 

@@ -16,6 +16,7 @@ class GeocodingApi {
       'lon': lng.toString(),
       'zoom': '18',
       'addressdetails': '1',
+      'namedetails': '1',
       'countrycodes': 'jo',
     });
     try {
@@ -27,17 +28,39 @@ class GeocodingApi {
       final data = jsonDecode(res.body) as Map<String, dynamic>;
       final addr = (data['address'] as Map?)?.cast<String, dynamic>() ?? const {};
 
-      final street = addr['road'] ?? addr['pedestrian'] ?? addr['footway'];
-      final area = addr['suburb'] ??
-          addr['neighbourhood'] ??
+      String? street;
+      for (final key in ['road', 'pedestrian', 'footway', 'living_street', 'service']) {
+        final v = addr[key];
+        if (v is String && v.isNotEmpty) {
+          street = v;
+          break;
+        }
+      }
+      final streetNo = addr['house_number'];
+      final district = addr['neighbourhood'] ??
           addr['quarter'] ??
+          addr['suburb'] ??
+          addr['hamlet'];
+      final area = addr['town'] ??
+          addr['city'] ??
           addr['village'] ??
-          addr['town'] ??
-          addr['city'];
+          addr['county'] ??
+          addr['state'];
 
-      if (street != null && area != null) return '$street, $area';
-      if (street != null) return street as String;
+      final parts = <String>[
+        if (streetNo is String && streetNo.isNotEmpty) streetNo,
+        if (street != null) street,
+      ];
+      final line = parts.isNotEmpty ? parts.join(' ') : null;
+
+      if (line != null && district != null) return '$line, $district';
+      if (line != null && area != null) return '$line, $area';
+      if (line != null) return line;
+      if (district != null && area != null) return '$district, $area';
+      if (district != null) return district as String;
       if (area != null) return area as String;
+      final name = data['name'];
+      if (name is String && name.isNotEmpty) return name;
       return data['display_name'] as String?;
     } catch (_) {
       return null;
