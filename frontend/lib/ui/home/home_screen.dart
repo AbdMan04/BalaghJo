@@ -92,6 +92,11 @@ class _HomeScreenState extends State<HomeScreen> {
         ),
       ),
     );
+    // Guarantee auto-dismiss at 4s even if the framework's snackbar timer
+    // is interrupted; controller.closed still fires so the delete below runs.
+    Future.delayed(const Duration(seconds: 4), () {
+      if (mounted) messenger.hideCurrentSnackBar();
+    });
     controller.closed.then((_) async {
       if (!mounted) return;
       if (!_pendingDeletes.contains(r.id)) return;

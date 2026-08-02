@@ -89,7 +89,7 @@ class _MyReportsScreenState extends State<MyReportsScreen> {
       SnackBar(
         behavior: SnackBarBehavior.floating,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(AppRadius.md)),
-        duration: const Duration(seconds: 4),
+        duration: const Duration(seconds: 3),
         content: Text(context.t('home.deleted_toast')),
         action: SnackBarAction(
           label: context.t('common.undo'),
@@ -101,6 +101,11 @@ class _MyReportsScreenState extends State<MyReportsScreen> {
         ),
       ),
     );
+    // Guarantee auto-dismiss at 3s even if the framework's snackbar timer
+    // is interrupted; controller.closed still fires so the delete below runs.
+    Future.delayed(const Duration(seconds: 3), () {
+      if (mounted) messenger.hideCurrentSnackBar();
+    });
     controller.closed.then((_) async {
       if (!mounted) return;
       if (!_pendingDeletes.contains(r.id)) return;

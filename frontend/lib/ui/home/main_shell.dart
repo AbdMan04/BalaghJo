@@ -74,43 +74,49 @@ class _BottomBar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      decoration: BoxDecoration(
-        color: Colors.white,
-        boxShadow: [
-          BoxShadow(color: Colors.black.withValues(alpha: 0.06), blurRadius: 16, offset: const Offset(0, -4)),
-        ],
-      ),
-      child: SafeArea(
-        top: false,
-        child: SizedBox(
-          height: 76,
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.spaceAround,
-            children: [
-              _NavItem(
-                icon: Icons.home_outlined,
-                activeIcon: Icons.home_rounded,
-                label: context.t('nav.home'),
-                active: index == 0,
-                onTap: () => onTap(0),
-              ),
-              _ReportFab(active: index == 1, onTap: () => onTap(1)),
-              _NavItem(
-                icon: Icons.description_outlined,
-                activeIcon: Icons.description,
-                label: context.t('nav.my_reports'),
-                active: index == 2,
-                onTap: () => onTap(2),
-              ),
-              _NavItem(
-                icon: Icons.person_outline,
-                activeIcon: Icons.person,
-                label: context.t('nav.profile'),
-                active: index == 3,
-                onTap: () => onTap(3),
-              ),
-            ],
+    // Keep the nav bar's layout fixed in LTR even when the app locale is
+    // Arabic (RTL), so items keep their positions while labels still
+    // translate.
+    return Directionality(
+      textDirection: TextDirection.ltr,
+      child: Container(
+        decoration: BoxDecoration(
+          color: Colors.white,
+          boxShadow: [
+            BoxShadow(color: Colors.black.withValues(alpha: 0.06), blurRadius: 16, offset: const Offset(0, -4)),
+          ],
+        ),
+        child: SafeArea(
+          top: false,
+          child: SizedBox(
+            height: 76,
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceAround,
+              children: [
+                _NavItem(
+                  icon: Icons.home_outlined,
+                  activeIcon: Icons.home_rounded,
+                  label: context.t('nav.home'),
+                  active: index == 0,
+                  onTap: () => onTap(0),
+                ),
+                _ReportFab(active: index == 1, onTap: () => onTap(1)),
+                _NavItem(
+                  icon: Icons.description_outlined,
+                  activeIcon: Icons.description,
+                  label: context.t('nav.my_reports'),
+                  active: index == 2,
+                  onTap: () => onTap(2),
+                ),
+                _NavItem(
+                  icon: Icons.person_outline,
+                  activeIcon: Icons.person,
+                  label: context.t('nav.profile'),
+                  active: index == 3,
+                  onTap: () => onTap(3),
+                ),
+              ],
+            ),
           ),
         ),
       ),
@@ -170,7 +176,12 @@ class _NavItem extends StatelessWidget {
                 fontWeight: FontWeight.w700,
                 color: active ? AppColors.blue : AppColors.textMuted,
               ),
-              child: Text(label),
+              child: Text(
+                label,
+                textAlign: TextAlign.center,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+              ),
             ),
           ],
         ),

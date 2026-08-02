@@ -10,6 +10,8 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:provider/provider.dart';
+import '../../core/locale_state.dart';
 import '../../core/strings.dart';
 import '../../core/theme.dart';
 import '../../data/api/report_api.dart';
@@ -345,7 +347,7 @@ class _SubmitReportScreenState extends State<SubmitReportScreen> {
                 FadeSlideIn(
                   delay: const Duration(milliseconds: 400),
                   child: Align(
-                    alignment: Alignment.centerLeft,
+                    alignment: Alignment.center,
                     child: TextButton.icon(
                       onPressed: _captureLocation,
                       icon: const Icon(Icons.my_location,
@@ -555,16 +557,16 @@ class _SubmitReportScreenState extends State<SubmitReportScreen> {
         width: double.infinity,
         padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 10),
         decoration: BoxDecoration(
-          color: selected ? c.tint.withValues(alpha: 0.12) : Colors.white,
+          color: selected ? AppColors.navy.withValues(alpha: 0.12) : Colors.white,
           border: Border.all(
-            color: selected ? c.tint : AppColors.border,
+            color: selected ? AppColors.navy : AppColors.border,
             width: selected ? 1.5 : 1,
           ),
           borderRadius: BorderRadius.circular(AppRadius.sm),
           boxShadow: selected
               ? [
                   BoxShadow(
-                      color: c.tint.withValues(alpha: 0.25), blurRadius: 10)
+                      color: AppColors.navy.withValues(alpha: 0.25), blurRadius: 10)
                 ]
               : null,
         ),
@@ -576,7 +578,7 @@ class _SubmitReportScreenState extends State<SubmitReportScreen> {
               child: Icon(c.icon,
                   key: ValueKey('${c.apiValue}-$selected'),
                   size: 16,
-                  color: selected ? c.tint : AppColors.navy),
+                  color: selected ? AppColors.navy : AppColors.navy),
             ),
             const SizedBox(width: 6),
             Flexible(
@@ -586,7 +588,7 @@ class _SubmitReportScreenState extends State<SubmitReportScreen> {
                 style: TextStyle(
                   fontSize: 13,
                   fontWeight: FontWeight.w700,
-                  color: selected ? c.tint : AppColors.navy,
+                  color: selected ? AppColors.navy : AppColors.navy,
                 ),
               ),
             ),
@@ -596,23 +598,34 @@ class _SubmitReportScreenState extends State<SubmitReportScreen> {
     );
   }
 
-  Widget _label(String en, String ar) => Padding(
-        padding: const EdgeInsets.only(top: 18, bottom: 8),
-        child: Row(
-          children: [
-            Text(en,
-                style: const TextStyle(
-                    fontSize: 11,
-                    fontWeight: FontWeight.w700,
-                    color: AppColors.textMuted,
-                    letterSpacing: 0.6)),
-            const SizedBox(width: 8),
-            Text(ar,
-                style: const TextStyle(
-                    fontSize: 11,
-                    fontWeight: FontWeight.w700,
-                    color: AppColors.textMuted)),
-          ],
-        ),
-      );
+  Widget _label(String en, String ar) {
+    // In Arabic only the translation is shown (the English word is dropped);
+    // in English both appear, with the Arabic on the right.
+    final isArabic = context.watch<LocaleState>().isArabic;
+    return Padding(
+      padding: const EdgeInsets.only(top: 18, bottom: 8),
+      child: isArabic
+          ? Text(ar,
+              style: const TextStyle(
+                  fontSize: 11,
+                  fontWeight: FontWeight.w700,
+                  color: AppColors.textMuted))
+          : Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Text(en,
+                    style: const TextStyle(
+                        fontSize: 11,
+                        fontWeight: FontWeight.w700,
+                        color: AppColors.textMuted,
+                        letterSpacing: 0.6)),
+                Text(ar,
+                    style: const TextStyle(
+                        fontSize: 11,
+                        fontWeight: FontWeight.w700,
+                        color: AppColors.textMuted)),
+              ],
+            ),
+    );
+  }
 }

@@ -30,6 +30,7 @@ class RecentReportTile extends StatelessWidget {
           key: ValueKey('home-tile-${report.id}'),
           direction: DismissDirection.endToStart,
           confirmDismiss: (_) => onDelete(),
+          onDismissed: (_) {},
           background: Container(
             alignment: AlignmentDirectional.centerEnd,
             padding: const EdgeInsets.symmetric(horizontal: 22),
