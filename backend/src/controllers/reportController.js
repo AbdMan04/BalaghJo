@@ -5,21 +5,44 @@ List & History).
  (FR-5) are received via multer middleware and stored alongside the
   report.
  */
+const fs = require('fs');
 const { validationResult } = require('express-validator');
 const Report = require('../models/Report');
 const User = require('../models/User');
 const Notification = require('../models/Notification');
 const { sendPush } = require('../config/firebase');
+const { uploader } = require('../config/cloudinary');
 const wrap = require('../utils/asyncHandler');
 
 const STATUS_LABELS = { pending: 'Pending', in_progress: 'In Progress', resolved: 'Resolved' };
+
+// FR-5: store the uploaded photo on Cloudinary when configured; otherwise
+// keep the local uploads/ path. The local file is a temp copy either way.
+async function storePhoto(file) {
+  if (!file) return '';
+  if (uploader) {
+    try {
+      const result = await uploader.upload(file.path, { folder: 'balaghjo' });
+      fs.unlink(file.path, () => {});
+      return result.secure_url;
+    } catch (err) {
+      console.error('[cloudinary] upload failed:', err.message);
+    }
+  }
+  return `/uploads/${file.filename}`;
+}
+
+function publicIdFromUrl(url) {
+  const m = String(url).match(/\/image\/upload\/(?:v\d+\/)?(.+)$/);
+  return m ? m[1].replace(/\.[a-z0-9]+$/i, '') : null;
+}
 
 exports.createReport = wrap(async (req, res) => {
   const errors = validationResult(req);
   if (!errors.isEmpty()) return res.status(400).json({ errors: errors.array() });
 
   const { category, title, description, address, lat, lng } = req.body;
-  const photoUrl = req.file ? `/uploads/${req.file.filename}` : '';
+  const photoUrl = await storePhoto(req.file);
 
   const payload = {
     userId: req.user.id,
@@ -155,6 +178,14 @@ exports.deleteReport = wrap(async (req, res) => {
   const wasResolved = report.status === 'resolved';
   const ownerId = report.userId;
   await report.deleteOne();
+  if (uploader && report.photoUrl) {
+    const publicId = publicIdFromUrl(report.photoUrl);
+    if (publicId) {
+      uploader.destroy(publicId).catch((err) =>
+        console.error('[cloudinary] destroy failed:', err.message)
+      );
+    }
+  }
   const inc = { sentReports: -1 };
   if (wasResolved) inc.solvedReports = -1;
   await User.findByIdAndUpdate(ownerId, { $inc: inc });

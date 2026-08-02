@@ -25,6 +25,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
   final NotificationApi _api = NotificationApi();
   List<AppNotification> _items = const [];
   bool _loading = true;
+  bool _fetching = false;
   bool _error = false;
   Timer? _timer;
 
@@ -42,19 +43,24 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
   }
 
   Future<void> _load() async {
-    if (_loading) return;
+    if (_fetching) return;
+    _fetching = true;
     try {
       final items = await _api.list();
       if (!mounted) return;
       setState(() {
         _items = items;
         _error = false;
+        _loading = false;
       });
     } catch (_) {
       if (!mounted) return;
-      setState(() => _error = _items.isEmpty);
+      setState(() {
+        _loading = false;
+        _error = _items.isEmpty;
+      });
     } finally {
-      if (mounted) setState(() => _loading = false);
+      _fetching = false;
     }
   }
 

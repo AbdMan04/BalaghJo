@@ -30,7 +30,7 @@ class ReportThumbnail extends StatelessWidget {
       child: report.photoUrl.isEmpty
           ? _fallback()
           : Image.network(
-              '${AppConfig.apiBaseUrl}${report.photoUrl}',
+              AppConfig.imageUrl(report.photoUrl),
               fit: BoxFit.cover,
               errorBuilder: (_, __, ___) => _fallback(),
               loadingBuilder: (_, child, progress) =>

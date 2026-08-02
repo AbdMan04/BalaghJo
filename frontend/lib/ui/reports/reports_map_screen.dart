@@ -399,7 +399,7 @@ class _MarkerCard extends StatelessWidget {
                   clipBehavior: Clip.antiAlias,
                   child: report.photoUrl.isNotEmpty
                       ? Image.network(
-                          '${AppConfig.apiBaseUrl}${report.photoUrl}',
+                          AppConfig.imageUrl(report.photoUrl),
                           fit: BoxFit.cover,
                           errorBuilder: (_, __, ___) =>
                               Icon(iconForCategory(report.category), color: tint),

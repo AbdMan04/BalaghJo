@@ -157,7 +157,7 @@ class _ReportDetailScreenState extends State<ReportDetailScreen> {
                           : ClipRRect(
                               borderRadius: BorderRadius.circular(AppRadius.lg),
                               child: Image.network(
-                                '${AppConfig.apiBaseUrl}${r.photoUrl}',
+                                AppConfig.imageUrl(r.photoUrl),
                                 fit: BoxFit.cover,
                                 width: double.infinity,
                                 errorBuilder: (_, __, ___) => const Center(
