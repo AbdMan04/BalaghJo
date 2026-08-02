@@ -2,3 +2,6 @@ node_modules/
 .env
 uploads/*
 !uploads/.gitkeep
+# Firebase service-account private keys must never be committed.
+*-adminsdk-*.json
+firebase-service-account*.json

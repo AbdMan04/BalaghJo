@@ -1,0 +1,14 @@
+# Render blueprint for the BALAGHJO frontend (Flutter web).
+# Serves both the mobile web app (/index.html) and the admin
+# dashboard (/admin.html) from a single static site. The backend
+# API remains a separate, manually-managed web service.
+services:
+  - type: web
+    runtime: static
+    name: balaghjo-admin
+    rootDir: frontend
+    buildCommand: bash build.sh
+    staticPublishPath: build/web
+    envVars:
+      - key: SKIP_INSTALL_DEPS
+        value: "true"
