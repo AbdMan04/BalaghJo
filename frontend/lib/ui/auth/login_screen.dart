@@ -116,6 +116,7 @@ class _LoginScreenState extends State<LoginScreen> {
                           controller: _identifier,
                           decoration: InputDecoration(
                             hintText: context.t('login.identifier_hint'),
+                            hintStyle: const TextStyle(fontSize: 13),
                             prefixIcon: const Icon(Icons.phone_android, color: AppColors.textMuted),
                           ),
                           keyboardType: TextInputType.number,
