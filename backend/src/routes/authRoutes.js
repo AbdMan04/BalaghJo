@@ -26,7 +26,7 @@ router.post(
   [
     body('firstName').isString().trim().notEmpty(),
     body('lastName').isString().trim().notEmpty(),
-    body('phone').isString().trim().matches(/^\d{10}$/).withMessage('Phone must be 10 digits'),
+    body('phone').isString().trim().matches(/^07[789]\d{7}$/).withMessage('Phone must start with 077, 078, or 079'),
     body('password').isString().isLength({ min: 6 }),
   ],
   ctrl.register
@@ -36,7 +36,7 @@ router.post(
   '/login',
   loginLimiter,
   [
-    body('identifier').isString().trim().matches(/^\d{10}$/).withMessage('Phone must be 10 digits'),
+    body('identifier').isString().trim().matches(/^07[789]\d{7}$/).withMessage('Phone must start with 077, 078, or 079'),
     body('password').isString().notEmpty().withMessage('Enter your password'),
   ],
   ctrl.login
@@ -60,7 +60,10 @@ router.patch(
   [
     body('firstName').optional().isString().trim().isLength({ min: 1, max: 50 }),
     body('lastName').optional().isString().trim().isLength({ min: 1, max: 50 }),
-    body('phone').optional().isString().trim().isLength({ max: 30 }),
+    body('phone')
+      .optional()
+      .custom((v) => v === '' || /^07[789]\d{7}$/.test(v))
+      .withMessage('Phone must start with 077, 078, or 079'),
   ],
   ctrl.updateProfile
 );

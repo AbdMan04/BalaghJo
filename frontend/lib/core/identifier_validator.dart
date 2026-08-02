@@ -1,21 +1,21 @@
 import 'package:flutter/widgets.dart';
 import 'strings.dart';
 
+final joPhoneRegex = RegExp(r'^07[789]\d{7}$');
+
 abstract class IdentifierValidator {
   bool matches(String value);
   String? validate(BuildContext context, String value);
 }
 
 class PhoneIdentifierValidator implements IdentifierValidator {
-  static final _re = RegExp(r'^[0-9]{10}$');
-
   const PhoneIdentifierValidator();
 
   @override
   bool matches(String value) => value.isNotEmpty;
   @override
   String? validate(BuildContext context, String value) =>
-      _re.hasMatch(value) ? null : context.t('login.invalid_phone');
+      joPhoneRegex.hasMatch(value) ? null : context.t('login.invalid_phone');
 }
 
 const _strategies = <IdentifierValidator>[

@@ -7,6 +7,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import '../../core/api_errors.dart';
+import '../../core/identifier_validator.dart';
 import '../../core/locale_state.dart';
 import '../../core/strings.dart';
 import '../../core/theme.dart';
@@ -422,7 +423,7 @@ class _EditProfileSheetState extends State<_EditProfileSheet> {
       return;
     }
     final phone = _phone.text.trim();
-    if (phone.isNotEmpty && phone.length != 10) {
+    if (phone.isNotEmpty && !joPhoneRegex.hasMatch(phone)) {
       setState(() => _error = context.t('login.invalid_phone'));
       return;
     }

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import '../../core/api_errors.dart';
+import '../../core/identifier_validator.dart';
 import '../../core/strings.dart';
 import '../../core/theme.dart';
 import '../../state/auth_state.dart';
@@ -104,7 +105,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                             FilteringTextInputFormatter.digitsOnly,
                             LengthLimitingTextInputFormatter(10),
                           ],
-                          validator: (v) => (v == null || v.trim().length != 10)
+                          validator: (v) => (v == null || !joPhoneRegex.hasMatch(v.trim()))
                               ? context.t('login.invalid_phone')
                               : null,
                         ),
