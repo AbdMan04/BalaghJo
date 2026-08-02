@@ -20,7 +20,6 @@ class AppUser {
   });
 
   String get fullName => '$firstName $lastName'.trim();
-  bool get isAdmin => role == 'admin';
 
   factory AppUser.fromJson(Map<String, dynamic> j) => AppUser(
         id: j['id'] ?? j['_id'] ?? '',

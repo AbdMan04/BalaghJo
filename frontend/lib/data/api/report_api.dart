@@ -53,24 +53,6 @@ class ReportApi {
     return Report.fromJson(res['report']);
   }
 
-  // Admin: fetch every report (with reporter info), filterable.
-  Future<List<Report>> adminAll({String? status, String? category, String? q}) async {
-    final query = <String, String>{};
-    if (status != null) query['status'] = status;
-    if (category != null) query['category'] = category;
-    if (q != null && q.trim().isNotEmpty) query['q'] = q.trim();
-    final res = await _api.get('/api/reports/admin/all', query: query.isEmpty ? null : query);
-    return ((res['reports'] as List?) ?? [])
-        .map((e) => Report.fromJson(e as Map<String, dynamic>))
-        .toList();
-  }
-
-  // Admin: advance a report through the status lifecycle.
-  Future<Report> updateStatus(String id, String status) async {
-    final res = await _api.patch('/api/reports/$id/status', {'status': status});
-    return Report.fromJson(res['report']);
-  }
-
   Future<List<Report>> nearby({
     required double lat,
     required double lng,

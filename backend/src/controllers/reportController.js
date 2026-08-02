@@ -161,38 +161,6 @@ exports.deleteReport = wrap(async (req, res) => {
   res.json({ ok: true });
 });
 
-// Admin dashboard: every report with full reporter info plus optional
-// status / category / text filters. Gated by adminOnly at the route.
-exports.listAllReportsAdmin = wrap(async (req, res) => {
-  const { status, category, q } = req.query;
-  const filter = {};
-  if (status && ['pending', 'in_progress', 'resolved'].includes(status)) filter.status = status;
-  if (category && ['pothole', 'waste', 'lighting', 'other'].includes(category)) {
-    filter.category = category;
-  }
-  if (q && typeof q === 'string' && q.trim()) {
-    const re = new RegExp(q.trim(), 'i');
-    filter.$or = [{ reportId: re }, { title: re }, { address: re }, { description: re }];
-  }
-  const reports = await Report.find(filter)
-    .populate('userId', 'firstName lastName phone')
-    .sort({ createdAt: -1 })
-    .limit(300);
-  res.json({
-    reports: reports.map((r) => {
-      const owner = r.userId;
-      const json = r.toPublicJSON();
-      json.reporter = owner
-        ? {
-            fullName: `${owner.firstName ?? ''} ${owner.lastName ?? ''}`.trim(),
-            phone: owner.phone || '',
-          }
-        : { fullName: '', phone: '' };
-      return json;
-    }),
-  });
-});
-
 exports.summary = wrap(async (req, res) => {
   const userId = req.user.id;
   const [total, resolved, active] = await Promise.all([

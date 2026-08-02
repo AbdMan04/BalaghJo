@@ -19,7 +19,6 @@ const createLimiter = rateLimit({
 router.get('/summary', ctrl.summary);
 router.get('/public', ctrl.listPublicReports);
 router.get('/', ctrl.listMyReports);
-router.get('/admin/all', adminOnly, ctrl.listAllReportsAdmin);
 router.get('/:id', ctrl.getReport);
 
 router.post('/nearby', ctrl.nearbyReports);
