@@ -5,18 +5,23 @@ import 'package:http/http.dart' as http;
 class GeocodingApi {
   static const _base = 'https://nominatim.openstreetmap.org/reverse';
 
-  Future<String?> reverseLookup(double lat, double lng) async {
+  Future<String?> reverseLookup(
+    double lat,
+    double lng, {
+    String language = 'en,ar',
+  }) async {
     final uri = Uri.parse(_base).replace(queryParameters: {
       'format': 'json',
       'lat': lat.toString(),
       'lon': lng.toString(),
       'zoom': '18',
       'addressdetails': '1',
+      'countrycodes': 'jo',
     });
     try {
       final res = await http.get(uri, headers: {
         'User-Agent': 'com.balaghjo.app/1.0',
-        'Accept-Language': 'en,ar',
+        'Accept-Language': language,
       }).timeout(const Duration(seconds: 8));
       if (res.statusCode != 200 || res.body.isEmpty) return null;
       final data = jsonDecode(res.body) as Map<String, dynamic>;

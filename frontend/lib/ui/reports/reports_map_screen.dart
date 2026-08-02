@@ -11,6 +11,7 @@ import 'package:flutter_map/flutter_map.dart';
 import 'package:intl/intl.dart';
 import 'package:latlong2/latlong.dart';
 import '../../core/config.dart';
+import '../../core/map_config.dart';
 import '../../core/strings.dart';
 import '../../core/theme.dart';
 import '../../data/api/report_api.dart';
@@ -28,8 +29,6 @@ class ReportsMapScreen extends StatefulWidget {
 }
 
 class _ReportsMapScreenState extends State<ReportsMapScreen> {
-  static const _irbid = LatLng(32.5556, 35.8500);
-
   final MapController _map = MapController();
   final _api = ReportApi();
   late Future<List<Report>> _future;
@@ -72,17 +71,21 @@ class _ReportsMapScreenState extends State<ReportsMapScreen> {
             children: [
               FlutterMap(
                 mapController: _map,
-                options: const MapOptions(
-                  initialCenter: _irbid,
-                  initialZoom: 12,
-                  minZoom: 5,
-                  maxZoom: 18,
+                options: MapOptions(
+                  initialCenter: MapConfig.irbidCenter,
+                  initialZoom: MapConfig.initialZoom,
+                  minZoom: MapConfig.minZoom,
+                  maxZoom: MapConfig.maxZoom,
+                  cameraConstraint: MapConfig.cameraConstraint(),
                 ),
                 children: [
-                  TileLayer(
-                    urlTemplate: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
-                    userAgentPackageName: 'com.balaghjo.app',
-                    maxZoom: 19,
+                  MapConfig.tileLayer(),
+                  const SimpleAttributionWidget(
+                    source: Text(
+                      MapConfig.attribution,
+                      style: TextStyle(fontSize: 9, color: AppColors.textMuted),
+                    ),
+                    alignment: Alignment.bottomLeft,
                   ),
                   MarkerLayer(
                     markers: reports

@@ -3,6 +3,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:latlong2/latlong.dart';
+import 'package:provider/provider.dart';
+import '../../core/locale_state.dart';
+import '../../core/map_config.dart';
 import '../../core/theme.dart';
 import '../../data/api/geocoding_api.dart';
 import '../widgets/animations.dart';
@@ -24,8 +27,6 @@ class MapPickerScreen extends StatefulWidget {
 }
 
 class _MapPickerScreenState extends State<MapPickerScreen> {
-  static const _irbid = LatLng(32.5556, 35.8500);
-
   final MapController _map = MapController();
   final GeocodingApi _geo = GeocodingApi();
   late LatLng _picked;
@@ -40,7 +41,7 @@ class _MapPickerScreenState extends State<MapPickerScreen> {
     super.initState();
     _picked = (widget.initialLat != null && widget.initialLng != null)
         ? LatLng(widget.initialLat!, widget.initialLng!)
-        : _irbid;
+        : MapConfig.irbidCenter;
     _lookupAddress();
   }
 
@@ -62,7 +63,12 @@ class _MapPickerScreenState extends State<MapPickerScreen> {
   Future<void> _lookupAddress() async {
     final mySeq = ++_lookupSeq;
     setState(() => _resolving = true);
-    final name = await _geo.reverseLookup(_picked.latitude, _picked.longitude);
+    final isAr = context.read<LocaleState>().isArabic;
+    final name = await _geo.reverseLookup(
+      _picked.latitude,
+      _picked.longitude,
+      language: isAr ? 'ar,en' : 'en,ar',
+    );
     if (!mounted || mySeq != _lookupSeq) return;
     setState(() {
       _address = name;
@@ -82,8 +88,18 @@ class _MapPickerScreenState extends State<MapPickerScreen> {
         );
         return;
       }
-      final pos = await Geolocator.getCurrentPosition(timeLimit: const Duration(seconds: 10));
-      final next = LatLng(pos.latitude, pos.longitude);
+      Position pos;
+      try {
+        pos = await Geolocator.getCurrentPosition(
+          desiredAccuracy: LocationAccuracy.high,
+          timeLimit: const Duration(seconds: 10),
+        );
+      } catch (_) {
+        final last = await Geolocator.getLastKnownPosition();
+        if (last == null) rethrow;
+        pos = last;
+      }
+      final next = MapConfig.clampToBounds(LatLng(pos.latitude, pos.longitude));
       _map.move(next, 16);
       _onPinChanged(next);
     } catch (_) {
@@ -114,17 +130,14 @@ class _MapPickerScreenState extends State<MapPickerScreen> {
             mapController: _map,
             options: MapOptions(
               initialCenter: _picked,
-              initialZoom: 13,
-              minZoom: 5,
-              maxZoom: 18,
+              initialZoom: MapConfig.initialZoom,
+              minZoom: MapConfig.minZoom,
+              maxZoom: MapConfig.maxZoom,
+              cameraConstraint: MapConfig.cameraConstraint(),
               onTap: (_, latLng) => _onPinChanged(latLng),
             ),
             children: [
-              TileLayer(
-                urlTemplate: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
-                userAgentPackageName: 'com.balaghjo.app',
-                maxZoom: 19,
-              ),
+              MapConfig.tileLayer(),
               MarkerLayer(
                 markers: [
                   Marker(
@@ -260,6 +273,14 @@ class _MapPickerScreenState extends State<MapPickerScreen> {
                         ],
                       ),
                     ),
+                  ),
+                  const SizedBox(height: 8),
+                  const Text(
+                    MapConfig.attribution,
+                    textAlign: TextAlign.center,
+                    style: TextStyle(color: AppColors.textMuted, fontSize: 9),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
                   ),
                 ],
               ),
