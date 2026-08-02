@@ -39,11 +39,14 @@ class HomeStatsHeader extends StatelessWidget {
                   ),
                   child: Row(
                     children: [
-                      _stat(context.t('home.stat_total'), s?.total ?? 0),
+                      _stat(Icons.description_outlined,
+                          context.t('home.stat_total'), s?.total ?? 0),
                       _divider(),
-                      _stat(context.t('home.stat_resolved'), s?.resolved ?? 0),
+                      _stat(Icons.check_circle_outline,
+                          context.t('home.stat_resolved'), s?.resolved ?? 0),
                       _divider(),
-                      _stat(context.t('home.stat_active'), s?.active ?? 0),
+                      _stat(Icons.pending_actions_outlined,
+                          context.t('home.stat_active'), s?.active ?? 0),
                     ],
                   ),
                 );
@@ -55,9 +58,11 @@ class HomeStatsHeader extends StatelessWidget {
     );
   }
 
-  Widget _stat(String label, int value) => Expanded(
+  Widget _stat(IconData icon, String label, int value) => Expanded(
         child: Column(
           children: [
+            Icon(icon, size: 16, color: Colors.white70),
+            const SizedBox(height: 4),
             AnimatedCounter(
               value: value,
               style: const TextStyle(

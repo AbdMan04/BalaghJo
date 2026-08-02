@@ -18,30 +18,22 @@ class QuickReportList extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final items = ReportCategory.userSelectable
-        .where((c) => c.svgAsset != null && c.quickSubtitle != null)
-        .toList();
+    final items = ReportCategory.userSelectable.toList();
     if (items.isEmpty) return const SizedBox.shrink();
 
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 20),
       child: Column(
         children: [
-          if (items.length >= 2)
+          for (var i = 0; i < items.length; i += 2) ...[
+            if (i > 0) const SizedBox(height: 10),
             Row(
               children: [
-                Expanded(child: _Card(category: items[0], delayMs: 360)),
-                const SizedBox(width: 10),
-                Expanded(child: _Card(category: items[1], delayMs: 420)),
-              ],
-            ),
-          if (items.length >= 3) ...[
-            const SizedBox(height: 10),
-            Row(
-              children: [
-                const Spacer(),
-                Expanded(flex: 2, child: _Card(category: items[2], delayMs: 480)),
-                const Spacer(),
+                Expanded(child: _Card(category: items[i], delayMs: 360)),
+                if (i + 1 < items.length) ...[
+                  const SizedBox(width: 10),
+                  Expanded(child: _Card(category: items[i + 1], delayMs: 420)),
+                ],
               ],
             ),
           ],
@@ -87,7 +79,9 @@ class _Card extends StatelessWidget {
                   height: 48,
                   color: category.tileBg,
                   padding: const EdgeInsets.all(5),
-                  child: SvgPicture.asset(category.svgAsset!, fit: BoxFit.contain),
+                  child: category.svgAsset != null
+                      ? SvgPicture.asset(category.svgAsset!, fit: BoxFit.contain)
+                      : Icon(category.icon, color: category.tint, size: 22),
                 ),
               ),
               const SizedBox(width: 10),
@@ -108,7 +102,7 @@ class _Card extends StatelessWidget {
                     ),
                     const SizedBox(height: 2),
                     Text(
-                      category.quickSubtitle!,
+                      category.quickSubtitle ?? category.labelAr,
                       textDirection: TextDirection.rtl,
                       style: const TextStyle(
                         fontSize: 11,

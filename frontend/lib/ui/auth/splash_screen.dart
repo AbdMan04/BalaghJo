@@ -110,7 +110,7 @@ class _SplashScreenState extends State<SplashScreen>
                   opacity: _fade,
                   child: const Column(
                     children: [
-                      Text('Balagh Jo',
+                      Text('BALAGHJO',
                           style: TextStyle(
                               color: Colors.white,
                               fontSize: 28,

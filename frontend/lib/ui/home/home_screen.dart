@@ -233,6 +233,7 @@ class _HomeScreenState extends State<HomeScreen> {
                     ),
                     child: Container(
                       padding: const EdgeInsets.all(14),
+                      clipBehavior: Clip.antiAlias,
                       decoration: BoxDecoration(
                         color: Colors.white,
                         borderRadius: BorderRadius.circular(AppRadius.md),
@@ -245,42 +246,52 @@ class _HomeScreenState extends State<HomeScreen> {
                           ),
                         ],
                       ),
-                      child: Row(
+                      child: Stack(
                         children: [
-                          Container(
-                            padding: const EdgeInsets.all(10),
-                            decoration: BoxDecoration(
-                              color: AppColors.navy,
-                              borderRadius: BorderRadius.circular(AppRadius.sm),
-                              boxShadow: [
-                                BoxShadow(
-                                  color: AppColors.navy.withValues(alpha: 0.35),
-                                  blurRadius: 10,
+                          Positioned.fill(
+                            child: IgnorePointer(
+                              child:
+                                  CustomPaint(painter: _MapGridPainter()),
+                            ),
+                          ),
+                          Row(
+                            children: [
+                              Container(
+                                padding: const EdgeInsets.all(10),
+                                decoration: BoxDecoration(
+                                  color: AppColors.navy,
+                                  borderRadius: BorderRadius.circular(AppRadius.sm),
+                                  boxShadow: [
+                                    BoxShadow(
+                                      color: AppColors.navy.withValues(alpha: 0.35),
+                                      blurRadius: 10,
+                                    ),
+                                  ],
                                 ),
-                              ],
-                            ),
-                            child: const Icon(Icons.map_outlined,
-                                color: Colors.white, size: 20),
+                                child: const Icon(Icons.map_outlined,
+                                    color: Colors.white, size: 20),
+                              ),
+                              const SizedBox(width: 12),
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(context.t('home.explore_map'),
+                                        style: const TextStyle(
+                                            fontWeight: FontWeight.w800,
+                                            fontSize: 14)),
+                                    const SizedBox(height: 2),
+                                    Text(context.t('home.explore_map_sub'),
+                                        style: const TextStyle(
+                                            color: AppColors.textMuted,
+                                            fontSize: 12)),
+                                  ],
+                                ),
+                              ),
+                              const Icon(Icons.chevron_right,
+                                  color: AppColors.textMuted),
+                            ],
                           ),
-                          const SizedBox(width: 12),
-                          Expanded(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(context.t('home.explore_map'),
-                                    style: const TextStyle(
-                                        fontWeight: FontWeight.w800,
-                                        fontSize: 14)),
-                                const SizedBox(height: 2),
-                                Text(context.t('home.explore_map_sub'),
-                                    style: const TextStyle(
-                                        color: AppColors.textMuted,
-                                        fontSize: 12)),
-                              ],
-                            ),
-                          ),
-                          const Icon(Icons.chevron_right,
-                              color: AppColors.textMuted),
                         ],
                       ),
                     ),
@@ -331,22 +342,49 @@ class _HomeScreenState extends State<HomeScreen> {
                       .toList();
                   if (reports.isEmpty) {
                     return Padding(
-                      padding: const EdgeInsets.all(32),
-                      child: Column(
-                        children: [
-                          Icon(Icons.inbox_outlined,
-                              size: 56,
-                              color:
-                                  AppColors.textMuted.withValues(alpha: 0.5)),
-                          const SizedBox(height: 12),
-                          Text(context.t('home.no_reports_yet'),
-                              style:
-                                  const TextStyle(fontWeight: FontWeight.w700)),
-                          const SizedBox(height: 4),
-                          Text(context.t('home.submit_first'),
-                              style: const TextStyle(
-                                  color: AppColors.textMuted, fontSize: 12)),
-                        ],
+                      padding: const EdgeInsets.fromLTRB(20, 8, 20, 8),
+                      child: Container(
+                        width: double.infinity,
+                        padding: const EdgeInsets.all(24),
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          borderRadius: BorderRadius.circular(AppRadius.md),
+                          border: Border.all(color: AppColors.border),
+                        ),
+                        child: Column(
+                          children: [
+                            Icon(Icons.inbox_outlined,
+                                size: 48,
+                                color: AppColors.textMuted
+                                    .withValues(alpha: 0.5)),
+                            const SizedBox(height: 12),
+                            Text(context.t('home.no_reports_yet'),
+                                style: const TextStyle(
+                                    fontWeight: FontWeight.w800,
+                                    fontSize: 15)),
+                            const SizedBox(height: 4),
+                            Text(context.t('home.submit_first'),
+                                style: const TextStyle(
+                                    color: AppColors.textMuted,
+                                    fontSize: 12)),
+                            const SizedBox(height: 16),
+                            FilledButton(
+                              onPressed: () =>
+                                  MainShellScope.of(context)?.goTo(1),
+                              style: FilledButton.styleFrom(
+                                backgroundColor: AppColors.navy,
+                                foregroundColor: Colors.white,
+                                padding: const EdgeInsets.symmetric(
+                                    horizontal: 20, vertical: 10),
+                                shape: RoundedRectangleBorder(
+                                  borderRadius:
+                                      BorderRadius.circular(AppRadius.md),
+                                ),
+                              ),
+                              child: Text(context.t('home.submit_first_btn')),
+                            ),
+                          ],
+                        ),
                       ),
                     );
                   }
@@ -370,4 +408,37 @@ class _HomeScreenState extends State<HomeScreen> {
       ),
     );
   }
+}
+
+// Faint map-grid backdrop for the Explore Map card, with a few
+// category-colored dots hinting at pins.
+class _MapGridPainter extends CustomPainter {
+  @override
+  void paint(Canvas canvas, Size size) {
+    final line = Paint()
+      ..color = AppColors.navy.withValues(alpha: 0.05)
+      ..strokeWidth = 1;
+    const step = 26.0;
+    for (double x = 0; x <= size.width; x += step) {
+      canvas.drawLine(Offset(x, 0), Offset(x, size.height), line);
+    }
+    for (double y = 0; y <= size.height; y += step) {
+      canvas.drawLine(Offset(0, y), Offset(size.width, y), line);
+    }
+    final pins = <(Offset, Color)>[
+      (const Offset(0.74, 0.40), AppColors.warning),
+      (const Offset(0.18, 0.28), AppColors.success),
+      (const Offset(0.34, 0.72), const Color(0xFFEAB308)),
+    ];
+    for (final (fraction, color) in pins) {
+      canvas.drawCircle(
+        Offset(size.width * fraction.dx, size.height * fraction.dy),
+        3,
+        Paint()..color = color.withValues(alpha: 0.4),
+      );
+    }
+  }
+
+  @override
+  bool shouldRepaint(covariant _MapGridPainter oldDelegate) => false;
 }
