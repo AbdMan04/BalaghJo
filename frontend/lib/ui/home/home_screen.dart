@@ -104,30 +104,32 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
           Row(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              SizedBox(
-                width: 132,
-                height: 42,
-                child: TextButton(
-                  onPressed: () => Navigator.of(ctx).pop(false),
-                  child: Text(ctx.t('common.cancel'),
-                      style: const TextStyle(color: AppColors.navy, fontWeight: FontWeight.w700)),
+              Expanded(
+                child: SizedBox(
+                  height: 42,
+                  child: TextButton(
+                    onPressed: () => Navigator.of(ctx).pop(false),
+                    child: Text(ctx.t('common.cancel'),
+                        style: const TextStyle(color: AppColors.navy, fontWeight: FontWeight.w700)),
+                  ),
                 ),
               ),
               const SizedBox(width: 12),
-              SizedBox(
-                width: 132,
-                height: 42,
-                child: ElevatedButton(
-                  onPressed: () => Navigator.of(ctx).pop(true),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: AppColors.danger,
-                    foregroundColor: Colors.white,
-                    elevation: 0,
-                    minimumSize: const Size(132, 42),
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(AppRadius.sm)),
-                    padding: const EdgeInsets.symmetric(horizontal: 24),
+              Expanded(
+                child: SizedBox(
+                  height: 42,
+                  child: ElevatedButton(
+                    onPressed: () => Navigator.of(ctx).pop(true),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: AppColors.danger,
+                      foregroundColor: Colors.white,
+                      elevation: 0,
+                      minimumSize: const Size.fromHeight(42),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(AppRadius.sm)),
+                      padding: const EdgeInsets.symmetric(horizontal: 24),
+                    ),
+                    child: Text(ctx.t('common.delete'), style: const TextStyle(fontWeight: FontWeight.w800)),
                   ),
-                  child: Text(ctx.t('common.delete'), style: const TextStyle(fontWeight: FontWeight.w800)),
                 ),
               ),
             ],
