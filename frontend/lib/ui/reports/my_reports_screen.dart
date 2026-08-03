@@ -32,7 +32,7 @@ class _MyReportsScreenState extends State<MyReportsScreen> {
   bool _newestFirst = true;
   late Future<List<Report>> _future;
   final Set<String> _pendingDeletes = {};
-  List<Report>? _lastList;
+  List<Report>? _cached;
   Timer? _pollTimer;
   bool _polling = false;
 
@@ -55,12 +55,21 @@ class _MyReportsScreenState extends State<MyReportsScreen> {
     super.dispose();
   }
 
+  // F4: fetch the full own-report list once and cache it; status filters
+  // and sorting are applied client-side so tapping a chip never refetches.
   Future<List<Report>> _load() async {
-    final list = await _api.list(status: _filter);
+    final list = await _api.list();
     list.sort((a, b) => _newestFirst
         ? b.createdAt.compareTo(a.createdAt)
         : a.createdAt.compareTo(b.createdAt));
+    _cached = list;
     return list;
+  }
+
+  Future<void> _refresh() async {
+    final list = await _load();
+    if (!mounted) return;
+    setState(() => _future = Future.value(list));
   }
 
   Future<void> _poll() async {
@@ -69,8 +78,7 @@ class _MyReportsScreenState extends State<MyReportsScreen> {
     try {
       final list = await _load();
       if (!mounted) return;
-      final changed = _lastList == null || !Report.sameStatusList(_lastList!, list);
-      _lastList = list;
+      final changed = _cached == null || !Report.sameStatusList(_cached!, list);
       if (changed) {
         setState(() => _future = Future.value(list));
       }
@@ -173,6 +181,7 @@ class _MyReportsScreenState extends State<MyReportsScreen> {
     final query = _search.text.trim().toLowerCase();
     return source.where((r) {
       if (_pendingDeletes.contains(r.id)) return false;
+      if (_filter != null && r.status.apiValue != _filter) return false;
       if (_categoryFilter != null && r.category != _categoryFilter) return false;
       if (query.isEmpty) return true;
       return r.title.toLowerCase().contains(query) ||
@@ -184,11 +193,7 @@ class _MyReportsScreenState extends State<MyReportsScreen> {
   }
 
   void _setFilter(String? f) {
-    setState(() {
-      _filter = f;
-      _lastList = null;
-      _future = _load();
-    });
+    setState(() => _filter = f);
   }
 
   void _setCategory(String? c) {
@@ -198,7 +203,16 @@ class _MyReportsScreenState extends State<MyReportsScreen> {
   void _selectSort(bool newestFirst) {
     setState(() {
       _newestFirst = newestFirst;
-      _future = _load();
+      final base = _cached;
+      if (base != null) {
+        final sorted = [...base]
+          ..sort((a, b) => newestFirst
+              ? b.createdAt.compareTo(a.createdAt)
+              : a.createdAt.compareTo(b.createdAt));
+        _future = Future.value(sorted);
+      } else {
+        _future = _load();
+      }
     });
     Navigator.pop(context);
   }
@@ -323,7 +337,7 @@ class _MyReportsScreenState extends State<MyReportsScreen> {
                 if (reports.isEmpty) {
                   final filtered = all.isNotEmpty;
                   return RefreshIndicator(
-                    onRefresh: () async => _setFilter(_filter),
+                    onRefresh: _refresh,
                     color: AppColors.blue,
                     child: ListView(
                       physics: const AlwaysScrollableScrollPhysics(),
@@ -359,17 +373,14 @@ class _MyReportsScreenState extends State<MyReportsScreen> {
                   );
                 }
                 return RefreshIndicator(
-                  onRefresh: () async => _setFilter(_filter),
+                  onRefresh: _refresh,
                   color: AppColors.blue,
                   child: ListView.builder(
                     padding: const EdgeInsets.fromLTRB(16, 4, 16, 16),
                     itemCount: reports.length,
-                    itemBuilder: (_, i) => FadeSlideIn(
-                      delay: Duration(milliseconds: 60 * i),
-                      child: MyReportsRow(
-                        report: reports[i],
-                        onDelete: () => _deleteReport(reports[i]),
-                      ),
+                    itemBuilder: (_, i) => MyReportsRow(
+                      report: reports[i],
+                      onDelete: () => _deleteReport(reports[i]),
                     ),
                   ),
                 );

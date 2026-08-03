@@ -169,24 +169,27 @@ class _MapPickerScreenState extends State<MapPickerScreen> {
           Positioned(
             right: 16,
             bottom: 195,
-            child: PressableScale(
-              onTap: _locating ? null : _useMyLocation,
-              child: Container(
-                width: 48,
-                height: 48,
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  shape: BoxShape.circle,
-                  boxShadow: [
-                    BoxShadow(color: Colors.black.withValues(alpha: 0.15), blurRadius: 10),
-                  ],
+            child: Tooltip(
+              message: context.t('submit.use_my_location'),
+              child: PressableScale(
+                onTap: _locating ? null : _useMyLocation,
+                child: Container(
+                  width: 48,
+                  height: 48,
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    shape: BoxShape.circle,
+                    boxShadow: [
+                      BoxShadow(color: Colors.black.withValues(alpha: 0.15), blurRadius: 10),
+                    ],
+                  ),
+                  child: _locating
+                      ? const Padding(
+                          padding: EdgeInsets.all(14),
+                          child: CircularProgressIndicator(strokeWidth: 2, color: AppColors.blue),
+                        )
+                      : const Icon(Icons.my_location, color: AppColors.blue),
                 ),
-                child: _locating
-                    ? const Padding(
-                        padding: EdgeInsets.all(14),
-                        child: CircularProgressIndicator(strokeWidth: 2, color: AppColors.blue),
-                      )
-                    : const Icon(Icons.my_location, color: AppColors.blue),
               ),
             ),
           ),

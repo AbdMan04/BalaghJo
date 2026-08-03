@@ -22,6 +22,28 @@ async function migrateReports() {
   }
 }
 
+// Seed the reportId counter so new RPT-* ids continue above the current
+// maximum instead of restarting and colliding with existing reports.
+// $max never lowers the stored sequence.
+async function seedReportCounter() {
+  const Reports = mongoose.connection.collection('reports');
+  const Counters = mongoose.connection.collection('counters');
+  const last = await Reports.find({ reportId: /^RPT-\d+$/ })
+    .sort({ reportId: -1 })
+    .limit(1)
+    .project({ reportId: 1 })
+    .next();
+  if (last) {
+    const seq = parseInt(last.reportId.slice(4), 10);
+    const r = await Counters.updateOne(
+      { _id: 'report' },
+      { $max: { seq } },
+      { upsert: true }
+    );
+    console.log(`[db] report counter seeded at ${seq}`);
+  }
+}
+
 async function connectDB(uri) {
   mongoose.set('strictQuery', true);
   await mongoose.connect(uri);
@@ -29,6 +51,7 @@ async function connectDB(uri) {
   try {
     await migrateUsers();
     await migrateReports();
+    await seedReportCounter();
   } catch (err) {
     console.error('[db] migration failed:', err.message);
   }

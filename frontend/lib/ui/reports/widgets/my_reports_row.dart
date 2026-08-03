@@ -24,11 +24,19 @@ class MyReportsRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final title =
+        report.title.isNotEmpty ? report.title : labelForCategory(report.category, context);
     return Padding(
       padding: const EdgeInsets.only(bottom: 10),
       child: ClipRRect(
         borderRadius: BorderRadius.circular(AppRadius.md),
-        child: Dismissible(
+        // A2: announce the swipe-to-delete affordance to screen readers;
+        // without this the Dismissible gesture is invisible to TalkBack/VoiceOver.
+        child: Semantics(
+          label: title,
+          hint: context.t('home.delete_swipe_hint'),
+          container: true,
+          child: Dismissible(
           key: ValueKey('my-reports-row-${report.id}'),
           direction: DismissDirection.endToStart,
           confirmDismiss: (_) => onDelete(),
@@ -96,6 +104,7 @@ class MyReportsRow extends StatelessWidget {
                 ],
               ),
             ),
+          ),
           ),
         ),
       ),

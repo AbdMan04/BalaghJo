@@ -87,19 +87,27 @@ class _PressableScaleState extends State<PressableScale>
 
   @override
   Widget build(BuildContext context) {
-    return GestureDetector(
-      onTapDown: widget.onTap == null ? null : (_) => _c.forward(),
-      onTapUp: widget.onTap == null ? null : (_) => _c.reverse(),
-      onTapCancel: widget.onTap == null ? null : () => _c.reverse(),
-      onTap: widget.onTap,
-      behavior: HitTestBehavior.opaque,
-      child: AnimatedBuilder(
-        animation: _c,
-        builder: (_, child) => Transform.scale(
-          scale: 1 - (1 - widget.scale) * _c.value,
-          child: child,
+    // GestureDetector is invisible to screen readers on its own, so
+    // expose this as a tappable button. The child's own text/icon
+    // provides the semantic label; disabled controls are announced as
+    // such and skipped by TalkBack/VoiceOver.
+    return Semantics(
+      button: true,
+      enabled: widget.onTap != null,
+      child: GestureDetector(
+        onTapDown: widget.onTap == null ? null : (_) => _c.forward(),
+        onTapUp: widget.onTap == null ? null : (_) => _c.reverse(),
+        onTapCancel: widget.onTap == null ? null : () => _c.reverse(),
+        onTap: widget.onTap,
+        behavior: HitTestBehavior.opaque,
+        child: AnimatedBuilder(
+          animation: _c,
+          builder: (_, child) => Transform.scale(
+            scale: 1 - (1 - widget.scale) * _c.value,
+            child: child,
+          ),
+          child: widget.child,
         ),
-        child: widget.child,
       ),
     );
   }

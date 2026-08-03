@@ -20,7 +20,7 @@ class HomeScreen extends StatefulWidget {
   State<HomeScreen> createState() => _HomeScreenState();
 }
 
-class _HomeScreenState extends State<HomeScreen> {
+class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
   final _api = ReportApi();
   Future<ReportSummary>? _future;
   final Set<String> _pendingDeletes = {};
@@ -35,12 +35,27 @@ class _HomeScreenState extends State<HomeScreen> {
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
     _future = _api.summary();
     _pollTimer = Timer.periodic(_pollInterval, (_) => _poll());
   }
 
+  // Stop polling while the app is in the background (saves battery,
+  // bandwidth, and server load); resume + refresh immediately on return.
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.paused || state == AppLifecycleState.hidden) {
+      _pollTimer?.cancel();
+      _pollTimer = null;
+    } else if (state == AppLifecycleState.resumed) {
+      _pollTimer ??= Timer.periodic(_pollInterval, (_) => _poll());
+      _poll();
+    }
+  }
+
   @override
   void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
     _pollTimer?.cancel();
     super.dispose();
   }

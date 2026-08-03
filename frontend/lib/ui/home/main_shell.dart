@@ -210,18 +210,23 @@ class _NavItem extends StatelessWidget {
               ),
             ),
             const SizedBox(height: 4),
-            AnimatedDefaultTextStyle(
-              duration: const Duration(milliseconds: 220),
-              style: TextStyle(
-                fontSize: 10,
-                fontWeight: FontWeight.w700,
-                color: active ? AppColors.blue : AppColors.textMuted,
-              ),
-              child: Text(
-                label,
-                textAlign: TextAlign.center,
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
+            // A3: the 10px label is intentionally tiny; cap how much system
+            // text scaling can inflate it so it never overflows the 70px tab.
+            MediaQuery.withClampedTextScaling(
+              maxScaleFactor: 1.3,
+              child: AnimatedDefaultTextStyle(
+                duration: const Duration(milliseconds: 220),
+                style: TextStyle(
+                  fontSize: 10,
+                  fontWeight: FontWeight.w700,
+                  color: active ? AppColors.blue : AppColors.textMuted,
+                ),
+                child: Text(
+                  label,
+                  textAlign: TextAlign.center,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
               ),
             ),
           ],
@@ -267,8 +272,11 @@ class _ReportFab extends StatelessWidget {
           ),
           const SizedBox(height: 4),
           Builder(
-            builder: (ctx) => Text(ctx.t('nav.report'),
-                style: const TextStyle(fontSize: 10, fontWeight: FontWeight.w700, color: AppColors.textMuted)),
+            builder: (ctx) => MediaQuery.withClampedTextScaling(
+              maxScaleFactor: 1.3,
+              child: Text(ctx.t('nav.report'),
+                  style: const TextStyle(fontSize: 10, fontWeight: FontWeight.w700, color: AppColors.textMuted)),
+            ),
           ),
         ],
       ),

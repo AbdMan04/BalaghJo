@@ -6,6 +6,7 @@
 // address. Backed by GET /api/reports/all, which deliberately omits
 // reporter PII so users cannot be deanonymized from the map.
 // Note: clustering (FR-19) is deferred to GP2.
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:intl/intl.dart';
@@ -38,6 +39,7 @@ class _ReportsMapScreenState extends State<ReportsMapScreen> {
   Report? _selected;
   LatLng? _myLocation;
   bool _locating = false;
+  Timer? _viewportTimer;
 
   @override
   void initState() {
@@ -45,15 +47,42 @@ class _ReportsMapScreenState extends State<ReportsMapScreen> {
     _future = _load();
   }
 
-  Future<List<Report>> _load() => _api.publicList(
-        category: _categoryFilter,
-        status: _statusFilter,
-      );
+  @override
+  void dispose() {
+    _viewportTimer?.cancel();
+    super.dispose();
+  }
 
-  void _refilter() {
+  /// C5: only ask for the reports inside the current viewport. Falls back
+  /// to "everything" before the map is ready (camera not attached yet).
+  Future<List<Report>> _load() {
+    LatLngBounds? bounds;
+    try {
+      bounds = _map.camera.visibleBounds;
+    } catch (_) {
+      bounds = null;
+    }
+    return _api.publicList(
+      category: _categoryFilter,
+      status: _statusFilter,
+      bounds: bounds,
+    );
+  }
+
+  void _refilter({bool keepSelection = false}) {
     setState(() {
-      _selected = null;
+      if (!keepSelection) _selected = null;
       _future = _load();
+    });
+  }
+
+  void _onMapEvent(MapEvent e) {
+    if (e is! MapEventMoveEnd) return;
+    // Debounce so a fling or pinch doesn't fire a refetch per frame.
+    _viewportTimer?.cancel();
+    _viewportTimer = Timer(const Duration(milliseconds: 300), () {
+      if (!mounted) return;
+      _refilter(keepSelection: true);
     });
   }
 
@@ -103,6 +132,7 @@ class _ReportsMapScreenState extends State<ReportsMapScreen> {
                   minZoom: MapConfig.minZoom,
                   maxZoom: MapConfig.maxZoom,
                   cameraConstraint: MapConfig.cameraConstraint(),
+                  onMapEvent: _onMapEvent,
                 ),
                 children: [
                   MapConfig.tileLayer(),
@@ -157,7 +187,7 @@ class _ReportsMapScreenState extends State<ReportsMapScreen> {
                   },
                 ),
               ),
-              if (loading)
+              if (loading && reports.isEmpty)
                 const Positioned(
                   top: 100,
                   left: 0,
@@ -184,24 +214,27 @@ class _ReportsMapScreenState extends State<ReportsMapScreen> {
               Positioned(
                 right: 16,
                 bottom: _selected != null ? 188 : 24,
-                child: PressableScale(
-                  onTap: _locating ? null : _locate,
-                  child: Container(
-                    width: 48,
-                    height: 48,
-                    decoration: BoxDecoration(
-                      color: Colors.white,
-                      shape: BoxShape.circle,
-                      boxShadow: [
-                        BoxShadow(color: Colors.black.withValues(alpha: 0.15), blurRadius: 10),
-                      ],
+                child: Tooltip(
+                  message: context.t('map.locate'),
+                  child: PressableScale(
+                    onTap: _locating ? null : _locate,
+                    child: Container(
+                      width: 48,
+                      height: 48,
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        shape: BoxShape.circle,
+                        boxShadow: [
+                          BoxShadow(color: Colors.black.withValues(alpha: 0.15), blurRadius: 10),
+                        ],
+                      ),
+                      child: _locating
+                          ? const Padding(
+                              padding: EdgeInsets.all(14),
+                              child: CircularProgressIndicator(strokeWidth: 2, color: AppColors.blue),
+                            )
+                          : const Icon(Icons.my_location, color: AppColors.blue),
                     ),
-                    child: _locating
-                        ? const Padding(
-                            padding: EdgeInsets.all(14),
-                            child: CircularProgressIndicator(strokeWidth: 2, color: AppColors.blue),
-                          )
-                        : const Icon(Icons.my_location, color: AppColors.blue),
                   ),
                 ),
               ),

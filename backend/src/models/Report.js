@@ -47,16 +47,27 @@ const reportSchema = new mongoose.Schema(
 
 reportSchema.index({ location: '2dsphere' });
 reportSchema.index({ userId: 1, createdAt: -1 });
+reportSchema.index({ status: 1, createdAt: -1 });
+reportSchema.index({ category: 1, createdAt: -1 });
+
+// Atomic sequence used to mint unique reportIds. A single document in
+// the counters collection is incremented with findOneAndUpdate, so two
+// concurrent creates can never derive the same next value (the old
+// "find max + 1" approach raced and depended on a create retry loop).
+const counterSchema = new mongoose.Schema({
+  _id: { type: String, required: true },
+  seq: { type: Number, default: 0 },
+});
+const Counter = mongoose.models.Counter || mongoose.model('Counter', counterSchema);
 
 reportSchema.pre('save', async function (next) {
   if (!this.reportId) {
-    const Report = mongoose.model('Report');
-    const last = await Report.findOne({ reportId: /^RPT-\d+$/ })
-      .sort({ reportId: -1 })
-      .select('reportId')
-      .lean();
-    const lastSeq = last ? parseInt(last.reportId.slice(4), 10) : 2400;
-    this.reportId = `RPT-${(lastSeq + 1).toString().padStart(4, '0')}`;
+    const counter = await Counter.findOneAndUpdate(
+      { _id: 'report' },
+      { $inc: { seq: 1 } },
+      { upsert: true, returnDocument: 'after' }
+    );
+    this.reportId = `RPT-${counter.seq.toString().padStart(4, '0')}`;
   }
   if (this.isNew) {
     this.statusHistory.push({ status: this.status, changedBy: 'user' });
@@ -87,32 +98,6 @@ reportSchema.methods.toPublicJSON = function () {
     createdAt: this.createdAt,
     updatedAt: this.updatedAt,
   };
-};
-
-// F4 status lifecycle: apply a forward-only transition (FR-16).
-// Rejects same-status no-ops and backwards/skipped jumps, and appends
-// an entry to the append-only statusHistory timeline.
-reportSchema.methods.setStatus = function (nextStatus, changedBy = 'system') {
-  if (this.status === nextStatus) {
-    return {
-      ok: false,
-      reason: 'already_current',
-      error: `Report is already ${nextStatus}`,
-    };
-  }
-  const allowed = STATUS_TRANSITIONS[this.status] || [];
-  if (!allowed.includes(nextStatus)) {
-    return {
-      ok: false,
-      reason: 'invalid_transition',
-      error: `Invalid status transition: ${this.status} -> ${nextStatus}`,
-    };
-  }
-  const previous = this.status;
-  this.status = nextStatus;
-  this.statusChangedAt = new Date();
-  this.statusHistory.push({ status: nextStatus, changedBy });
-  return { ok: true, previous };
 };
 
 module.exports = mongoose.model('Report', reportSchema);

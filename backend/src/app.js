@@ -17,11 +17,17 @@ app.set('trust proxy', 1);
 app.use(helmet());
 
 // NFR: global fallback limiter (per-route auth limiters are stricter).
+// Read-only endpoints that back the app's foreground polling are exempt
+// here (they're still auth-protected at the route level); otherwise a
+// single device polling every few seconds would exhaust a per-IP bucket
+// and lock real users out.
+const readOnlyPaths = ['/health', '/api/reports/summary', '/api/reports/public'];
 const globalLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
-  max: 300,
+  max: 600,
   standardHeaders: true,
   legacyHeaders: false,
+  skip: (req) => readOnlyPaths.includes(req.path),
   message: { error: 'Too many requests, please try again later.' },
 });
 app.use(globalLimiter);

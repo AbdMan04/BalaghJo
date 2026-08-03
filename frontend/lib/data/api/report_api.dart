@@ -1,4 +1,5 @@
 import 'dart:io';
+import 'package:flutter_map/flutter_map.dart' show LatLngBounds;
 import '../models/report.dart';
 import 'api_client.dart';
 
@@ -37,10 +38,20 @@ class ReportApi {
         .toList();
   }
 
-  Future<List<Report>> publicList({String? status, String? category}) async {
+  Future<List<Report>> publicList({
+    String? status,
+    String? category,
+    LatLngBounds? bounds,
+  }) async {
     final query = <String, String>{};
     if (status != null) query['status'] = status;
     if (category != null) query['category'] = category;
+    if (bounds != null) {
+      query['swLat'] = bounds.southWest.latitude.toString();
+      query['swLng'] = bounds.southWest.longitude.toString();
+      query['neLat'] = bounds.northEast.latitude.toString();
+      query['neLng'] = bounds.northEast.longitude.toString();
+    }
     final res = await _api.get('/api/reports/public',
         query: query.isEmpty ? null : query);
     return ((res['reports'] as List?) ?? [])

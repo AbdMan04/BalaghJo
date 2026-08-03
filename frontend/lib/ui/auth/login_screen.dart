@@ -112,19 +112,24 @@ class _LoginScreenState extends State<LoginScreen> {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         _label(context.t('login.identifier_label'), context.t('ar.phone_number')),
-                        TextFormField(
-                          controller: _identifier,
-                          decoration: InputDecoration(
-                            hintText: context.t('login.identifier_hint'),
-                            hintStyle: const TextStyle(fontSize: 13),
-                            prefixIcon: const Icon(Icons.phone_android, color: AppColors.textMuted),
+                        // A3: the hint is intentionally small; cap system
+                        // text scaling so it doesn't balloon the field.
+                        MediaQuery.withClampedTextScaling(
+                          maxScaleFactor: 1.3,
+                          child: TextFormField(
+                            controller: _identifier,
+                            decoration: InputDecoration(
+                              hintText: context.t('login.identifier_hint'),
+                              hintStyle: const TextStyle(fontSize: 13),
+                              prefixIcon: const Icon(Icons.phone_android, color: AppColors.textMuted),
+                            ),
+                            keyboardType: TextInputType.number,
+                            inputFormatters: [
+                              FilteringTextInputFormatter.digitsOnly,
+                              LengthLimitingTextInputFormatter(10),
+                            ],
+                            validator: (v) => validateIdentifier(context, v),
                           ),
-                          keyboardType: TextInputType.number,
-                          inputFormatters: [
-                            FilteringTextInputFormatter.digitsOnly,
-                            LengthLimitingTextInputFormatter(10),
-                          ],
-                          validator: (v) => validateIdentifier(context, v),
                         ),
                       ],
                     ),
@@ -143,6 +148,7 @@ class _LoginScreenState extends State<LoginScreen> {
                             suffixIcon: IconButton(
                               icon: Icon(_obscure ? Icons.visibility_off_outlined : Icons.visibility_outlined,
                                   color: AppColors.textMuted),
+                              tooltip: context.t('common.toggle_password'),
                               onPressed: () => setState(() => _obscure = !_obscure),
                             ),
                           ),

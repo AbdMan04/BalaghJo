@@ -22,11 +22,18 @@ class RecentReportTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final title =
+        report.title.isNotEmpty ? report.title : labelForCategory(report.category, context);
     return Padding(
       padding: const EdgeInsets.fromLTRB(20, 6, 20, 6),
       child: ClipRRect(
         borderRadius: BorderRadius.circular(AppRadius.md),
-        child: Dismissible(
+        // A2: expose the swipe-to-delete affordance to screen readers.
+        child: Semantics(
+          label: title,
+          hint: context.t('home.delete_swipe_hint'),
+          container: true,
+          child: Dismissible(
           key: ValueKey('home-tile-${report.id}'),
           direction: DismissDirection.endToStart,
           confirmDismiss: (_) => onDelete(),
@@ -97,6 +104,7 @@ class RecentReportTile extends StatelessWidget {
                 ],
               ),
             ),
+          ),
           ),
         ),
       ),

@@ -10,7 +10,7 @@ class AppColors {
   static const danger = Color(0xFFEF4444);
   static const surface = Color(0xFFF8FAFC);
   static const border = Color(0xFFE2E8F0);
-  static const textMuted = Color(0xFF64748B);
+  static const textMuted = Color(0xFF475569);
 
   static const tilePothole = Color(0xFFFFEAC9); 
   static const tileWaste = Color(0xFFDDF3E1);

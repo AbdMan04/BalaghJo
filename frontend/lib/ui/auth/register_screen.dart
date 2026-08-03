@@ -93,22 +93,26 @@ class _RegisterScreenState extends State<RegisterScreen> {
                       children: [
                         _label(context.t('register.phone_label'),
                             context.t('ar.phone_number')),
-                        TextFormField(
-                          controller: _phone,
-                          decoration: InputDecoration(
-                            hintText: context.t('register.phone_hint'),
-                            hintStyle: const TextStyle(fontSize: 13),
-                            prefixIcon: const Icon(Icons.phone_android,
-                                color: AppColors.textMuted),
+                        // A3: cap text scaling on the small hint.
+                        MediaQuery.withClampedTextScaling(
+                          maxScaleFactor: 1.3,
+                          child: TextFormField(
+                            controller: _phone,
+                            decoration: InputDecoration(
+                              hintText: context.t('register.phone_hint'),
+                              hintStyle: const TextStyle(fontSize: 13),
+                              prefixIcon: const Icon(Icons.phone_android,
+                                  color: AppColors.textMuted),
+                            ),
+                            keyboardType: TextInputType.number,
+                            inputFormatters: [
+                              FilteringTextInputFormatter.digitsOnly,
+                              LengthLimitingTextInputFormatter(10),
+                            ],
+                            validator: (v) => (v == null || !joPhoneRegex.hasMatch(v.trim()))
+                                ? context.t('login.invalid_phone')
+                                : null,
                           ),
-                          keyboardType: TextInputType.number,
-                          inputFormatters: [
-                            FilteringTextInputFormatter.digitsOnly,
-                            LengthLimitingTextInputFormatter(10),
-                          ],
-                          validator: (v) => (v == null || !joPhoneRegex.hasMatch(v.trim()))
-                              ? context.t('login.invalid_phone')
-                              : null,
                         ),
                       ],
                     ),
@@ -176,6 +180,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                                       ? Icons.visibility_off_outlined
                                       : Icons.visibility_outlined,
                                   color: AppColors.textMuted),
+                              tooltip: context.t('common.toggle_password'),
                               onPressed: () =>
                                   setState(() => _obscure = !_obscure),
                             ),
