@@ -38,7 +38,12 @@ class _LoginScreenState extends State<LoginScreen> {
       Navigator.of(context).pushAndRemoveUntil(
           fadeSlideRoute(const MainShell()), (_) => false);
     } catch (e) {
-      setState(() => _error = cleanErrorMessage(e));
+      final msg = cleanErrorMessage(e);
+      setState(() => _error = switch (msg) {
+        'Incorrect Phone Number!' => context.t('login.phone_not_registered'),
+        'Incorrect password' => context.t('login.wrong_password'),
+        _ => msg,
+      });
       _shake.value++;
     }
   }

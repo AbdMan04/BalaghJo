@@ -68,8 +68,9 @@ exports.login = wrap(async (req, res) => {
   if (!strategy) return res.status(401).json({ error: 'Incorrect password' });
 
   const user = await User.findOne(strategy.toQuery(raw)).select('+passwordHash');
-  const ok = user ? await user.comparePassword(password) : false;
-  if (!user || !ok) return res.status(401).json({ error: 'Incorrect password' });
+  if (!user) return res.status(401).json({ error: 'Incorrect Phone Number!' });
+  const ok = await user.comparePassword(password);
+  if (!ok) return res.status(401).json({ error: 'Incorrect password' });
 
   const token = signToken(user);
   res.json({ token, user: user.toPublicJSON() });
