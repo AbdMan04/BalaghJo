@@ -18,6 +18,36 @@ const { STATUS_TRANSITIONS } = require('../models/Report');
 
 const STATUS_LABELS = { pending: 'Pending', in_progress: 'In Progress', resolved: 'Resolved' };
 
+// Pagination (item 2): cursor-based paging for the report list endpoints.
+// A cursor encodes `createdAtISO_id`; paging uses a (createdAt, _id) tuple
+// comparison so identical timestamps can't skip or duplicate rows.
+const DEFAULT_PAGE_SIZE = 500;
+const MAX_PAGE_SIZE = 500;
+
+function parsePageSize(raw) {
+  const n = Number(raw);
+  if (!Number.isFinite(n)) return DEFAULT_PAGE_SIZE;
+  return Math.min(Math.max(1, Math.trunc(n)), MAX_PAGE_SIZE);
+}
+
+function applyCursor(filter, before) {
+  if (!before || typeof before !== 'string') return;
+  const sep = before.lastIndexOf('_');
+  if (sep <= 0) return;
+  const ts = new Date(before.slice(0, sep));
+  const id = before.slice(sep + 1);
+  if (Number.isNaN(ts.getTime()) || !mongoose.isValidObjectId(id)) return;
+  const oid = new mongoose.Types.ObjectId(id);
+  filter.$or = [
+    { createdAt: { $lt: ts } },
+    { createdAt: ts, _id: { $lt: oid } },
+  ];
+}
+
+function cursorFor(last) {
+  return `${last.createdAt.toISOString()}_${last._id}`;
+}
+
 // FR-5: store the uploaded photo on Cloudinary when configured; otherwise
 // keep the local uploads/ path. The local file is a temp copy either way.
 async function storePhoto(file) {
@@ -87,8 +117,18 @@ exports.listMyReports = wrap(async (req, res) => {
   const { status } = req.query;
   const filter = { userId: req.user.id };
   if (status && ['pending', 'in_progress', 'resolved'].includes(status)) filter.status = status;
-  const reports = await Report.find(filter).sort({ createdAt: -1 });
-  res.json({ reports: reports.map((r) => r.toPublicJSON()) });
+  applyCursor(filter, req.query.before);
+  const limit = parsePageSize(req.query.limit);
+  // Backward-compatible: without `limit`, returns the full list as before.
+  const reports = await Report.find(filter)
+    .sort({ createdAt: -1, _id: -1 })
+    .limit(limit + 1);
+  const hasMore = reports.length > limit;
+  const page = hasMore ? reports.slice(0, limit) : reports;
+  res.json({
+    reports: page.map((r) => r.toPublicJSON()),
+    nextCursor: hasMore ? cursorFor(page[page.length - 1]) : null,
+  });
 });
 
 exports.listPublicReports = wrap(async (req, res) => {
@@ -111,12 +151,16 @@ exports.listPublicReports = wrap(async (req, res) => {
       },
     };
   }
+  applyCursor(filter, req.query.before);
+  const limit = parsePageSize(req.query.limit);
   const reports = await Report.find(filter)
     .select('reportId category title status address location photoUrl createdAt')
-    .sort({ createdAt: -1 })
-    .limit(500);
+    .sort({ createdAt: -1, _id: -1 })
+    .limit(limit + 1);
+  const hasMore = reports.length > limit;
+  const page = hasMore ? reports.slice(0, limit) : reports;
   res.json({
-    reports: reports.map((r) => ({
+    reports: page.map((r) => ({
       id: r._id,
       reportId: r.reportId,
       category: r.category,
@@ -127,6 +171,7 @@ exports.listPublicReports = wrap(async (req, res) => {
       location: r.location,
       createdAt: r.createdAt,
     })),
+    nextCursor: hasMore ? cursorFor(page[page.length - 1]) : null,
   });
 });
 

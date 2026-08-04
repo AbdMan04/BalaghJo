@@ -19,8 +19,8 @@ const STATUS_TRANSITIONS = {
 
 const reportSchema = new mongoose.Schema(
   {
-    reportId: { type: String, unique: true, index: true },
-    userId: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true, index: true },
+    reportId: { type: String, unique: true },
+    userId: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
     category: { type: String, enum: CATEGORIES, required: true },
     title: { type: String, trim: true, default: '' },
     description: { type: String, required: true, maxlength: 2000 },
@@ -30,7 +30,7 @@ const reportSchema = new mongoose.Schema(
       coordinates: { type: [Number], default: [0, 0] }, // [lng, lat]
     },
     address: { type: String, default: '' },
-    status: { type: String, enum: STATUSES, default: 'pending', index: true },
+    status: { type: String, enum: STATUSES, default: 'pending' },
     statusChangedAt: { type: Date, default: null },
     assignedTo: { type: mongoose.Schema.Types.ObjectId, ref: 'User', default: null },
     estimatedFix: { type: Date },
@@ -46,7 +46,9 @@ const reportSchema = new mongoose.Schema(
 );
 
 reportSchema.index({ location: '2dsphere' });
+reportSchema.index({ location: '2dsphere', category: 1 });
 reportSchema.index({ userId: 1, createdAt: -1 });
+reportSchema.index({ userId: 1, status: 1, createdAt: -1 });
 reportSchema.index({ status: 1, createdAt: -1 });
 reportSchema.index({ category: 1, createdAt: -1 });
 
