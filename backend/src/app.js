@@ -2,6 +2,7 @@ require('dotenv').config();
 const express = require('express');
 const cors = require('cors');
 const helmet = require('helmet');
+const compression = require('compression');
 const morgan = require('morgan');
 const path = require('path');
 const rateLimit = require('express-rate-limit');
@@ -15,6 +16,10 @@ const app = express();
 app.set('trust proxy', 1);
 
 app.use(helmet());
+
+// Compress JSON responses (map marker lists + summaries are re-polled by
+// every device, so gzip cuts the bandwidth cost of foreground polling).
+app.use(compression());
 
 // NFR: global fallback limiter (per-route auth limiters are stricter).
 // Read-only endpoints that back the app's foreground polling are exempt

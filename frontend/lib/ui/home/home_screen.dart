@@ -6,7 +6,8 @@ import '../../data/api/report_api.dart';
 import '../../data/models/report.dart';
 import '../reports/reports_map_screen.dart';
 import '../widgets/animations.dart';
-import '../widgets/category_icon.dart';
+import '../widgets/report_delete_flow.dart';
+import '../widgets/route_aware_polling.dart';
 import 'main_shell.dart';
 import 'widgets/home_stats_header.dart';
 import 'widgets/quick_report_list.dart';
@@ -20,46 +21,25 @@ class HomeScreen extends StatefulWidget {
   State<HomeScreen> createState() => _HomeScreenState();
 }
 
-class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
+class _HomeScreenState extends State<HomeScreen> with RouteAwarePolling {
   final _api = ReportApi();
   Future<ReportSummary>? _future;
   ReportSummary? _summary;
   final Set<String> _pendingDeletes = {};
   List<Report>? _lastRecent;
-  Timer? _pollTimer;
-  bool _polling = false;
 
   // F4/FR-11, NFR-6: poll every 3s so status badges on recent reports
-  // refresh within ~5s without an app restart.
-  static const _pollInterval = Duration(seconds: 3);
+  // refresh within ~5s without an app restart. The timer is paused
+  // whenever Home isn't the visible route or the app is backgrounded
+  // (RouteAwarePolling).
+  @override
+  Duration get pollInterval => const Duration(seconds: 3);
 
   @override
   void initState() {
     super.initState();
-    WidgetsBinding.instance.addObserver(this);
     _future = _api.summary();
     _applySummary(_future!);
-    _pollTimer = Timer.periodic(_pollInterval, (_) => _poll());
-  }
-
-  // Stop polling while the app is in the background (saves battery,
-  // bandwidth, and server load); resume + refresh immediately on return.
-  @override
-  void didChangeAppLifecycleState(AppLifecycleState state) {
-    if (state == AppLifecycleState.paused || state == AppLifecycleState.hidden) {
-      _pollTimer?.cancel();
-      _pollTimer = null;
-    } else if (state == AppLifecycleState.resumed) {
-      _pollTimer ??= Timer.periodic(_pollInterval, (_) => _poll());
-      _poll();
-    }
-  }
-
-  @override
-  void dispose() {
-    WidgetsBinding.instance.removeObserver(this);
-    _pollTimer?.cancel();
-    super.dispose();
   }
 
   Future<void> _refresh() async {
@@ -83,9 +63,8 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
     }
   }
 
-  Future<void> _poll() async {
-    if (_polling) return;
-    _polling = true;
+  @override
+  Future<void> poll() async {
     try {
       final s = await _api.summary();
       if (!mounted) return;
@@ -105,108 +84,17 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
       }
     } catch (_) {
       // Keep showing the last good summary on transient network errors.
-    } finally {
-      _polling = false;
     }
   }
 
-  Future<bool> _deleteReport(Report r) async {
-    final confirmed = await showDialog<bool>(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        backgroundColor: Colors.white,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(AppRadius.lg)),
-        title: Text(ctx.t('home.delete_title'), style: const TextStyle(fontWeight: FontWeight.w800)),
-        content: Text(
-          '${ctx.t('home.delete_body_prefix')}'
-          '${r.title.isNotEmpty ? r.title : labelForCategory(r.category, ctx)}'
-          '${ctx.t('home.delete_body_suffix')}',
-          style: const TextStyle(color: AppColors.textMuted, height: 1.4),
-        ),
-        actions: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Expanded(
-                child: SizedBox(
-                  height: 42,
-                  child: TextButton(
-                    onPressed: () => Navigator.of(ctx).pop(false),
-                    child: Text(ctx.t('common.cancel'),
-                        style: const TextStyle(color: AppColors.navy, fontWeight: FontWeight.w700)),
-                  ),
-                ),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: SizedBox(
-                  height: 42,
-                  child: ElevatedButton(
-                    onPressed: () => Navigator.of(ctx).pop(true),
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: AppColors.danger,
-                      foregroundColor: Colors.white,
-                      elevation: 0,
-                      minimumSize: const Size.fromHeight(42),
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(AppRadius.sm)),
-                      padding: const EdgeInsets.symmetric(horizontal: 24),
-                    ),
-                    child: Text(ctx.t('common.delete'), style: const TextStyle(fontWeight: FontWeight.w800)),
-                  ),
-                ),
-              ),
-            ],
-          ),
-        ],
-      ),
-    );
-    if (confirmed != true) return false;
-    if (!mounted) return false;
-
-    setState(() => _pendingDeletes.add(r.id));
-    final messenger = ScaffoldMessenger.of(context);
-    messenger.hideCurrentSnackBar();
-    final controller = messenger.showSnackBar(
-      SnackBar(
-        behavior: SnackBarBehavior.floating,
-        backgroundColor: Colors.black,
-        shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(AppRadius.md)),
-        duration: const Duration(seconds: 3),
-        content: Text(context.t('home.deleted_toast'), style: const TextStyle(color: Colors.white)),
-        action: SnackBarAction(
-          label: context.t('common.undo'),
-          textColor: Colors.white,
-          onPressed: () {
-            if (!mounted) return;
-            setState(() => _pendingDeletes.remove(r.id));
-          },
-        ),
-      ),
-    );
-    // Guarantee auto-dismiss at 3s even if the framework's snackbar timer
-    // is interrupted; controller.closed still fires so the delete below runs.
-    Future.delayed(const Duration(seconds: 3), () {
-      if (mounted) messenger.hideCurrentSnackBar();
-    });
-    controller.closed.then((_) async {
-      if (!mounted) return;
-      if (!_pendingDeletes.contains(r.id)) return;
-      try {
-        await _api.delete(r.id);
-        if (!mounted) return;
-        _pendingDeletes.remove(r.id);
-        await _refresh();
-      } catch (e) {
-        if (!mounted) return;
-        setState(() => _pendingDeletes.remove(r.id));
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Failed to delete: $e')),
-        );
-      }
-    });
-    return true;
-  }
+  Future<bool> _deleteReport(Report r) => runReportDeleteFlow(
+        context: context,
+        api: _api,
+        report: r,
+        pendingIds: _pendingDeletes,
+        setState: setState,
+        onDeleted: _refresh,
+      );
 
   static String _formatCount(int n) {
     final digits = n.toString();

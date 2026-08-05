@@ -14,6 +14,8 @@ import '../../data/api/report_api.dart';
 import '../../data/models/report.dart';
 import '../widgets/animations.dart';
 import '../widgets/category_icon.dart';
+import '../widgets/report_delete_flow.dart';
+import '../widgets/route_aware_polling.dart';
 import 'widgets/my_reports_row.dart';
 import 'widgets/report_filter_chips.dart';
 
@@ -24,7 +26,8 @@ class MyReportsScreen extends StatefulWidget {
   State<MyReportsScreen> createState() => _MyReportsScreenState();
 }
 
-class _MyReportsScreenState extends State<MyReportsScreen> {
+class _MyReportsScreenState extends State<MyReportsScreen>
+    with RouteAwarePolling {
   final _api = ReportApi();
   final _search = TextEditingController();
   String? _filter;
@@ -33,24 +36,23 @@ class _MyReportsScreenState extends State<MyReportsScreen> {
   late Future<List<Report>> _future;
   final Set<String> _pendingDeletes = {};
   List<Report>? _cached;
-  Timer? _pollTimer;
-  bool _polling = false;
 
   // F4/FR-11, NFR-6: poll every 3s so admin status changes appear in the
   // app within ~5s without a restart. Only setState when something changed.
-  static const _pollInterval = Duration(seconds: 3);
+  // The timer is paused whenever this screen isn't the visible route or the
+  // app is backgrounded (RouteAwarePolling).
+  @override
+  Duration get pollInterval => const Duration(seconds: 3);
 
   @override
   void initState() {
     super.initState();
     _search.addListener(() => setState(() {}));
     _future = _load();
-    _pollTimer = Timer.periodic(_pollInterval, (_) => _poll());
   }
 
   @override
   void dispose() {
-    _pollTimer?.cancel();
     _search.dispose();
     super.dispose();
   }
@@ -72,9 +74,8 @@ class _MyReportsScreenState extends State<MyReportsScreen> {
     setState(() => _future = Future.value(list));
   }
 
-  Future<void> _poll() async {
-    if (_polling) return;
-    _polling = true;
+  @override
+  Future<void> poll() async {
     try {
       final list = await _load();
       if (!mounted) return;
@@ -84,109 +85,20 @@ class _MyReportsScreenState extends State<MyReportsScreen> {
       }
     } catch (_) {
       // Keep showing the last good data on transient network errors.
-    } finally {
-      _polling = false;
     }
   }
 
-  Future<bool> _deleteReport(Report r) async {
-    final confirmed = await showDialog<bool>(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        backgroundColor: Colors.white,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(AppRadius.lg)),
-        title: Text(ctx.t('home.delete_title'), style: const TextStyle(fontWeight: FontWeight.w800)),
-        content: Text(
-          '${ctx.t('home.delete_body_prefix')}'
-          '${r.title.isNotEmpty ? r.title : labelForCategory(r.category, ctx)}'
-          '${ctx.t('home.delete_body_suffix')}',
-          style: const TextStyle(color: AppColors.textMuted, height: 1.4),
-        ),
-        actions: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Expanded(
-                child: SizedBox(
-                  height: 42,
-                  child: TextButton(
-                    onPressed: () => Navigator.of(ctx).pop(false),
-                    child: Text(ctx.t('common.cancel'),
-                        style: const TextStyle(color: AppColors.navy, fontWeight: FontWeight.w700)),
-                  ),
-                ),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: SizedBox(
-                  height: 42,
-                  child: ElevatedButton(
-                    onPressed: () => Navigator.of(ctx).pop(true),
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: AppColors.danger,
-                      foregroundColor: Colors.white,
-                      elevation: 0,
-                      minimumSize: const Size.fromHeight(42),
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(AppRadius.sm)),
-                      padding: const EdgeInsets.symmetric(horizontal: 24),
-                    ),
-                    child: Text(ctx.t('common.delete'), style: const TextStyle(fontWeight: FontWeight.w800)),
-                  ),
-                ),
-              ),
-            ],
-          ),
-        ],
-      ),
-    );
-    if (confirmed != true) return false;
-    if (!mounted) return false;
-
-    setState(() => _pendingDeletes.add(r.id));
-    final messenger = ScaffoldMessenger.of(context);
-    messenger.hideCurrentSnackBar();
-    final controller = messenger.showSnackBar(
-      SnackBar(
-        behavior: SnackBarBehavior.floating,
-        backgroundColor: Colors.black,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(AppRadius.md)),
-        duration: const Duration(seconds: 3),
-        content: Text(context.t('home.deleted_toast'), style: const TextStyle(color: Colors.white)),
-        action: SnackBarAction(
-          label: context.t('common.undo'),
-          textColor: Colors.white,
-          onPressed: () {
-            if (!mounted) return;
-            setState(() => _pendingDeletes.remove(r.id));
-          },
-        ),
-      ),
-    );
-    // Guarantee auto-dismiss at 3s even if the framework's snackbar timer
-    // is interrupted; controller.closed still fires so the delete below runs.
-    Future.delayed(const Duration(seconds: 3), () {
-      if (mounted) messenger.hideCurrentSnackBar();
-    });
-    controller.closed.then((_) async {
-      if (!mounted) return;
-      if (!_pendingDeletes.contains(r.id)) return;
-      try {
-        await _api.delete(r.id);
-        if (!mounted) return;
-        setState(() {
-          _pendingDeletes.remove(r.id);
-          _future = _load();
-        });
-      } catch (e) {
-        if (!mounted) return;
-        setState(() => _pendingDeletes.remove(r.id));
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Failed to delete: $e')),
-        );
-      }
-    });
-    return true;
-  }
+  Future<bool> _deleteReport(Report r) => runReportDeleteFlow(
+        context: context,
+        api: _api,
+        report: r,
+        pendingIds: _pendingDeletes,
+        setState: setState,
+        onDeleted: () async {
+          if (!mounted) return;
+          setState(() => _future = _load());
+        },
+      );
 
   List<Report> _applyClientFilters(List<Report> source) {
     final query = _search.text.trim().toLowerCase();

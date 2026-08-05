@@ -3,6 +3,7 @@ const { body } = require('express-validator');
 const rateLimit = require('express-rate-limit');
 const ctrl = require('../controllers/reportController');
 const { authRequired, adminOnly } = require('../middleware/auth');
+const { CATEGORIES } = require('../models/Report');
 const upload = require('../middleware/upload');
 
 router.use(authRequired);
@@ -28,7 +29,7 @@ router.post(
   createLimiter,
   upload.single('photo'),
   [
-    body('category').isIn(['pothole', 'waste', 'lighting', 'other']),
+    body('category').isIn(CATEGORIES),
     body('description').isString().isLength({ min: 5, max: 2000 }),
     body('lat').optional().isFloat(),
     body('lng').optional().isFloat(),

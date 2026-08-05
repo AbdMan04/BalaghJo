@@ -8,7 +8,11 @@ import 'map_config.dart';
 abstract final class LocationHelper {
   /// Returns the current position clamped into the Irbid bounds, or null
   /// when permission is denied or a fresh fix cannot be obtained.
-  static Future<LatLng?> locateClamped() async {
+  static Future<LatLng?> locateClamped() => locate(clamp: true);
+
+  /// Returns a fresh GPS fix, or null when permission is denied or the fix
+  /// times out. Clamps into the Irbid bounds unless [clamp] is disabled.
+  static Future<LatLng?> locate({bool clamp = true}) async {
     var perm = await Geolocator.checkPermission();
     if (perm == LocationPermission.denied) {
       perm = await Geolocator.requestPermission();
@@ -21,6 +25,7 @@ abstract final class LocationHelper {
       desiredAccuracy: LocationAccuracy.best,
       timeLimit: const Duration(seconds: 10),
     );
-    return MapConfig.clampToBounds(LatLng(pos.latitude, pos.longitude));
+    final point = LatLng(pos.latitude, pos.longitude);
+    return clamp ? MapConfig.clampToBounds(point) : point;
   }
 }

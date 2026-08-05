@@ -8,6 +8,7 @@ import '../../core/theme.dart';
 import '../../state/auth_state.dart';
 import '../home/main_shell.dart';
 import '../widgets/animations.dart';
+import '../widgets/password_visibility_toggle.dart';
 import 'register_screen.dart';
 
 class LoginScreen extends StatefulWidget {
@@ -150,11 +151,10 @@ class _LoginScreenState extends State<LoginScreen> {
                           decoration: InputDecoration(
                             hintText: context.t('login.password_hint'),
                             prefixIcon: const Icon(Icons.lock_outline, color: AppColors.textMuted),
-                            suffixIcon: IconButton(
-                              icon: Icon(_obscure ? Icons.visibility_off_outlined : Icons.visibility_outlined,
-                                  color: AppColors.textMuted),
-                              tooltip: context.t('common.toggle_password'),
-                              onPressed: () => setState(() => _obscure = !_obscure),
+                            suffixIcon: PasswordVisibilityToggle(
+                              obscure: _obscure,
+                              onPressed: () =>
+                                  setState(() => _obscure = !_obscure),
                             ),
                           ),
                           obscureText: _obscure,

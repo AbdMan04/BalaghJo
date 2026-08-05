@@ -13,6 +13,7 @@ import '../../data/api/notification_api.dart';
 import '../../data/models/notification.dart';
 import '../reports/report_detail_screen.dart';
 import '../widgets/animations.dart';
+import '../widgets/route_aware_polling.dart';
 
 class NotificationsScreen extends StatefulWidget {
   const NotificationsScreen({super.key});
@@ -21,26 +22,25 @@ class NotificationsScreen extends StatefulWidget {
   State<NotificationsScreen> createState() => _NotificationsScreenState();
 }
 
-class _NotificationsScreenState extends State<NotificationsScreen> {
+class _NotificationsScreenState extends State<NotificationsScreen>
+    with RouteAwarePolling {
   final NotificationApi _api = NotificationApi();
   List<AppNotification> _items = const [];
   bool _loading = true;
   bool _fetching = false;
   bool _error = false;
-  Timer? _timer;
+
+  @override
+  Duration get pollInterval => const Duration(seconds: 4);
 
   @override
   void initState() {
     super.initState();
     _load();
-    _timer = Timer.periodic(const Duration(seconds: 4), (_) => _load());
   }
 
   @override
-  void dispose() {
-    _timer?.cancel();
-    super.dispose();
-  }
+  Future<void> poll() => _load();
 
   Future<void> _load() async {
     if (_fetching) return;

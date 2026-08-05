@@ -14,9 +14,32 @@ const Notification = require('../models/Notification');
 const { sendPush } = require('../config/firebase');
 const { uploader } = require('../config/cloudinary');
 const wrap = require('../utils/asyncHandler');
-const { STATUS_TRANSITIONS } = require('../models/Report');
+const { TtlCache } = require('../utils/ttlCache');
+const { STATUSES, CATEGORIES, STATUS_TRANSITIONS } = require('../models/Report');
 
 const STATUS_LABELS = { pending: 'Pending', in_progress: 'In Progress', resolved: 'Resolved' };
+
+// Per-user summary is safe to cache for 15s because every write that can
+// change it (create/delete/status update) invalidates the owner's entry.
+const summaryCache = new TtlCache({ maxEntries: 2000 });
+const SUMMARY_TTL_MS = 15_000;
+
+// The public map list is global; cache it briefly and clear it on any write.
+const publicCache = new TtlCache({ maxEntries: 200 });
+const PUBLIC_TTL_MS = 5_000;
+
+function invalidateUserSummary(userId) {
+  summaryCache.delete(`summary:${userId.toString()}`);
+}
+
+function invalidatePublicLists() {
+  publicCache.clear();
+}
+
+// Ownership/role guard shared by the detail and delete handlers.
+function isOwnerOrAdmin(reportUserId, user) {
+  return reportUserId.toString() === user.id || user.role === 'admin';
+}
 
 // Pagination (item 2): cursor-based paging for the report list endpoints.
 // A cursor encodes `createdAtISO_id`; paging uses a (createdAt, _id) tuple
@@ -110,13 +133,15 @@ exports.createReport = wrap(async (req, res) => {
   }
 
   await User.findByIdAndUpdate(req.user.id, { $inc: { sentReports: 1 } });
+  invalidateUserSummary(req.user.id);
+  invalidatePublicLists();
   res.status(201).json({ report: report.toPublicJSON() });
 });
 
 exports.listMyReports = wrap(async (req, res) => {
   const { status } = req.query;
   const filter = { userId: req.user.id };
-  if (status && ['pending', 'in_progress', 'resolved'].includes(status)) filter.status = status;
+  if (status && STATUSES.includes(status)) filter.status = status;
   applyCursor(filter, req.query.before);
   const limit = parsePageSize(req.query.limit);
   // Backward-compatible: without `limit`, returns the full list as before.
@@ -134,10 +159,8 @@ exports.listMyReports = wrap(async (req, res) => {
 exports.listPublicReports = wrap(async (req, res) => {
   const { status, category, neLat, neLng, swLat, swLng } = req.query;
   const filter = {};
-  if (status && ['pending', 'in_progress', 'resolved'].includes(status)) filter.status = status;
-  if (category && ['pothole', 'waste', 'lighting', 'other'].includes(category)) {
-    filter.category = category;
-  }
+  if (status && STATUSES.includes(status)) filter.status = status;
+  if (category && CATEGORIES.includes(category)) filter.category = category;
   // C5: the map passes its viewport corners so we only return reports
   // inside the visible box (uses the 2dsphere index) instead of always
   // shipping up to 500 docs per open/pan/filter.
@@ -153,27 +176,34 @@ exports.listPublicReports = wrap(async (req, res) => {
   }
   applyCursor(filter, req.query.before);
   const limit = parsePageSize(req.query.limit);
+  const key = [
+    'public',
+    status || '',
+    category || '',
+    box.every(Number.isFinite) ? box.join(',') : 'none',
+    limit,
+    req.query.before || '',
+  ].join('|');
+  const payload = await cachedPublic(key, limit, filter);
+  res.json(payload);
+});
+
+async function cachedPublic(key, limit, filter) {
+  const hit = publicCache.get(key, PUBLIC_TTL_MS);
+  if (hit !== null) return hit;
   const reports = await Report.find(filter)
     .select('reportId category title status address location photoUrl createdAt')
     .sort({ createdAt: -1, _id: -1 })
     .limit(limit + 1);
   const hasMore = reports.length > limit;
   const page = hasMore ? reports.slice(0, limit) : reports;
-  res.json({
-    reports: page.map((r) => ({
-      id: r._id,
-      reportId: r.reportId,
-      category: r.category,
-      title: r.title || '',
-      status: r.status,
-      address: r.address || '',
-      photoUrl: r.photoUrl || '',
-      location: r.location,
-      createdAt: r.createdAt,
-    })),
+  const payload = {
+    reports: page.map((r) => r.toPublicSummary()),
     nextCursor: hasMore ? cursorFor(page[page.length - 1]) : null,
-  });
-});
+  };
+  publicCache.set(key, payload);
+  return payload;
+}
 
 // Duplicate-submission guard: returns same-category reports within
 // ~500m of the given point (no reporter PII). Used by the submit
@@ -193,37 +223,24 @@ exports.nearbyReports = wrap(async (req, res) => {
       },
     },
   };
-  if (category && ['pothole', 'waste', 'lighting', 'other'].includes(category)) {
-    filter.category = category;
-  }
+  if (category && CATEGORIES.includes(category)) filter.category = category;
   const reports = await Report.find(filter)
     .select('reportId category title status address location photoUrl createdAt')
     .sort({ createdAt: -1 })
     .limit(20);
   res.json({
-    reports: reports.map((r) => ({
-      id: r._id,
-      reportId: r.reportId,
-      category: r.category,
-      title: r.title || '',
-      status: r.status,
-      address: r.address || '',
-      photoUrl: r.photoUrl || '',
-      location: r.location,
-      createdAt: r.createdAt,
-    })),
+    reports: reports.map((r) => r.toPublicSummary()),
   });
 });
 
 exports.getReport = wrap(async (req, res) => {
   const report = await Report.findById(req.params.id).populate('userId', 'firstName lastName phone');
   if (!report) return res.status(404).json({ error: 'Not found' });
-  const isOwnerOrAdmin =
-    report.userId._id.toString() === req.user.id || req.user.role === 'admin';
+  const allowed = isOwnerOrAdmin(report.userId, req.user);
   const reporter = report.userId;
   const json = report.toPublicJSON();
   json.userId = reporter._id;
-  json.reporter = isOwnerOrAdmin
+  json.reporter = allowed
     ? {
         fullName: `${reporter.firstName ?? ''} ${reporter.lastName ?? ''}`.trim(),
         phone: reporter.phone || '',
@@ -238,7 +255,7 @@ exports.getReport = wrap(async (req, res) => {
 exports.deleteReport = wrap(async (req, res) => {
   const report = await Report.findById(req.params.id);
   if (!report) return res.status(404).json({ error: 'Not found' });
-  if (report.userId.toString() !== req.user.id && req.user.role !== 'admin') {
+  if (!isOwnerOrAdmin(report.userId, req.user)) {
     return res.status(403).json({ error: 'Forbidden' });
   }
   const wasResolved = report.status === 'resolved';
@@ -255,11 +272,16 @@ exports.deleteReport = wrap(async (req, res) => {
   const inc = { sentReports: -1 };
   if (wasResolved) inc.solvedReports = -1;
   await User.findByIdAndUpdate(ownerId, { $inc: inc });
+  invalidateUserSummary(ownerId);
+  invalidatePublicLists();
   res.json({ ok: true });
 });
 
 exports.summary = wrap(async (req, res) => {
   const userId = new mongoose.Types.ObjectId(req.user.id);
+  const key = `summary:${req.user.id}`;
+  const hit = summaryCache.get(key, SUMMARY_TTL_MS);
+  if (hit !== null) return res.json(hit);
   // C7: one round-trip instead of four — count the per-status buckets in
   // a single $facet pipeline (still served by the {userId, createdAt} index).
   const [agg] = await Report.aggregate([
@@ -277,19 +299,21 @@ exports.summary = wrap(async (req, res) => {
   ]);
   const count = (arr) => (arr && arr.length ? arr[0].n : 0);
   const recent = await Report.find({ userId }).sort({ createdAt: -1 }).limit(3);
-  res.json({
+  const payload = {
     summary: {
       total: count(agg.total),
       resolved: count(agg.resolved),
       active: count(agg.active),
     },
     recent: recent.map((r) => r.toPublicJSON()),
-  });
+  };
+  summaryCache.set(key, payload);
+  res.json(payload);
 });
 
 exports.updateStatus = wrap(async (req, res) => {
   const { status } = req.body;
-  if (!['pending', 'in_progress', 'resolved'].includes(status)) {
+  if (!STATUSES.includes(status)) {
     return res.status(400).json({ error: 'Invalid status' });
   }
 
@@ -330,6 +354,8 @@ exports.updateStatus = wrap(async (req, res) => {
   if (status === 'resolved') {
     await User.findByIdAndUpdate(report.userId, { $inc: { solvedReports: 1 } });
   }
+  invalidateUserSummary(report.userId);
+  invalidatePublicLists();
 
   // FR-7: persist an in-app notification and fire an FCM push to the
   // reporter's registered devices. C6: fire-and-forget so the status

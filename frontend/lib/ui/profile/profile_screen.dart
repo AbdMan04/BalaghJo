@@ -16,6 +16,7 @@ import '../../state/auth_state.dart';
 import '../auth/onboarding_screen.dart';
 import '../notifications/notifications_screen.dart';
 import '../widgets/animations.dart';
+import '../widgets/password_visibility_toggle.dart';
 
 class ProfileScreen extends StatelessWidget {
   const ProfileScreen({super.key});
@@ -306,13 +307,9 @@ class _ChangePasswordDialogState extends State<_ChangePasswordDialog> {
               obscureText: _hideCurrent,
               decoration: InputDecoration(
                 labelText: context.t('profile.current_password'),
-                suffixIcon: IconButton(
-                  icon: Icon(
-                      _hideCurrent
-                          ? Icons.visibility_off_outlined
-                          : Icons.visibility_outlined,
-                      size: 20,
-                      color: AppColors.textMuted),
+                suffixIcon: PasswordVisibilityToggle(
+                  obscure: _hideCurrent,
+                  size: 20,
                   onPressed: () => setState(() => _hideCurrent = !_hideCurrent),
                 ),
               ),
@@ -323,13 +320,9 @@ class _ChangePasswordDialogState extends State<_ChangePasswordDialog> {
               obscureText: _hideNext,
               decoration: InputDecoration(
                 labelText: context.t('profile.new_password'),
-                suffixIcon: IconButton(
-                  icon: Icon(
-                      _hideNext
-                          ? Icons.visibility_off_outlined
-                          : Icons.visibility_outlined,
-                      size: 20,
-                      color: AppColors.textMuted),
+                suffixIcon: PasswordVisibilityToggle(
+                  obscure: _hideNext,
+                  size: 20,
                   onPressed: () => setState(() => _hideNext = !_hideNext),
                 ),
               ),

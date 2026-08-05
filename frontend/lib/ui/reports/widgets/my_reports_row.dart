@@ -24,8 +24,7 @@ class MyReportsRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final title =
-        report.title.isNotEmpty ? report.title : labelForCategory(report.category, context);
+    final title = reportDisplayTitle(report, context);
     return Padding(
       padding: const EdgeInsets.only(bottom: 10),
       child: ClipRRect(
@@ -85,7 +84,7 @@ class MyReportsRow extends StatelessWidget {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          report.title.isNotEmpty ? report.title : labelForCategory(report.category, context),
+                          reportDisplayTitle(report, context),
                           style: const TextStyle(fontWeight: FontWeight.w700),
                         ),
                         const SizedBox(height: 6),

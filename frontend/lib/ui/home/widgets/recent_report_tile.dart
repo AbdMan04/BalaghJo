@@ -22,8 +22,7 @@ class RecentReportTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final title =
-        report.title.isNotEmpty ? report.title : labelForCategory(report.category, context);
+    final title = reportDisplayTitle(report, context);
     return Padding(
       padding: const EdgeInsets.fromLTRB(20, 6, 20, 6),
       child: ClipRRect(
@@ -83,7 +82,7 @@ class RecentReportTile extends StatelessWidget {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          report.title.isNotEmpty ? report.title : labelForCategory(report.category, context),
+                          reportDisplayTitle(report, context),
                           style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 14),
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,

@@ -8,10 +8,10 @@
  */
 import 'dart:io';
 import 'package:flutter/material.dart';
-import 'package:geolocator/geolocator.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:provider/provider.dart';
 import '../../core/locale_state.dart';
+import '../../core/location_helper.dart';
 import '../../core/strings.dart';
 import '../../core/theme.dart';
 import '../../data/api/report_api.dart';
@@ -83,16 +83,8 @@ class _SubmitReportScreenState extends State<SubmitReportScreen> {
 
   Future<void> _captureLocation() async {
     try {
-      var perm = await Geolocator.checkPermission();
-      if (perm == LocationPermission.denied) {
-        perm = await Geolocator.requestPermission();
-      }
-      if (perm == LocationPermission.denied ||
-          perm == LocationPermission.deniedForever) {
-        return;
-      }
-      final pos = await Geolocator.getCurrentPosition(
-          timeLimit: const Duration(seconds: 10));
+      final pos = await LocationHelper.locate(clamp: false);
+      if (pos == null) return;
       setState(() {
         _lat = pos.latitude;
         _lng = pos.longitude;
@@ -447,7 +439,7 @@ class _SubmitReportScreenState extends State<SubmitReportScreen> {
                                           const SizedBox(width: 6),
                                           Expanded(
                                             child: Text(
-                                              '${m.reportId} · ${m.address.isNotEmpty ? m.address : labelForCategory(m.category, context)}',
+                                              '${m.reportId} · ${reportDisplayAddress(m, context)}',
                                               style: const TextStyle(
                                                   fontSize: 12,
                                                   fontWeight: FontWeight.w600),

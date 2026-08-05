@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:provider/provider.dart';
 import 'core/locale_state.dart';
+import 'core/route_observer.dart';
 import 'core/theme.dart';
 import 'state/auth_state.dart';
 import 'ui/auth/splash_screen.dart';
@@ -41,6 +42,7 @@ class BalaghjoApp extends StatelessWidget {
             GlobalWidgetsLocalizations.delegate,
             GlobalCupertinoLocalizations.delegate,
           ],
+          navigatorObservers: [appRouteObserver],
           home: const SplashScreen(),
         ),
       ),

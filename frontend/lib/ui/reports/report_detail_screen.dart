@@ -21,6 +21,7 @@ import '../../data/api/report_api.dart';
 import '../../data/models/report.dart';
 import '../widgets/animations.dart';
 import '../widgets/category_icon.dart';
+import '../widgets/route_aware_polling.dart';
 import '../widgets/status_badge.dart';
 
 class ReportDetailScreen extends StatefulWidget {
@@ -31,24 +32,19 @@ class ReportDetailScreen extends StatefulWidget {
   State<ReportDetailScreen> createState() => _ReportDetailScreenState();
 }
 
-class _ReportDetailScreenState extends State<ReportDetailScreen> {
+class _ReportDetailScreenState extends State<ReportDetailScreen>
+    with RouteAwarePolling {
   late Future<Report> _future;
   bool _following = false;
   Report? _last;
-  Timer? _pollTimer;
-  bool _polling = false;
+
+  @override
+  Duration get pollInterval => const Duration(seconds: 3);
 
   @override
   void initState() {
     super.initState();
     _future = _load();
-    _pollTimer = Timer.periodic(const Duration(seconds: 3), (_) => _poll());
-  }
-
-  @override
-  void dispose() {
-    _pollTimer?.cancel();
-    super.dispose();
   }
 
   Future<Report> _load() async {
@@ -57,9 +53,8 @@ class _ReportDetailScreenState extends State<ReportDetailScreen> {
     return r;
   }
 
-  Future<void> _poll() async {
-    if (_polling) return;
-    _polling = true;
+  @override
+  Future<void> poll() async {
     try {
       final fresh = await ReportApi().get(widget.reportId);
       if (!mounted) return;
@@ -70,13 +65,11 @@ class _ReportDetailScreenState extends State<ReportDetailScreen> {
       }
     } catch (_) {
       // Keep showing the last good report on transient network errors.
-    } finally {
-      _polling = false;
     }
   }
 
   String _shareText(Report r) => 'Report ${r.reportId}\n'
-      '${r.title.isNotEmpty ? r.title : labelForCategory(r.category, context)}\n'
+      '${reportDisplayTitle(r, context)}\n'
       'Status: ${r.status.label}\n'
       '${r.address.isNotEmpty ? r.address : ""}\n'
       '${r.description}';
@@ -173,7 +166,7 @@ class _ReportDetailScreenState extends State<ReportDetailScreen> {
                   child: Row(
                     children: [
                       Expanded(
-                        child: Text(r.title.isNotEmpty ? r.title : labelForCategory(r.category, context),
+                        child: Text(reportDisplayTitle(r, context),
                             style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 20)),
                       ),
                       StatusBadge(r.status),

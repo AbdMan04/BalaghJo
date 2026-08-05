@@ -10,6 +10,7 @@ import '../../core/strings.dart';
 import '../../core/theme.dart';
 import '../../data/api/geocoding_api.dart';
 import '../widgets/animations.dart';
+import '../widgets/location_snackbars.dart';
 
 class PickedLocation {
   final double lat;
@@ -83,18 +84,14 @@ class _MapPickerScreenState extends State<MapPickerScreen> {
       final next = await LocationHelper.locateClamped();
       if (next == null) {
         if (!mounted) return;
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Location permission denied')),
-        );
+        showLocationPermissionDenied(context);
         return;
       }
       _map.move(next, MapConfig.locationZoom);
       _onPinChanged(next);
     } catch (_) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Could not get your location')),
-      );
+      showLocationUnavailable(context);
     } finally {
       if (mounted) setState(() => _locating = false);
     }

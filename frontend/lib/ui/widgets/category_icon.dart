@@ -9,6 +9,7 @@
 // terms of category strings don't all need to change at once.
 import 'package:flutter/material.dart';
 import '../../core/theme.dart';
+import '../../data/models/report.dart';
 
 enum ReportCategory {
   pothole(
@@ -92,3 +93,18 @@ IconData iconForCategory(String cat) => ReportCategory.fromApi(cat).icon;
 Color colorForCategory(String cat) => ReportCategory.fromApi(cat).tint;
 String labelForCategory(String cat, [BuildContext? ctx]) =>
     ReportCategory.fromApi(cat).label;
+
+// Fallback title used everywhere a report without a custom title still
+// needs to be identifiable: show the custom title when present, else the
+// localized category label.
+String reportDisplayTitle(Report report, BuildContext context) =>
+    report.title.isNotEmpty
+        ? report.title
+        : labelForCategory(report.category, context);
+
+// Same idea for addresses: a report without a pinned address is shown as
+// its category label instead.
+String reportDisplayAddress(Report report, BuildContext context) =>
+    report.address.isNotEmpty
+        ? report.address
+        : labelForCategory(report.category, context);

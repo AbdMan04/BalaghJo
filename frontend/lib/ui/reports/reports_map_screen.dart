@@ -20,6 +20,7 @@ import '../../data/api/report_api.dart';
 import '../../data/models/report.dart';
 import '../widgets/animations.dart';
 import '../widgets/category_icon.dart';
+import '../widgets/location_snackbars.dart';
 import '../widgets/status_badge.dart';
 import 'report_detail_screen.dart';
 
@@ -94,18 +95,14 @@ class _ReportsMapScreenState extends State<ReportsMapScreen> {
       final point = await LocationHelper.locateClamped();
       if (!mounted) return;
       if (point == null) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Location permission denied')),
-        );
+        showLocationPermissionDenied(context);
         return;
       }
       setState(() => _myLocation = point);
       _map.move(point, MapConfig.locationZoom);
     } catch (_) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Could not get your location')),
-      );
+      showLocationUnavailable(context);
     } finally {
       if (mounted) setState(() => _locating = false);
     }

@@ -102,6 +102,22 @@ reportSchema.methods.toPublicJSON = function () {
   };
 };
 
+// Lean shape for list endpoints (map markers, nearby matches): exactly
+// the fields the list UI consumes, so large collections stay small.
+reportSchema.methods.toPublicSummary = function () {
+  return {
+    id: this._id,
+    reportId: this.reportId,
+    category: this.category,
+    title: this.title,
+    status: this.status,
+    address: this.address,
+    photoUrl: this.photoUrl,
+    location: this.location,
+    createdAt: this.createdAt,
+  };
+};
+
 module.exports = mongoose.model('Report', reportSchema);
 module.exports.STATUSES = STATUSES;
 module.exports.CATEGORIES = CATEGORIES;
