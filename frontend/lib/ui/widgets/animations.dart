@@ -1,6 +1,10 @@
 import 'package:flutter/material.dart';
 
-class FadeSlideIn extends StatefulWidget {
+// FadeSlideIn — legacy entrance animation (fade + slide-up from the bottom
+// with a stagger delay). The app now displays data naturally and directly,
+// so this renders its child immediately with no animation. The parameters
+// are kept so existing call sites keep compiling unchanged.
+class FadeSlideIn extends StatelessWidget {
   final Widget child;
   final Duration delay;
   final Duration duration;
@@ -14,43 +18,7 @@ class FadeSlideIn extends StatefulWidget {
   });
 
   @override
-  State<FadeSlideIn> createState() => _FadeSlideInState();
-}
-
-class _FadeSlideInState extends State<FadeSlideIn>
-    with SingleTickerProviderStateMixin {
-  late final AnimationController _c =
-      AnimationController(vsync: this, duration: widget.duration);
-  late final Animation<double> _opacity =
-      CurvedAnimation(parent: _c, curve: Curves.easeOut);
-  late final Animation<double> _slide =
-      Tween<double>(begin: widget.offsetY, end: 0)
-          .animate(CurvedAnimation(parent: _c, curve: Curves.easeOutCubic));
-
-  @override
-  void initState() {
-    super.initState();
-    Future.delayed(widget.delay, () {
-      if (mounted) _c.forward();
-    });
-  }
-  @override
-  void dispose() {
-    _c.dispose();
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return AnimatedBuilder(
-      animation: _c,
-      builder: (_, child) => Opacity(
-        opacity: _opacity.value,
-        child: Transform.translate(offset: Offset(0, _slide.value), child: child),
-      ),
-      child: widget.child,
-    );
-  }
+  Widget build(BuildContext context) => child;
 }
 
 class PressableScale extends StatefulWidget {
@@ -195,6 +163,42 @@ Route<T> pageRoute<T>(Widget page, {bool fullscreenDialog = false}) {
   return MaterialPageRoute<T>(
     fullscreenDialog: fullscreenDialog,
     builder: (_) => page,
+  );
+}
+
+// Builds a route that switches instantly with no transition — used for the
+// data-display flow (report lists/details, map, notifications) so those
+// screens appear directly, like switching bottom-nav tabs.
+Route<T> instantRoute<T>(Widget page) {
+  return PageRouteBuilder<T>(
+    transitionDuration: Duration.zero,
+    reverseTransitionDuration: Duration.zero,
+    pageBuilder: (_, __, ___) => page,
+  );
+}
+
+// Subtle entrance for the auth screens (splash -> onboarding -> sign in /
+// sign up): a soft fade with a slight upward drift suggests forward
+// movement without the full horizontal slide.
+Route<T> subtleRoute<T>(Widget page) {
+  return PageRouteBuilder<T>(
+    transitionDuration: const Duration(milliseconds: 320),
+    reverseTransitionDuration: const Duration(milliseconds: 220),
+    pageBuilder: (_, __, ___) => page,
+    transitionsBuilder: (_, animation, __, child) {
+      final curved =
+          CurvedAnimation(parent: animation, curve: Curves.easeOutCubic);
+      return FadeTransition(
+        opacity: curved,
+        child: SlideTransition(
+          position: Tween<Offset>(
+            begin: const Offset(0, 0.03),
+            end: Offset.zero,
+          ).animate(curved),
+          child: child,
+        ),
+      );
+    },
   );
 }
 

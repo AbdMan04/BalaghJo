@@ -44,7 +44,7 @@ class _SplashScreenState extends State<SplashScreen>
     } else {
       next = const MainShell();
     }
-    Navigator.of(context).pushReplacement(pageRoute(next));
+    Navigator.of(context).pushReplacement(subtleRoute(next));
   }
 
   @override

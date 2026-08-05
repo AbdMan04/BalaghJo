@@ -46,7 +46,7 @@ class ProfileScreen extends StatelessWidget {
                       Icons.notifications_none,
                       context.t('profile.notifications'),
                       () => Navigator.of(context).push(
-                          pageRoute(const NotificationsScreen())),
+                          instantRoute(const NotificationsScreen())),
                     ),
                   ),
                   FadeSlideIn(

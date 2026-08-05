@@ -205,7 +205,7 @@ class _HomeScreenState extends State<HomeScreen> with RouteAwarePolling {
                   delay: const Duration(milliseconds: 600),
                   child: PressableScale(
                     onTap: () => Navigator.of(context).push(
-                      pageRoute(const ReportsMapScreen()),
+                      instantRoute(const ReportsMapScreen()),
                     ),
                     child: Container(
                       padding: const EdgeInsets.all(14),

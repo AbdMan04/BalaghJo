@@ -558,17 +558,13 @@ class _MarkerCard extends StatelessWidget {
             const SizedBox(height: 10),
             PressableScale(
               onTap: () => Navigator.of(context).push(
-                pageRoute(ReportDetailScreen(reportId: report.id)),
+                instantRoute(ReportDetailScreen(reportId: report.id)),
               ),
               child: Container(
                 height: 42,
                 alignment: Alignment.center,
                 decoration: BoxDecoration(
-                  gradient: const LinearGradient(
-                    colors: [AppColors.navy, AppColors.blue],
-                    begin: Alignment.centerLeft,
-                    end: Alignment.centerRight,
-                  ),
+                  color: AppColors.navy,
                   borderRadius: BorderRadius.circular(AppRadius.sm),
                 ),
                 child: Row(

@@ -266,7 +266,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                   Center(
                     child: GestureDetector(
                       onTap: () => Navigator.of(context)
-                          .pushReplacement(pageRoute(const LoginScreen())),
+                          .pushReplacement(subtleRoute(const LoginScreen())),
                       child: Text.rich(TextSpan(children: [
                         TextSpan(
                             text: context.t('register.have_account'),

@@ -230,7 +230,7 @@ class _LoginScreenState extends State<LoginScreen> {
                   Center(
                     child: GestureDetector(
                       onTap: () => Navigator.of(context).pushReplacement(
-                          pageRoute(const RegisterScreen())),
+                          subtleRoute(const RegisterScreen())),
                       child: Text.rich(TextSpan(children: [
                         TextSpan(text: context.t('login.no_account'), style: const TextStyle(color: AppColors.textMuted)),
                         TextSpan(text: context.t('login.sign_up_link'), style: const TextStyle(color: AppColors.blue, fontWeight: FontWeight.w700)),
