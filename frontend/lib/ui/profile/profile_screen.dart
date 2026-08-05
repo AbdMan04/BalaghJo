@@ -372,6 +372,10 @@ class _ChangePasswordDialogState extends State<_ChangePasswordDialog> {
         ),
         ElevatedButton(
           onPressed: _busy ? null : _submit,
+          style: ElevatedButton.styleFrom(
+            backgroundColor: AppColors.calmBlue,
+            foregroundColor: Colors.white,
+          ),
           child: _busy
               ? const SizedBox(
                   height: 18,
@@ -553,11 +557,7 @@ class _EditProfileSheetState extends State<_EditProfileSheet> {
                 height: 50,
                 alignment: Alignment.center,
                 decoration: BoxDecoration(
-                  gradient: const LinearGradient(
-                    colors: [AppColors.navy, AppColors.blue],
-                    begin: Alignment.centerLeft,
-                    end: Alignment.centerRight,
-                  ),
+                  color: AppColors.navy,
                   borderRadius: BorderRadius.circular(AppRadius.md),
                   boxShadow: [
                     BoxShadow(

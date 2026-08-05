@@ -26,11 +26,6 @@ class _SplashScreenState extends State<SplashScreen>
   late final Animation<double> _fade =
       CurvedAnimation(parent: _logo, curve: const Interval(0, 0.6));
 
-  late final AnimationController _pulse = AnimationController(
-    vsync: this,
-    duration: const Duration(seconds: 2),
-  )..repeat(reverse: true);
-
   @override
   void initState() {
     super.initState();
@@ -55,7 +50,6 @@ class _SplashScreenState extends State<SplashScreen>
   @override
   void dispose() {
     _logo.dispose();
-    _pulse.dispose();
     super.dispose();
   }
 
@@ -69,14 +63,12 @@ class _SplashScreenState extends State<SplashScreen>
               color: AppColors.navy,
             ),
           ),
-          const Positioned(top: -60, left: -40, child: GradientBlob(color: AppColors.sky, size: 280)),
-          const Positioned(bottom: -80, right: -60, child: GradientBlob(color: AppColors.blue, size: 320)),
           Center(
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
                 AnimatedBuilder(
-                  animation: Listenable.merge([_logo, _pulse]),
+                  animation: _logo,
                   builder: (_, __) {
                     return Transform.scale(
                       scale: _scale.value,
@@ -87,8 +79,8 @@ class _SplashScreenState extends State<SplashScreen>
                           color: Colors.white.withValues(alpha: 0.1),
                           boxShadow: [
                             BoxShadow(
-                              color: AppColors.sky.withValues(alpha: 0.4 + 0.3 * _pulse.value),
-                              blurRadius: 30 + 20 * _pulse.value,
+                              color: AppColors.sky.withValues(alpha: 0.4),
+                              blurRadius: 30,
                               spreadRadius: 2,
                             ),
                           ],

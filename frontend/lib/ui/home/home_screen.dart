@@ -23,6 +23,7 @@ class HomeScreen extends StatefulWidget {
 class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
   final _api = ReportApi();
   Future<ReportSummary>? _future;
+  ReportSummary? _summary;
   final Set<String> _pendingDeletes = {};
   List<Report>? _lastRecent;
   Timer? _pollTimer;
@@ -37,6 +38,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
     _future = _api.summary();
+    _applySummary(_future!);
     _pollTimer = Timer.periodic(_pollInterval, (_) => _poll());
   }
 
@@ -63,9 +65,22 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
   Future<void> _refresh() async {
     _lastRecent = null;
     setState(() {
+      _summary = null;
       _future = _api.summary();
     });
-    await _future;
+    await _applySummary(_future!);
+  }
+
+  // Keeps the total-reports counter (and any other summary fields) in sync
+  // with the latest fetch. Guards against setState after dispose.
+  Future<void> _applySummary(Future<ReportSummary> future) async {
+    try {
+      final s = await future;
+      if (!mounted) return;
+      setState(() => _summary = s);
+    } catch (_) {
+      // Keep the last good summary on transient network errors.
+    }
   }
 
   Future<void> _poll() async {
@@ -75,10 +90,18 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
       final s = await _api.summary();
       if (!mounted) return;
       final changed =
-          _lastRecent == null || !Report.sameStatusList(_lastRecent!, s.recent);
+          _lastRecent == null ||
+          _summary == null ||
+          !Report.sameStatusList(_lastRecent!, s.recent) ||
+          _summary!.total != s.total ||
+          _summary!.resolved != s.resolved ||
+          _summary!.active != s.active;
       _lastRecent = s.recent;
       if (changed) {
-        setState(() => _future = Future.value(s));
+        setState(() {
+          _summary = s;
+          _future = Future.value(s);
+        });
       }
     } catch (_) {
       // Keep showing the last good summary on transient network errors.
@@ -185,6 +208,16 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
     return true;
   }
 
+  static String _formatCount(int n) {
+    final digits = n.toString();
+    final buf = StringBuffer();
+    for (var i = 0; i < digits.length; i++) {
+      if (i > 0 && (digits.length - i) % 3 == 0) buf.write(',');
+      buf.write(digits[i]);
+    }
+    return buf.toString();
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -206,11 +239,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
                     child: Container(
                       padding: const EdgeInsets.all(16),
                       decoration: BoxDecoration(
-                        gradient: const LinearGradient(
-                          colors: [AppColors.navy, Color(0xFF1E3A8A)],
-                          begin: Alignment.centerLeft,
-                          end: Alignment.centerRight,
-                        ),
+                        color: AppColors.navy,
                         borderRadius: BorderRadius.circular(AppRadius.md),
                         boxShadow: [
                           BoxShadow(
@@ -357,6 +386,33 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
                                   ],
                                 ),
                               ),
+                              if (_summary != null) ...[
+                                const SizedBox(width: 10),
+                                AnimatedSwitcher(
+                                  duration: const Duration(milliseconds: 200),
+                                  child: Semantics(
+                                    label:
+                                        '${_formatCount(_summary!.total)} ${context.t('home.explore_map_count')}',
+                                    child: Container(
+                                      key: const ValueKey('explore_count'),
+                                      padding: const EdgeInsets.symmetric(
+                                          horizontal: 10, vertical: 5),
+                                      decoration: BoxDecoration(
+                                        color: AppColors.calmBlue,
+                                        borderRadius:
+                                            BorderRadius.circular(AppRadius.sm),
+                                      ),
+                                      child: Text(
+                                          _formatCount(_summary!.total),
+                                          style: const TextStyle(
+                                              color: Colors.white,
+                                              fontWeight: FontWeight.w800,
+                                              fontSize: 13)),
+                                    ),
+                                  ),
+                                ),
+                              ],
+                              const SizedBox(width: 6),
                               const Icon(Icons.chevron_right,
                                   color: AppColors.textMuted),
                             ],
