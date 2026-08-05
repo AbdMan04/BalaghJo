@@ -57,7 +57,20 @@ class ApiClient {
 
   String? _token;
   String? get token => _token;
-  void setToken(String? t) => _token = t;
+
+  String? _refreshToken;
+  String? get refreshToken => _refreshToken;
+
+  // Fired when the refresh token itself is rejected (expired/revoked), so
+  // the session owner can clear persisted state. Wired to AuthState.
+  Future<void> Function()? onSessionExpired;
+
+  Future<bool>? _refreshing;
+
+  void setTokens(String? token, String? refreshToken) {
+    _token = token;
+    _refreshToken = refreshToken;
+  }
 
   Uri _uri(String path, [Map<String, dynamic>? query]) {
     final base = Uri.parse(AppConfig.apiBaseUrl);
@@ -116,7 +129,7 @@ class ApiClient {
     });
   }
 
-  Future<dynamic> _send(Future<http.Response> Function() run) async {
+  Future<dynamic> _send(Future<http.Response> Function() run, {bool allowRefresh = true}) async {
     http.Response res;
     try {
       res = await run().timeout(_timeout);
@@ -129,7 +142,70 @@ class ApiClient {
     } catch (_) {
       throw ApiException(0, 'Network error. Please try again.');
     }
+    // Access token expired: silently refresh once and retry the request.
+    // Never refresh the refresh call itself, and only retry a single time.
+    if (res.statusCode == 401 && allowRefresh && _refreshToken != null) {
+      if (await refresh()) return _send(run, allowRefresh: false);
+    }
     return _decode(res);
+  }
+
+  // Exchange the refresh token for a fresh pair. Concurrent callers (e.g.
+  // several in-flight polls hitting 401 at once) share a single in-flight
+  // future so the rotation only happens once.
+  Future<bool> refresh() {
+    final inFlight = _refreshing;
+    if (inFlight != null) return inFlight;
+    final future = _doRefresh().whenComplete(() => _refreshing = null);
+    _refreshing = future;
+    return future;
+  }
+
+  Future<bool> _doRefresh() async {
+    final rt = _refreshToken;
+    if (rt == null) return false;
+    http.Response res;
+    try {
+      res = await http
+          .post(
+            _uri('/api/auth/refresh'),
+            headers: {'Content-Type': 'application/json'},
+            body: jsonEncode({'refreshToken': rt}),
+          )
+          .timeout(_timeout);
+    } catch (_) {
+      return false;
+    }
+    if (res.statusCode != 200) {
+      // Refresh token rejected → session is over.
+      final cb = onSessionExpired;
+      if (cb != null) await cb();
+      return false;
+    }
+    final body = jsonDecode(res.body) as Map<String, dynamic>;
+    _token = body['token'] as String?;
+    _refreshToken = body['refreshToken'] as String?;
+    return _token != null;
+  }
+
+  // Best-effort server-side revocation on logout; the user is signed out
+  // locally regardless of the outcome.
+  Future<void> logoutRemote() async {
+    final rt = _refreshToken;
+    try {
+      await http
+          .post(
+            _uri('/api/auth/logout'),
+            headers: {
+              if (_token != null) 'Authorization': 'Bearer $_token',
+              'Content-Type': 'application/json',
+            },
+            body: jsonEncode({'refreshToken': rt ?? ''}),
+          )
+          .timeout(_timeout);
+    } catch (_) {
+      // Ignore — local session is already cleared by the caller.
+    }
   }
 
   dynamic _decode(http.Response res) {

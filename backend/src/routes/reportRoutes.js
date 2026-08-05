@@ -26,7 +26,7 @@ router.post('/nearby', ctrl.nearbyReports);
 
 router.post(
   '/',
-  createLimiter,
+  ...(process.env.NODE_ENV === 'test' ? [] : [createLimiter]),
   upload.single('photo'),
   [
     body('category').isIn(CATEGORIES),

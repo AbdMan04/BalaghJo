@@ -1,6 +1,6 @@
 const router = require('express').Router();
 const { body } = require('express-validator');
-const rateLimit = require('express-rate-limit');
+const { rateLimit, ipKeyGenerator } = require('express-rate-limit');
 const ctrl = require('../controllers/authController');
 const { authRequired } = require('../middleware/auth');
 
@@ -20,9 +20,34 @@ const loginLimiter = rateLimit({
   message: { error: 'Too many login attempts. Try again in a few minutes.' },
 });
 
+// Per-phone lockout: the per-IP limiter alone doesn't stop a distributed
+// brute force of a single account, so throttle by the identifier too.
+const phoneLoginLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 10,
+  standardHeaders: true,
+  legacyHeaders: false,
+  keyGenerator: (req) => {
+    const id = String((req.body && req.body.identifier) || '').trim();
+    return id ? `login:${id}` : ipKeyGenerator(req);
+  },
+  message: { error: 'Too many attempts for this phone number. Try again in a few minutes.' },
+});
+
+const refreshLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 30,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { error: 'Too many token refreshes. Try again in a few minutes.' },
+});
+
+const isTest = process.env.NODE_ENV === 'test';
+const limiter = (l) => (isTest ? [] : [l]);
+
 router.post(
   '/register',
-  registerLimiter,
+  ...limiter(registerLimiter),
   [
     body('firstName').isString().trim().notEmpty(),
     body('lastName').isString().trim().notEmpty(),
@@ -34,13 +59,23 @@ router.post(
 
 router.post(
   '/login',
-  loginLimiter,
+  ...limiter(loginLimiter),
+  ...limiter(phoneLoginLimiter),
   [
     body('identifier').isString().trim().matches(/^07[789]\d{7}$/).withMessage('Phone must start with 077, 078, or 079'),
     body('password').isString().notEmpty().withMessage('Enter your password'),
   ],
   ctrl.login
 );
+
+router.post(
+  '/refresh',
+  ...limiter(refreshLimiter),
+  [body('refreshToken').isString().trim().notEmpty()],
+  ctrl.refresh
+);
+
+router.post('/logout', authRequired, ctrl.logout);
 
 router.get('/me', authRequired, ctrl.me);
 
@@ -64,6 +99,12 @@ router.patch(
       .optional()
       .custom((v) => v === '' || /^07[789]\d{7}$/.test(v))
       .withMessage('Phone must start with 077, 078, or 079'),
+    // Phone is the login identifier: require the password before it changes.
+    body('currentPassword')
+      .if(body('phone').exists())
+      .isString()
+      .notEmpty()
+      .withMessage('Current password is required to change your phone number'),
   ],
   ctrl.updateProfile
 );

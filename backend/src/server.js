@@ -15,6 +15,15 @@ process.on('uncaughtException', (err) => {
 const PORT = process.env.PORT || 4000;
 const MONGO_URI = process.env.MONGO_URI || 'mongodb://127.0.0.1:27017/balaghjo';
 
+// Fail fast instead of a confusing 401 storm: the JWT secret is mandatory
+// and must be a strong random value (tokens are signed and verified with it).
+if (!process.env.JWT_SECRET || process.env.JWT_SECRET.length < 32) {
+  console.error(
+    '[startup] JWT_SECRET must be set to a random string of at least 32 characters.'
+  );
+  process.exit(1);
+}
+
 // Use every available CPU core so Node's single-threaded event loop isn't
 // the ceiling. Workers share the same port (cluster handles the dispatch).
 // Capped at 2 by default to stay inside a 512MB free-tier instance's RAM;

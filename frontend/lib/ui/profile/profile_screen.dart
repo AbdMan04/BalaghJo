@@ -394,8 +394,15 @@ class _EditProfileSheetState extends State<_EditProfileSheet> {
   late final TextEditingController _first;
   late final TextEditingController _last;
   late final TextEditingController _phone;
+  late final TextEditingController _password;
   bool _busy = false;
   String? _error;
+
+  bool get _phoneChanged {
+    final current = context.read<AuthState>().user?.phone ?? '';
+    final phone = _phone.text.trim();
+    return phone.isNotEmpty && phone != current;
+  }
 
   @override
   void initState() {
@@ -404,6 +411,7 @@ class _EditProfileSheetState extends State<_EditProfileSheet> {
     _first = TextEditingController(text: user?.firstName ?? '');
     _last = TextEditingController(text: user?.lastName ?? '');
     _phone = TextEditingController(text: user?.phone ?? '');
+    _password = TextEditingController();
   }
 
   @override
@@ -411,6 +419,7 @@ class _EditProfileSheetState extends State<_EditProfileSheet> {
     _first.dispose();
     _last.dispose();
     _phone.dispose();
+    _password.dispose();
     super.dispose();
   }
 
@@ -424,6 +433,10 @@ class _EditProfileSheetState extends State<_EditProfileSheet> {
       setState(() => _error = context.t('login.invalid_phone'));
       return;
     }
+    if (_phoneChanged && _password.text.isEmpty) {
+      setState(() => _error = context.t('profile.err_current_required'));
+      return;
+    }
     setState(() {
       _busy = true;
       _error = null;
@@ -432,7 +445,8 @@ class _EditProfileSheetState extends State<_EditProfileSheet> {
       await context.read<AuthState>().updateProfile(
             firstName: _first.text.trim(),
             lastName: _last.text.trim(),
-            phone: _phone.text.trim(),
+            phone: _phoneChanged ? _phone.text.trim() : null,
+            currentPassword: _phoneChanged ? _password.text : null,
           );
       if (!mounted) return;
       Navigator.pop(context);
@@ -521,6 +535,19 @@ class _EditProfileSheetState extends State<_EditProfileSheet> {
                     color: AppColors.textMuted),
               ),
             ),
+            if (_phoneChanged) ...[
+              const SizedBox(height: 12),
+              TextField(
+                controller: _password,
+                obscureText: true,
+                decoration: InputDecoration(
+                  labelText: context.t('profile.current_password'),
+                  hintText: context.t('profile.phone_password_hint'),
+                  prefixIcon: const Icon(Icons.lock_outline,
+                      color: AppColors.textMuted),
+                ),
+              ),
+            ],
             if (_error != null) ...[
               const SizedBox(height: 12),
               Container(

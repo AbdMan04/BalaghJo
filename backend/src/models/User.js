@@ -23,6 +23,13 @@ const userSchema = new mongoose.Schema(
     solvedReports: { type: Number, default: 0 },
     isVerified: { type: Boolean, default: true },
     deviceTokens: { type: [String], default: [] },
+    // Rotating refresh-token registry: only the sha256 hash is stored, so a
+    // DB leak never exposes usable tokens. Selected explicitly in auth flows.
+    refreshTokens: {
+      type: [{ tokenHash: { type: String }, expiresAt: { type: Date } }],
+      default: [],
+      select: false,
+    },
   },
   { timestamps: true }
 );

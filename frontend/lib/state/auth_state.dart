@@ -18,8 +18,10 @@ import '../data/models/user.dart';
 class AuthState extends ChangeNotifier {
   final AuthApi _api = AuthApi();
   static const _kToken = 'token';
+  static const _kRefreshToken = 'refresh_token';
 
   String? _token;
+  String? _refreshToken;
   AppUser? _user;
   bool _loading = false;
 
@@ -29,14 +31,21 @@ class AuthState extends ChangeNotifier {
   bool get loading => _loading;
 
   Future<void> bootstrap() async {
+    // Expired-session hook: ApiClient auto-refreshes on 401; if the refresh
+    // token is itself dead it calls this so we clear persisted state.
+    ApiClient.instance.onSessionExpired = () => _clearSession();
+
     final prefs = await SharedPreferences.getInstance();
     _token = prefs.getString(_kToken);
+    _refreshToken = prefs.getString(_kRefreshToken);
+    ApiClient.instance.setTokens(_token, _refreshToken);
     if (_token != null) {
-      ApiClient.instance.setToken(_token);
       try {
+        // Runs through ApiClient, which silently refreshes a stale access
+        // token and retries before this /me ever fails.
         _user = await _api.me();
       } catch (_) {
-        await logout();
+        await _clearSession();
         return;
       }
     }
@@ -48,7 +57,7 @@ class AuthState extends ChangeNotifier {
     _setLoading(true);
     try {
       final res = await _api.login(identifier, password);
-      await _persist(res.token, res.user);
+      await _persist(res.token, res.refreshToken, res.user);
     } finally {
       _setLoading(false);
     }
@@ -68,7 +77,7 @@ class AuthState extends ChangeNotifier {
         password: password,
         phone: phone,
       );
-      await _persist(res.token, res.user);
+      await _persist(res.token, res.refreshToken, res.user);
     } finally {
       _setLoading(false);
     }
@@ -84,6 +93,9 @@ class AuthState extends ChangeNotifier {
         currentPassword: currentPassword,
         newPassword: newPassword,
       );
+      // Backend revokes every refresh token on a password change; drop ours
+      // so the next expiry signs the session out instead of failing refresh.
+      await _clearRefreshToken();
     } finally {
       _setLoading(false);
     }
@@ -93,6 +105,7 @@ class AuthState extends ChangeNotifier {
     String? firstName,
     String? lastName,
     String? phone,
+    String? currentPassword,
   }) async {
     _setLoading(true);
     try {
@@ -100,6 +113,7 @@ class AuthState extends ChangeNotifier {
         firstName: firstName,
         lastName: lastName,
         phone: phone,
+        currentPassword: currentPassword,
       );
       notifyListeners();
     } finally {
@@ -109,21 +123,38 @@ class AuthState extends ChangeNotifier {
 
   Future<void> logout() async {
     unawaited(FirebaseService.unregisterToken());
+    // Best-effort server-side revocation; local session clears regardless.
+    unawaited(ApiClient.instance.logoutRemote());
+    await _clearSession();
+  }
+
+  Future<void> _persist(String token, String refreshToken, AppUser user) async {
+    _token = token;
+    _refreshToken = refreshToken;
+    _user = user;
+    ApiClient.instance.setTokens(token, refreshToken);
     final prefs = await SharedPreferences.getInstance();
-    await prefs.remove(_kToken);
-    _token = null;
-    _user = null;
-    ApiClient.instance.setToken(null);
+    await prefs.setString(_kToken, token);
+    await prefs.setString(_kRefreshToken, refreshToken);
+    _syncPush();
     notifyListeners();
   }
 
-  Future<void> _persist(String token, AppUser user) async {
-    _token = token;
-    _user = user;
-    ApiClient.instance.setToken(token);
+  Future<void> _clearRefreshToken() async {
+    _refreshToken = null;
+    ApiClient.instance.setTokens(_token, null);
     final prefs = await SharedPreferences.getInstance();
-    await prefs.setString(_kToken, token);
-    _syncPush();
+    await prefs.remove(_kRefreshToken);
+  }
+
+  Future<void> _clearSession() async {
+    _token = null;
+    _refreshToken = null;
+    _user = null;
+    ApiClient.instance.setTokens(null, null);
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.remove(_kToken);
+    await prefs.remove(_kRefreshToken);
     notifyListeners();
   }
 

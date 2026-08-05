@@ -13,6 +13,8 @@ const notificationRoutes = require('./routes/notificationRoutes');
 
 const app = express();
 
+const isTest = process.env.NODE_ENV === 'test';
+
 app.set('trust proxy', 1);
 
 app.use(helmet());
@@ -35,7 +37,9 @@ const globalLimiter = rateLimit({
   skip: (req) => readOnlyPaths.includes(req.path),
   message: { error: 'Too many requests, please try again later.' },
 });
-app.use(globalLimiter);
+// Skip the global limiter under tests (the auth/report suites hammer the
+// same localhost IP hundreds of times per run).
+if (!isTest) app.use(globalLimiter);
 
 const allowedOrigins = (process.env.CORS_ORIGINS || '')
   .split(',')

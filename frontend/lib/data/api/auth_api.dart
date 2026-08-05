@@ -3,8 +3,9 @@ import 'api_client.dart';
 
 class AuthResult {
   final String token;
+  final String refreshToken;
   final AppUser user;
-  AuthResult(this.token, this.user);
+  AuthResult(this.token, this.refreshToken, this.user);
 }
 
 class AuthApi {
@@ -22,7 +23,11 @@ class AuthApi {
       'password': password,
       'phone': phone,
     });
-    return AuthResult(res['token'], AppUser.fromJson(res['user']));
+    return AuthResult(
+      res['token'],
+      res['refreshToken'],
+      AppUser.fromJson(res['user']),
+    );
   }
 
   Future<AuthResult> login(String identifier, String password) async {
@@ -30,7 +35,11 @@ class AuthApi {
       'identifier': identifier,
       'password': password,
     });
-    return AuthResult(res['token'], AppUser.fromJson(res['user']));
+    return AuthResult(
+      res['token'],
+      res['refreshToken'],
+      AppUser.fromJson(res['user']),
+    );
   }
 
   Future<AppUser> me() async {
@@ -52,11 +61,13 @@ class AuthApi {
     String? firstName,
     String? lastName,
     String? phone,
+    String? currentPassword,
   }) async {
     final body = <String, dynamic>{};
     if (firstName != null) body['firstName'] = firstName;
     if (lastName != null) body['lastName'] = lastName;
     if (phone != null) body['phone'] = phone;
+    if (currentPassword != null) body['currentPassword'] = currentPassword;
     final res = await _api.patch('/api/auth/profile', body);
     return AppUser.fromJson(res['user']);
   }
