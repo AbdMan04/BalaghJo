@@ -18,7 +18,9 @@ mixin RouteAwarePolling<T extends StatefulWidget> on State<T>
   bool _screenActive = false;
   final _LifecycleForwarder _lifecycle = _LifecycleForwarder();
 
-  Duration get pollInterval => const Duration(seconds: 3);
+  // Single-device latency between server cache refresh (5s public, 15s
+  // summary) and visibility is imperceptible; 5s cuts poll traffic ~40%.
+  Duration get pollInterval => const Duration(seconds: 5);
 
   Future<void> poll();
 

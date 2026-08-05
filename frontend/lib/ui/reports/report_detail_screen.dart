@@ -39,7 +39,7 @@ class _ReportDetailScreenState extends State<ReportDetailScreen>
   Report? _last;
 
   @override
-  Duration get pollInterval => const Duration(seconds: 3);
+  Duration get pollInterval => const Duration(seconds: 5);
 
   @override
   void initState() {

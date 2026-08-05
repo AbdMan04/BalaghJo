@@ -28,7 +28,12 @@ app.use(compression());
 // here (they're still auth-protected at the route level); otherwise a
 // single device polling every few seconds would exhaust a per-IP bucket
 // and lock real users out.
-const readOnlyPaths = ['/health', '/api/reports/summary', '/api/reports/public'];
+const readOnlyPaths = [
+  '/health',
+  '/api/reports/summary',
+  '/api/reports/public',
+  '/api/notifications',
+];
 const globalLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
   max: 600,
@@ -58,7 +63,9 @@ app.use(
   })
 );
 app.use(express.json({ limit: '2mb' }));
-app.use(morgan('dev'));
+// Log tersely in production: the app polls every few seconds, and a verbose
+// per-request line for each poll is pure I/O + log noise on a tiny instance.
+app.use(morgan(process.env.NODE_ENV === 'production' ? 'tiny' : 'dev'));
 
 app.use('/uploads', express.static(path.resolve(process.env.UPLOAD_DIR || 'uploads')));
 

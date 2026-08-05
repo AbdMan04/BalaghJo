@@ -47,7 +47,9 @@ userSchema.pre('validate', function (next) {
   next();
 });
 
-const BCRYPT_ROUNDS = 12;
+// 10 rounds: fast enough for a tiny free-tier instance (~100ms per hash)
+// while still strong against brute force; the login limiter backs it up.
+const BCRYPT_ROUNDS = 10;
 
 userSchema.statics.hashPassword = function (plain) {
   return bcrypt.hash(plain, BCRYPT_ROUNDS);

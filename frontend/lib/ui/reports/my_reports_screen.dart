@@ -42,7 +42,7 @@ class _MyReportsScreenState extends State<MyReportsScreen>
   // The timer is paused whenever this screen isn't the visible route or the
   // app is backgrounded (RouteAwarePolling).
   @override
-  Duration get pollInterval => const Duration(seconds: 3);
+  Duration get pollInterval => const Duration(seconds: 5);
 
   @override
   void initState() {

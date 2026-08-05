@@ -28,12 +28,22 @@ const SUMMARY_TTL_MS = 15_000;
 const publicCache = new TtlCache({ maxEntries: 200 });
 const PUBLIC_TTL_MS = 5_000;
 
+// My-reports list is polled every few seconds from the list screen but is
+// only invalidated by that user's own writes; cache per (user, filter) and
+// clear the whole bucket on any write so stale pages can't linger.
+const myListCache = new TtlCache({ maxEntries: 500 });
+const MY_LIST_TTL_MS = 5_000;
+
 function invalidateUserSummary(userId) {
   summaryCache.delete(`summary:${userId.toString()}`);
 }
 
 function invalidatePublicLists() {
   publicCache.clear();
+}
+
+function invalidateMyLists() {
+  myListCache.clear();
 }
 
 // Ownership/role guard shared by the detail and delete handlers.
@@ -135,6 +145,7 @@ exports.createReport = wrap(async (req, res) => {
   await User.findByIdAndUpdate(req.user.id, { $inc: { sentReports: 1 } });
   invalidateUserSummary(req.user.id);
   invalidatePublicLists();
+  invalidateMyLists();
   res.status(201).json({ report: report.toPublicJSON() });
 });
 
@@ -144,16 +155,21 @@ exports.listMyReports = wrap(async (req, res) => {
   if (status && STATUSES.includes(status)) filter.status = status;
   applyCursor(filter, req.query.before);
   const limit = parsePageSize(req.query.limit);
+  const key = `my:${req.user.id}:${status || ''}:${limit}:${req.query.before || ''}`;
+  const hit = myListCache.get(key, MY_LIST_TTL_MS);
+  if (hit !== null) return res.json(hit);
   // Backward-compatible: without `limit`, returns the full list as before.
   const reports = await Report.find(filter)
     .sort({ createdAt: -1, _id: -1 })
     .limit(limit + 1);
   const hasMore = reports.length > limit;
   const page = hasMore ? reports.slice(0, limit) : reports;
-  res.json({
+  const payload = {
     reports: page.map((r) => r.toPublicJSON()),
     nextCursor: hasMore ? cursorFor(page[page.length - 1]) : null,
-  });
+  };
+  myListCache.set(key, payload);
+  res.json(payload);
 });
 
 exports.listPublicReports = wrap(async (req, res) => {
@@ -274,6 +290,7 @@ exports.deleteReport = wrap(async (req, res) => {
   await User.findByIdAndUpdate(ownerId, { $inc: inc });
   invalidateUserSummary(ownerId);
   invalidatePublicLists();
+  invalidateMyLists();
   res.json({ ok: true });
 });
 
@@ -294,18 +311,43 @@ exports.summary = wrap(async (req, res) => {
           { $match: { status: { $in: ['pending', 'in_progress'] } } },
           { $count: 'n' },
         ],
+        // The recent-3 list rides in the same pipeline (one round-trip).
+        // Aggregation emits plain documents, so shape them with a manual
+        // mapper rather than the Mongoose toPublicJSON method.
+        recent: [{ $sort: { createdAt: -1, _id: -1 } }, { $limit: 3 }],
       },
     },
   ]);
   const count = (arr) => (arr && arr.length ? arr[0].n : 0);
-  const recent = await Report.find({ userId }).sort({ createdAt: -1 }).limit(3);
+  const recent = (agg.recent || []).map((d) => ({
+    id: d._id,
+    reportId: d.reportId,
+    userId: d.userId,
+    category: d.category,
+    title: d.title,
+    description: d.description,
+    photoUrl: d.photoUrl,
+    location: d.location,
+    address: d.address,
+    status: d.status,
+    statusChangedAt: d.statusChangedAt,
+    statusHistory: (d.statusHistory || []).map((h) => ({
+      status: h.status,
+      changedAt: h.changedAt,
+      changedBy: h.changedBy,
+    })),
+    assignedTo: d.assignedTo,
+    estimatedFix: d.estimatedFix,
+    createdAt: d.createdAt,
+    updatedAt: d.updatedAt,
+  }));
   const payload = {
     summary: {
       total: count(agg.total),
       resolved: count(agg.resolved),
       active: count(agg.active),
     },
-    recent: recent.map((r) => r.toPublicJSON()),
+    recent,
   };
   summaryCache.set(key, payload);
   res.json(payload);
@@ -356,6 +398,7 @@ exports.updateStatus = wrap(async (req, res) => {
   }
   invalidateUserSummary(report.userId);
   invalidatePublicLists();
+  invalidateMyLists();
 
   // FR-7: persist an in-app notification and fire an FCM push to the
   // reporter's registered devices. C6: fire-and-forget so the status

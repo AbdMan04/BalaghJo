@@ -31,7 +31,7 @@ class _NotificationsScreenState extends State<NotificationsScreen>
   bool _error = false;
 
   @override
-  Duration get pollInterval => const Duration(seconds: 4);
+  Duration get pollInterval => const Duration(seconds: 5);
 
   @override
   void initState() {
