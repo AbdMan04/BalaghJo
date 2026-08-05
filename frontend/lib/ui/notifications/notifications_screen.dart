@@ -85,7 +85,7 @@ class _NotificationsScreenState extends State<NotificationsScreen>
       });
     }
     if (n.reportId.isNotEmpty && mounted) {
-      Navigator.of(context).push(fadeSlideRoute(ReportDetailScreen(reportId: n.reportId)));
+      Navigator.of(context).push(pageRoute(ReportDetailScreen(reportId: n.reportId)));
     }
   }
 

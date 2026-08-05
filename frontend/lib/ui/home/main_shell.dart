@@ -18,6 +18,12 @@ class MainShell extends StatefulWidget {
 class _MainShellState extends State<MainShell> {
   int _index = 0;
 
+  // +1 when moving right across tabs, -1 when moving left. Used by the tab
+  // body's AnimatedSwitcher so new pages slide in from the side the user is
+  // heading toward (and the Home "Report an issue" button, which also calls
+  // goTo, gets the same slide).
+  double _navDirection = 1;
+
   final _pages = const [
     HomeScreen(),
     SubmitReportScreen(),
@@ -27,7 +33,10 @@ class _MainShellState extends State<MainShell> {
 
   void _setIndex(int i) {
     if (i == _index) return;
-    setState(() => _index = i);
+    setState(() {
+      _navDirection = i > _index ? 1.0 : -1.0;
+      _index = i;
+    });
   }
 
   @override
@@ -41,16 +50,22 @@ class _MainShellState extends State<MainShell> {
         },
         child: Scaffold(
           body: AnimatedSwitcher(
-            duration: const Duration(milliseconds: 280),
+            duration: const Duration(milliseconds: 300),
             switchInCurve: Curves.easeOutCubic,
-            switchOutCurve: Curves.easeIn,
-            transitionBuilder: (child, anim) => FadeTransition(
-              opacity: anim,
-              child: SlideTransition(
-                position: Tween<Offset>(begin: const Offset(0, 0.02), end: Offset.zero).animate(anim),
-                child: child,
-              ),
-            ),
+            switchOutCurve: Curves.easeInCubic,
+            transitionBuilder: (child, anim) {
+              final curved =
+                  CurvedAnimation(parent: anim, curve: Curves.easeOutCubic);
+              return FadeTransition(
+                opacity: anim,
+                child: SlideTransition(
+                  position: Tween<Offset>(
+                          begin: Offset(_navDirection, 0), end: Offset.zero)
+                      .animate(curved),
+                  child: child,
+                ),
+              );
+            },
             child: KeyedSubtree(
               key: ValueKey(_index),
               child: _pages[_index],

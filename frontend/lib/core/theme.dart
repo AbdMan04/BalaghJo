@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'page_transitions.dart';
 
 class AppColors {
   static const navy = Color(0xFF0D1F3C);
@@ -68,7 +69,26 @@ ThemeData buildAppTheme() {
         minimumSize: const Size.fromHeight(52),
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(AppRadius.md)),
         textStyle: const TextStyle(fontWeight: FontWeight.w700, fontSize: 15),
+      )
+      // White-ish ripple so presses are visible on the navy fill.
+      .copyWith(
+        overlayColor: WidgetStateProperty.resolveWith(
+          (states) => states.contains(WidgetState.pressed)
+              ? Colors.white.withValues(alpha: 0.20)
+              : Colors.white.withValues(alpha: 0.08),
+        ),
       ),
+    ),
+    // One horizontal-slide transition for every route on every platform.
+    pageTransitionsTheme: const PageTransitionsTheme(
+      builders: {
+        TargetPlatform.android: HorizontalSlideTransitionsBuilder(),
+        TargetPlatform.iOS: HorizontalSlideTransitionsBuilder(),
+        TargetPlatform.macOS: HorizontalSlideTransitionsBuilder(),
+        TargetPlatform.windows: HorizontalSlideTransitionsBuilder(),
+        TargetPlatform.linux: HorizontalSlideTransitionsBuilder(),
+        TargetPlatform.fuchsia: HorizontalSlideTransitionsBuilder(),
+      },
     ),
   );
 }

@@ -64,7 +64,7 @@ class AppStrings {
     'home.stat_resolved': 'Resolved',
     'home.stat_active': 'Active',
     'home.report_issue': 'اضغط لإرفاق مشكلتك',
-    'home.report_issue_en': 'Report an Issue!',
+    'home.report_issue_en': 'Report an issue!',
     'home.quick_report': 'Quick Report',
     'home.quick_report_sub': 'اختر نوع المشكلة',
     'home.explore_map': 'Explore on map',

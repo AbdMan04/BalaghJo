@@ -43,7 +43,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
           );
       if (!mounted) return;
       Navigator.of(context)
-          .pushAndRemoveUntil(fadeSlideRoute(const MainShell()), (_) => false);
+          .pushAndRemoveUntil(pageRoute(const MainShell()), (_) => false);
     } catch (e) {
       setState(() => _error = cleanErrorMessage(e));
       _shake.value++;
@@ -266,7 +266,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                   Center(
                     child: GestureDetector(
                       onTap: () => Navigator.of(context)
-                          .pushReplacement(fadeSlideRoute(const LoginScreen())),
+                          .pushReplacement(pageRoute(const LoginScreen())),
                       child: Text.rich(TextSpan(children: [
                         TextSpan(
                             text: context.t('register.have_account'),

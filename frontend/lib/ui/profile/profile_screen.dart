@@ -46,7 +46,7 @@ class ProfileScreen extends StatelessWidget {
                       Icons.notifications_none,
                       context.t('profile.notifications'),
                       () => Navigator.of(context).push(
-                          fadeSlideRoute(const NotificationsScreen())),
+                          pageRoute(const NotificationsScreen())),
                     ),
                   ),
                   FadeSlideIn(
@@ -67,7 +67,7 @@ class ProfileScreen extends StatelessWidget {
                         await context.read<AuthState>().logout();
                         if (!context.mounted) return;
                         Navigator.of(context).pushAndRemoveUntil(
-                            fadeSlideRoute(const OnboardingScreen()),
+                            pageRoute(const OnboardingScreen()),
                             (_) => false);
                       },
                       color: AppColors.danger,

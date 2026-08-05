@@ -37,7 +37,7 @@ class _LoginScreenState extends State<LoginScreen> {
       await context.read<AuthState>().login(identifier, _pass.text);
       if (!mounted) return;
       Navigator.of(context).pushAndRemoveUntil(
-          fadeSlideRoute(const MainShell()), (_) => false);
+          pageRoute(const MainShell()), (_) => false);
     } catch (e) {
       final msg = cleanErrorMessage(e);
       setState(() => _error = switch (msg) {
@@ -230,7 +230,7 @@ class _LoginScreenState extends State<LoginScreen> {
                   Center(
                     child: GestureDetector(
                       onTap: () => Navigator.of(context).pushReplacement(
-                          fadeSlideRoute(const RegisterScreen())),
+                          pageRoute(const RegisterScreen())),
                       child: Text.rich(TextSpan(children: [
                         TextSpan(text: context.t('login.no_account'), style: const TextStyle(color: AppColors.textMuted)),
                         TextSpan(text: context.t('login.sign_up_link'), style: const TextStyle(color: AppColors.blue, fontWeight: FontWeight.w700)),

@@ -54,7 +54,7 @@ class _Card extends StatelessWidget {
       delay: Duration(milliseconds: delayMs),
       child: PressableScale(
         onTap: () => Navigator.of(context).push(
-          fadeSlideRoute(SubmitReportScreen(initialCategory: category.apiValue)),
+          pageRoute(SubmitReportScreen(initialCategory: category.apiValue)),
         ),
         child: Container(
           padding: const EdgeInsets.all(12),

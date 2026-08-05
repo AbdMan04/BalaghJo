@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../core/theme.dart';
 
 class FadeSlideIn extends StatefulWidget {
   final Widget child;
@@ -58,12 +59,17 @@ class PressableScale extends StatefulWidget {
   final VoidCallback? onTap;
   final double scale;
   final BorderRadius? borderRadius;
+  final Color glowColor;
+
+  /// [glowColor] tint of the soft halo shown while the control is held;
+  /// [scale] is how far the control shrinks on press.
   const PressableScale({
     super.key,
     required this.child,
     this.onTap,
     this.scale = 0.96,
     this.borderRadius,
+    this.glowColor = AppColors.blue,
   });
 
   @override
@@ -72,11 +78,19 @@ class PressableScale extends StatefulWidget {
 
 class _PressableScaleState extends State<PressableScale>
     with SingleTickerProviderStateMixin {
+  // Fast press-down (90ms easeOut), then a springy release (240ms, easeOut
+  // overshoots slightly so the control bounces back).
   late final AnimationController _c = AnimationController(
     vsync: this,
-    duration: const Duration(milliseconds: 120),
+    duration: const Duration(milliseconds: 90),
+    reverseDuration: const Duration(milliseconds: 240),
     lowerBound: 0,
     upperBound: 1,
+  );
+  late final Animation<double> _pressed = CurvedAnimation(
+    parent: _c,
+    curve: Curves.easeOut,
+    reverseCurve: Curves.easeOutBack,
   );
 
   @override
@@ -101,10 +115,37 @@ class _PressableScaleState extends State<PressableScale>
         onTap: widget.onTap,
         behavior: HitTestBehavior.opaque,
         child: AnimatedBuilder(
-          animation: _c,
+          animation: _pressed,
           builder: (_, child) => Transform.scale(
-            scale: 1 - (1 - widget.scale) * _c.value,
-            child: child,
+            scale: 1 - (1 - widget.scale) * _pressed.value,
+            child: Stack(
+              clipBehavior: Clip.none,
+              children: [
+                // Soft brand-colored glow that fades in while held.
+                Positioned.fill(
+                  child: IgnorePointer(
+                    child: Opacity(
+                      opacity: _pressed.value,
+                      child: DecoratedBox(
+                        decoration: BoxDecoration(
+                          borderRadius: widget.borderRadius ??
+                              BorderRadius.circular(AppRadius.md),
+                          boxShadow: [
+                            BoxShadow(
+                              color: widget.glowColor.withValues(alpha: 0.30),
+                              blurRadius: 22,
+                              spreadRadius: 2,
+                              offset: const Offset(0, 8),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+                child!,
+              ],
+            ),
           ),
           child: widget.child,
         ),
@@ -180,23 +221,13 @@ class _ShakeWidgetState extends State<ShakeWidget>
   }
 }
 
-Route<T> fadeSlideRoute<T>(Widget page, {bool fullscreenDialog = false}) {
-  return PageRouteBuilder<T>(
+// Builds every route as a MaterialPageRoute so the transition is owned by
+// the app-wide PageTransitionsTheme (horizontal slide) instead of each
+// call site. Kept as a helper so call sites read as one line.
+Route<T> pageRoute<T>(Widget page, {bool fullscreenDialog = false}) {
+  return MaterialPageRoute<T>(
     fullscreenDialog: fullscreenDialog,
-    transitionDuration: const Duration(milliseconds: 380),
-    reverseTransitionDuration: const Duration(milliseconds: 240),
-    pageBuilder: (_, __, ___) => page,
-    transitionsBuilder: (_, animation, __, child) {
-      final curved = CurvedAnimation(parent: animation, curve: Curves.easeOutCubic);
-      return FadeTransition(
-        opacity: curved,
-        child: SlideTransition(
-          position: Tween<Offset>(begin: const Offset(0, 0.04), end: Offset.zero)
-              .animate(curved),
-          child: child,
-        ),
-      );
-    },
+    builder: (_) => page,
   );
 }
 

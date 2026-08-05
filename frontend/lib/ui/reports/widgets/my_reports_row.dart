@@ -58,7 +58,7 @@ class MyReportsRow extends StatelessWidget {
           ),
           child: PressableScale(
             onTap: () => Navigator.of(context).push(
-                fadeSlideRoute(ReportDetailScreen(reportId: report.id))),
+                pageRoute(ReportDetailScreen(reportId: report.id))),
             child: Container(
               padding: const EdgeInsets.all(14),
               decoration: BoxDecoration(

@@ -43,12 +43,12 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
     if (_page < _pages.length - 1) {
       _pc.nextPage(duration: const Duration(milliseconds: 380), curve: Curves.easeOutCubic);
     } else {
-      Navigator.of(context).push(fadeSlideRoute(const RegisterScreen()));
+      Navigator.of(context).push(pageRoute(const RegisterScreen()));
     }
   }
 
   void _skip() {
-    Navigator.of(context).pushReplacement(fadeSlideRoute(const LoginScreen()));
+    Navigator.of(context).pushReplacement(pageRoute(const LoginScreen()));
   }
 
   @override
@@ -93,7 +93,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                     children: [
                       Expanded(
                         child: PressableScale(
-                          onTap: () => Navigator.of(context).push(fadeSlideRoute(const LoginScreen())),
+                          onTap: () => Navigator.of(context).push(pageRoute(const LoginScreen())),
                           child: Container(
                             height: 52,
                             alignment: Alignment.center,

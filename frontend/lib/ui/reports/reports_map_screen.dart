@@ -558,7 +558,7 @@ class _MarkerCard extends StatelessWidget {
             const SizedBox(height: 10),
             PressableScale(
               onTap: () => Navigator.of(context).push(
-                fadeSlideRoute(ReportDetailScreen(reportId: report.id)),
+                pageRoute(ReportDetailScreen(reportId: report.id)),
               ),
               child: Container(
                 height: 42,

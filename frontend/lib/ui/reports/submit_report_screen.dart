@@ -426,7 +426,7 @@ class _SubmitReportScreenState extends State<SubmitReportScreen> {
                                     borderRadius:
                                         BorderRadius.circular(AppRadius.sm),
                                     onTap: () => Navigator.of(context).push(
-                                        fadeSlideRoute(ReportDetailScreen(
+                                        pageRoute(ReportDetailScreen(
                                             reportId: m.id))),
                                     child: Padding(
                                       padding: const EdgeInsets.symmetric(
