@@ -96,16 +96,6 @@ class _HomeScreenState extends State<HomeScreen> with RouteAwarePolling {
         onDeleted: _refresh,
       );
 
-  static String _formatCount(int n) {
-    final digits = n.toString();
-    final buf = StringBuffer();
-    for (var i = 0; i < digits.length; i++) {
-      if (i > 0 && (digits.length - i) % 3 == 0) buf.write(',');
-      buf.write(digits[i]);
-    }
-    return buf.toString();
-  }
-
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -274,32 +264,6 @@ class _HomeScreenState extends State<HomeScreen> with RouteAwarePolling {
                                   ],
                                 ),
                               ),
-                              if (_summary != null) ...[
-                                const SizedBox(width: 10),
-                                AnimatedSwitcher(
-                                  duration: const Duration(milliseconds: 200),
-                                  child: Semantics(
-                                    label:
-                                        '${_formatCount(_summary!.total)} ${context.t('home.explore_map_count')}',
-                                    child: Container(
-                                      key: const ValueKey('explore_count'),
-                                      padding: const EdgeInsets.symmetric(
-                                          horizontal: 10, vertical: 5),
-                                      decoration: BoxDecoration(
-                                        color: AppColors.calmBlue,
-                                        borderRadius:
-                                            BorderRadius.circular(AppRadius.sm),
-                                      ),
-                                      child: Text(
-                                          _formatCount(_summary!.total),
-                                          style: const TextStyle(
-                                              color: Colors.white,
-                                              fontWeight: FontWeight.w800,
-                                              fontSize: 13)),
-                                    ),
-                                  ),
-                                ),
-                              ],
                               const SizedBox(width: 6),
                               const Icon(Icons.chevron_right,
                                   color: AppColors.textMuted),

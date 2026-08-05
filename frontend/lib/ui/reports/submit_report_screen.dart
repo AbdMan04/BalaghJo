@@ -566,29 +566,16 @@ class _SubmitReportScreenState extends State<SubmitReportScreen> {
                 ]
               : null,
         ),
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            AnimatedSwitcher(
-              duration: const Duration(milliseconds: 220),
-              child: Icon(c.icon,
-                  key: ValueKey('${c.apiValue}-$selected'),
-                  size: 16,
-                  color: selected ? AppColors.navy : AppColors.navy),
+        child: Center(
+          child: Text(
+            c.labelAr,
+            textAlign: TextAlign.center,
+            style: TextStyle(
+              fontSize: 13,
+              fontWeight: FontWeight.w700,
+              color: selected ? AppColors.navy : AppColors.navy,
             ),
-            const SizedBox(width: 6),
-            Flexible(
-              child: Text(
-                c.labelAr,
-                textAlign: TextAlign.center,
-                style: TextStyle(
-                  fontSize: 13,
-                  fontWeight: FontWeight.w700,
-                  color: selected ? AppColors.navy : AppColors.navy,
-                ),
-              ),
-            ),
-          ],
+          ),
         ),
       ),
     );

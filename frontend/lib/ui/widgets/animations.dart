@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import '../../core/theme.dart';
 
 class FadeSlideIn extends StatefulWidget {
   final Widget child;
@@ -58,18 +57,13 @@ class PressableScale extends StatefulWidget {
   final Widget child;
   final VoidCallback? onTap;
   final double scale;
-  final BorderRadius? borderRadius;
-  final Color glowColor;
 
-  /// [glowColor] tint of the soft halo shown while the control is held;
   /// [scale] is how far the control shrinks on press.
   const PressableScale({
     super.key,
     required this.child,
     this.onTap,
     this.scale = 0.96,
-    this.borderRadius,
-    this.glowColor = AppColors.blue,
   });
 
   @override
@@ -118,34 +112,7 @@ class _PressableScaleState extends State<PressableScale>
           animation: _pressed,
           builder: (_, child) => Transform.scale(
             scale: 1 - (1 - widget.scale) * _pressed.value,
-            child: Stack(
-              clipBehavior: Clip.none,
-              children: [
-                // Soft brand-colored glow that fades in while held.
-                Positioned.fill(
-                  child: IgnorePointer(
-                    child: Opacity(
-                      opacity: _pressed.value,
-                      child: DecoratedBox(
-                        decoration: BoxDecoration(
-                          borderRadius: widget.borderRadius ??
-                              BorderRadius.circular(AppRadius.md),
-                          boxShadow: [
-                            BoxShadow(
-                              color: widget.glowColor.withValues(alpha: 0.30),
-                              blurRadius: 22,
-                              spreadRadius: 2,
-                              offset: const Offset(0, 8),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ),
-                  ),
-                ),
-                child!,
-              ],
-            ),
+            child: child!,
           ),
           child: widget.child,
         ),
