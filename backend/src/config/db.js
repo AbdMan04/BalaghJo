@@ -1,4 +1,5 @@
 const mongoose = require('mongoose');
+const { uploader } = require('./cloudinary');
 
 async function migrateUsers() {
   const Users = mongoose.connection.collection('users');
@@ -50,6 +51,35 @@ async function seedReportCounter() {
   }
 }
 
+// Users are sometimes deleted directly from the database; their reports
+// stay behind and keep showing on the map explorer. This runs on every
+// boot (so the next deploy/restart cleans up automatically): remove any
+// report whose owner no longer exists, and drop its Cloudinary photo.
+async function cleanupOrphanReports() {
+  const Reports = mongoose.connection.collection('reports');
+  const Users = mongoose.connection.collection('users');
+  const userIds = await Users.distinct('_id');
+  const orphans = await Reports.find({ userId: { $nin: userIds } })
+    .project({ reportId: 1, photoUrl: 1 })
+    .limit(500)
+    .toArray();
+  if (orphans.length === 0) return;
+
+  for (const o of orphans) {
+    if (uploader && o.photoUrl && o.photoUrl.startsWith('http')) {
+      const m = String(o.photoUrl).match(/\/image\/upload\/(?:v\d+\/)?(.+)$/);
+      const publicId = m ? m[1].replace(/\.[a-z0-9]+$/i, '') : null;
+      if (publicId) {
+        uploader.destroy(publicId).catch((err) =>
+          console.error('[cloudinary] destroy failed for orphan photo:', err.message)
+        );
+      }
+    }
+  }
+  const r = await Reports.deleteMany({ _id: { $in: orphans.map((o) => o._id) } });
+  console.log(`[db] deleted ${r.deletedCount} orphaned reports (owner removed)`);
+}
+
 async function connectDB(uri) {
   mongoose.set('strictQuery', true);
   await mongoose.connect(uri);
@@ -58,6 +88,7 @@ async function connectDB(uri) {
     await migrateUsers();
     await migrateReports();
     await seedReportCounter();
+    await cleanupOrphanReports();
   } catch (err) {
     console.error('[db] migration failed:', err.message);
   }
