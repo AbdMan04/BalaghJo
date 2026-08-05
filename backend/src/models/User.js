@@ -38,6 +38,15 @@ userSchema.methods.comparePassword = function (plain) {
   return bcrypt.compare(plain, this.passwordHash);
 };
 
+// Safety net: legacy accounts (pre-phone-login app versions) stored values
+// like 'email' that aren't in the enum. Normalize before any save so the
+// document is always valid — otherwise a bare save() during login/refresh
+// throws a ValidationError and blocks legacy users from signing in.
+userSchema.pre('validate', function (next) {
+  if (!['google', 'phone'].includes(this.provider)) this.provider = 'phone';
+  next();
+});
+
 const BCRYPT_ROUNDS = 12;
 
 userSchema.statics.hashPassword = function (plain) {

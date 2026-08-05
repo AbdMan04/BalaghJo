@@ -5,7 +5,13 @@ async function migrateUsers() {
   const r1 = await Users.updateMany({ role: 'citizen' }, { $set: { role: 'user' } });
   const r2 = await Users.updateMany({ role: { $exists: false } }, { $set: { role: 'user' } });
   const r3 = await Users.updateMany({ provider: { $exists: false } }, { $set: { provider: 'phone' } });
-  const total = r1.modifiedCount + r2.modifiedCount + r3.modifiedCount;
+  // Legacy values ('email', etc.) aren't valid enum entries; normalize them
+  // so save()-based flows (login refresh-token persistence) don't throw.
+  const r4 = await Users.updateMany(
+    { provider: { $exists: true, $nin: ['google', 'phone'] } },
+    { $set: { provider: 'phone' } }
+  );
+  const total = r1.modifiedCount + r2.modifiedCount + r3.modifiedCount + r4.modifiedCount;
   if (total > 0) console.log(`[db] migrated ${total} legacy user fields`);
 }
 

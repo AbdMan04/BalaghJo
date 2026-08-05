@@ -1,5 +1,6 @@
 const request = require('supertest');
 const app = require('../src/app');
+const User = require('../src/models/User');
 const { startDb, stopDb, cleanDb, registerUser } = require('./helpers');
 
 describe('auth', () => {
@@ -143,5 +144,21 @@ describe('auth', () => {
       .send({ firstName: 'NewName' });
     expect(res.status).toBe(200);
     expect(res.body.user.firstName).toBe('NewName');
+  });
+
+  test('legacy users with an invalid provider can still log in', async () => {
+    const { user } = await registerUser(agent, '0781112223');
+    // Simulate a pre-phone-login account that stored provider: 'email'.
+    await User.findByIdAndUpdate(user.id, { provider: 'email' });
+
+    const res = await agent
+      .post('/api/auth/login')
+      .send({ identifier: '0781112223', password: 'secret123' });
+    expect(res.status).toBe(200);
+    expect(res.body.token).toBeTruthy();
+    expect(res.body.refreshToken).toBeTruthy();
+
+    const after = await User.findById(user.id);
+    expect(after.provider).toBe('phone');
   });
 });
