@@ -1,4 +1,24 @@
-enum ReportStatus { pending, inProgress, resolved }
+// FR-10: statuses are carried as instance members (not an extension) so
+// they resolve reliably in every web compiler (DDC and dart2js).
+enum ReportStatus {
+  pending('pending', 'Sent', 'قيد الانتظار'),
+  inProgress('in_progress', 'Processing', 'قيد المعالجة'),
+  resolved('resolved', 'Resolved', 'تم الحل');
+
+  final String apiValue;
+  final String label;
+  final String labelAr;
+  const ReportStatus(this.apiValue, this.label, this.labelAr);
+
+  // FR-10: statuses labelled in Arabic and English.
+  String get bilingualLabel => '$labelAr · $label';
+
+  static ReportStatus fromApi(String? v) => switch (v) {
+        'in_progress' => ReportStatus.inProgress,
+        'resolved' => ReportStatus.resolved,
+        _ => ReportStatus.pending,
+      };
+}
 
 class StatusEvent {
   final ReportStatus status;
@@ -7,35 +27,10 @@ class StatusEvent {
   StatusEvent({required this.status, required this.changedAt, this.changedBy = ''});
 
   factory StatusEvent.fromJson(Map<String, dynamic> j) => StatusEvent(
-        status: ReportStatusX.fromApi(j['status']),
+        status: ReportStatus.fromApi(j['status']),
         changedAt: DateTime.tryParse(j['changedAt'] ?? '') ?? DateTime.now(),
         changedBy: j['changedBy'] ?? '',
       );
-}
-
-extension ReportStatusX on ReportStatus {
-  String get apiValue => switch (this) {
-        ReportStatus.pending => 'pending',
-        ReportStatus.inProgress => 'in_progress',
-        ReportStatus.resolved => 'resolved',
-      };
-  String get label => switch (this) {
-        ReportStatus.pending => 'Sent',
-        ReportStatus.inProgress => 'Processing',
-        ReportStatus.resolved => 'Resolved',
-      };
-  // FR-10: statuses labelled in Arabic and English.
-  String get labelAr => switch (this) {
-        ReportStatus.pending => 'قيد الانتظار',
-        ReportStatus.inProgress => 'قيد المعالجة',
-        ReportStatus.resolved => 'تم الحل',
-      };
-  String get bilingualLabel => '$labelAr · $label';
-  static ReportStatus fromApi(String? v) => switch (v) {
-        'in_progress' => ReportStatus.inProgress,
-        'resolved' => ReportStatus.resolved,
-        _ => ReportStatus.pending,
-      };
 }
 
 class Report {
@@ -93,7 +88,7 @@ class Report {
       address: j['address'] ?? '',
       lng: coords.isNotEmpty ? coords[0].toDouble() : 0,
       lat: coords.length > 1 ? coords[1].toDouble() : 0,
-      status: ReportStatusX.fromApi(j['status']),
+      status: ReportStatus.fromApi(j['status']),
       statusChangedAt: j['statusChangedAt'] != null
           ? DateTime.tryParse(j['statusChangedAt'])
           : null,

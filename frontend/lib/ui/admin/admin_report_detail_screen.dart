@@ -212,7 +212,7 @@ class _AdminReportDetailScreenState extends State<AdminReportDetailScreen> {
                               for (final s in _forward[_report.status] ?? const [])
                                 DropdownMenuItem(
                                   value: s,
-                                  child: Text(s.bilingualLabel,
+                                  child: Text('${s.labelAr} · ${s.label}',
                                     style: const TextStyle(fontSize: 13),
                                   ),
                                 ),
