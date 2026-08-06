@@ -29,7 +29,6 @@ class AdminReportDetailScreen extends StatefulWidget {
 
 class _AdminReportDetailScreenState extends State<AdminReportDetailScreen> {
   late Report _report = widget.report;
-  late final ReportStatus _selected = _report.status;
   bool _saving = false;
   String? _error;
 
@@ -45,6 +44,9 @@ class _AdminReportDetailScreenState extends State<AdminReportDetailScreen> {
       _saving = true;
       _error = null;
     });
+    // Capture localized text before the await: context.t() uses
+    // context.watch, which is illegal from an async event handler.
+    final successMsg = context.t('admin.status_updated');
     try {
       final updated = await AdminApi().updateStatus(_report.id, next.apiValue);
       if (!mounted) return;
@@ -56,7 +58,7 @@ class _AdminReportDetailScreenState extends State<AdminReportDetailScreen> {
         SnackBar(
           behavior: SnackBarBehavior.floating,
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(AppRadius.md)),
-          content: Text(context.t('admin.status_updated')),
+          content: Text(successMsg),
         ),
       );
     } catch (e) {
@@ -69,13 +71,14 @@ class _AdminReportDetailScreenState extends State<AdminReportDetailScreen> {
   }
 
   Future<void> _copyCoords() async {
+    final copiedMsg = context.t('admin.coords_copied');
     await Clipboard.setData(ClipboardData(text: '${_report.lat}, ${_report.lng}'));
     if (!mounted) return;
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         behavior: SnackBarBehavior.floating,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(AppRadius.md)),
-        content: Text(context.t('admin.coords_copied')),
+        content: Text(copiedMsg),
       ),
     );
   }
@@ -184,14 +187,19 @@ class _AdminReportDetailScreenState extends State<AdminReportDetailScreen> {
                       )
                     : DropdownButtonFormField<ReportStatus>(
                         key: const ValueKey('admin-status-dropdown'),
-                        initialValue: _selected,
-                        items: _order
-                            .where((s) => s != _report.status)
-                            .map((s) => DropdownMenuItem(
-                                  value: s,
-                                  child: Text(s.bilingualLabel, style: const TextStyle(fontSize: 13)),
-                                ))
-                            .toList(),
+                        // initialValue must be present in items (assertion);
+                        // the current status is always included and shown
+                        // selected, so pick a new value to update.
+                        initialValue: _report.status,
+                        items: [
+                          for (final s in _order)
+                            DropdownMenuItem(
+                              value: s,
+                              child: Text(s.bilingualLabel,
+                                style: const TextStyle(fontSize: 13),
+                              ),
+                            ),
+                        ],
                         decoration: InputDecoration(
                           labelText: context.t('admin.change_status'),
                           prefixIcon: const Icon(
@@ -200,7 +208,7 @@ class _AdminReportDetailScreenState extends State<AdminReportDetailScreen> {
                           ),
                         ),
                         onChanged: _saving ? null : (s) {
-                          if (s != null) _changeStatus(s);
+                          if (s != null && s != _report.status) _changeStatus(s);
                         },
                       ),
               ),
