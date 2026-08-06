@@ -37,7 +37,7 @@ class _LoginScreenState extends State<LoginScreen> {
       await context.read<AuthState>().login(identifier, _pass.text);
       if (!mounted) return;
       Navigator.of(context).pushAndRemoveUntil(
-          pageRoute(const MainShell()), (_) => false);
+          pageRoute(resolveHomeShell(context)), (_) => false);
     } catch (e) {
       final msg = cleanErrorMessage(e);
       setState(() => _error = switch (msg) {

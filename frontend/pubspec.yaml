@@ -49,11 +49,4 @@ flutter_launcher_icons:
   image_path: "assets/icons/quick_report/playstore.png"
   adaptive_icon_background: "#0B7F78"
   adaptive_icon_foreground: "assets/icons/quick_report/playstore.png"
-
-  dependencies:
-  flutter:
-    sdk: flutter
-
-  firebase_core: ^4.0.0
-  firebase_messaging: ^16.0.0
   

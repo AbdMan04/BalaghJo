@@ -1,12 +1,25 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter/foundation.dart';
+import 'package:provider/provider.dart';
 import '../../core/strings.dart';
 import '../../core/theme.dart';
+import '../../state/auth_state.dart';
+import '../admin/admin_shell.dart';
 import '../profile/profile_screen.dart';
 import '../reports/my_reports_screen.dart';
 import '../reports/submit_report_screen.dart';
 import '../widgets/animations.dart';
 import 'home_screen.dart';
+
+// Landing shell after login/splash: admins on the web build land in the
+// F5 dashboard; everyone else (and all mobile sessions) gets the citizen
+// tabs. The backend independently rejects non-admin JWTs on /api/admin.
+Widget resolveHomeShell(BuildContext context) {
+  final user = context.read<AuthState>().user;
+  if (kIsWeb && user?.role == 'admin') return const AdminShell();
+  return const MainShell();
+}
 
 class MainShell extends StatefulWidget {
   const MainShell({super.key});

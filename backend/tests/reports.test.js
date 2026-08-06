@@ -235,4 +235,49 @@ describe('reports', () => {
     expect(missing.status).toBe(404);
     expect(user.id).toBeTruthy();
   });
+
+  test('admin report feed requires the admin role', async () => {
+    const { token } = await registerUser(agent, '0782013014');
+    const asUser = await agent
+      .get('/api/admin/reports')
+      .set('Authorization', `Bearer ${token}`);
+    expect(asUser.status).toBe(403);
+
+    const noAuth = await agent.get('/api/admin/reports');
+    expect(noAuth.status).toBe(401);
+  });
+
+  test('admin report feed paginates at 50 and filters by status/category', async () => {
+    const { token, user } = await registerUser(agent, '0783014015');
+    for (let i = 0; i < 3; i += 1) {
+      await createReport(token, {
+        description: `Road issue number ${i + 1} in Irbid city center`,
+      });
+    }
+    await createReport(token, {
+      category: 'lighting',
+      description: 'Broken streetlight near the university',
+    });
+
+    const admin = await adminTokenFor('0784015016');
+    const all = await agent
+      .get('/api/admin/reports')
+      .set('Authorization', `Bearer ${admin}`);
+    expect(all.status).toBe(200);
+    expect(all.body.reports).toHaveLength(4);
+    expect(all.body.reports[0].reporter.fullName).toContain(user.firstName);
+
+    const potholes = await agent
+      .get('/api/admin/reports')
+      .query({ category: 'pothole' })
+      .set('Authorization', `Bearer ${admin}`);
+    expect(potholes.body.reports).toHaveLength(3);
+    expect(potholes.body.reports.every((r) => r.category === 'pothole')).toBe(true);
+
+    const resolved = await agent
+      .get('/api/admin/reports')
+      .query({ status: 'resolved' })
+      .set('Authorization', `Bearer ${admin}`);
+    expect(resolved.body.reports).toHaveLength(0);
+  });
 });

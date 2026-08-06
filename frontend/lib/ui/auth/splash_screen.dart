@@ -42,7 +42,7 @@ class _SplashScreenState extends State<SplashScreen>
     if (!auth.isAuthenticated) {
       next = const OnboardingScreen();
     } else {
-      next = const MainShell();
+      next = resolveHomeShell(context);
     }
     Navigator.of(context).pushReplacement(subtleRoute(next));
   }

@@ -249,6 +249,59 @@ exports.nearbyReports = wrap(async (req, res) => {
   });
 });
 
+// F5 / FR-13..15: admin report listing — paginated (50/page), filterable by
+// status, category and geo area, with the submitter populated (owner/phone)
+// so the dashboard row can show who filed each report. This is the admin
+// counterpart of listMyReports; citizen endpoints stay unchanged.
+exports.listAdminReports = wrap(async (req, res) => {
+  const { status, category, q, neLat, neLng, swLat, swLng } = req.query;
+  const filter = {};
+  if (status && STATUSES.includes(status)) filter.status = status;
+  if (category && CATEGORIES.includes(category)) filter.category = category;
+  const box = [Number(swLng), Number(swLat), Number(neLng), Number(neLat)];
+  if (box.every(Number.isFinite)) {
+    filter.location = {
+      $geoWithin: {
+        $box: [[box[0], box[1]], [box[2], box[3]]],
+      },
+    };
+  }
+  if (q && typeof q === 'string') {
+    const term = q.trim();
+    if (term) {
+      filter.$or = [
+        { title: { $regex: term, $options: 'i' } },
+        { description: { $regex: term, $options: 'i' } },
+        { address: { $regex: term, $options: 'i' } },
+        { reportId: { $regex: term, $options: 'i' } },
+      ];
+    }
+  }
+  applyCursor(filter, req.query.before);
+  const limit = parsePageSize(req.query.limit || 50);
+  const reports = await Report.find(filter)
+    .populate('userId', 'firstName lastName phone')
+    .sort({ createdAt: -1, _id: -1 })
+    .limit(limit + 1);
+  const hasMore = reports.length > limit;
+  const page = hasMore ? reports.slice(0, limit) : reports;
+  const payload = {
+    reports: page.map((r) => {
+      const json = r.toPublicJSON();
+      const reporter = r.userId;
+      json.reporter = reporter
+        ? {
+            fullName: `${reporter.firstName ?? ''} ${reporter.lastName ?? ''}`.trim(),
+            phone: reporter.phone || '',
+          }
+        : { fullName: 'Unknown', phone: '' };
+      return json;
+    }),
+    nextCursor: hasMore ? cursorFor(page[page.length - 1]) : null,
+  };
+  res.json(payload);
+});
+
 exports.getReport = wrap(async (req, res) => {
   const report = await Report.findById(req.params.id).populate('userId', 'firstName lastName phone');
   if (!report) return res.status(404).json({ error: 'Not found' });

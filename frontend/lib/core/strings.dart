@@ -171,6 +171,17 @@ class AppStrings {
     'notif.empty_sub': "You'll see report status updates here",
     'notif.mark_all': 'Mark all read',
     'notif.just_now': 'just now',
+    'admin.badge': 'ADMIN',
+    'admin.search_hint': 'Search reports…',
+    'admin.no_reports': 'No reports match your filters',
+    'admin.prev': 'Previous',
+    'admin.next': 'Next',
+    'admin.location': 'LOCATION',
+    'admin.copy_coords': 'Copy coordinates',
+    'admin.coords_copied': 'Coordinates copied',
+    'admin.status_workflow': 'STATUS WORKFLOW',
+    'admin.change_status': 'Change status',
+    'admin.status_updated': 'Status updated',
   };
 
   static const _ar = <String, String>{
@@ -341,6 +352,17 @@ class AppStrings {
     'notif.empty_sub': 'ستظهر هنا تحديثات حالة التقارير',
     'notif.mark_all': 'تحديد الكل كمقروء',
     'notif.just_now': 'الآن',
+    'admin.badge': 'الإدارة',
+    'admin.search_hint': 'ابحث في التقارير…',
+    'admin.no_reports': 'لا توجد تقارير مطابقة للفلاتر',
+    'admin.prev': 'السابق',
+    'admin.next': 'التالي',
+    'admin.location': 'الموقع',
+    'admin.copy_coords': 'نسخ الإحداثيات',
+    'admin.coords_copied': 'تم نسخ الإحداثيات',
+    'admin.status_workflow': 'إدارة الحالة',
+    'admin.change_status': 'تغيير الحالة',
+    'admin.status_updated': 'تم تحديث الحالة',
   };
 
   // Resolves a key against the active locale. Watches LocaleState so any
