@@ -40,7 +40,6 @@ services:
     name: balaghjo-dashboard
     runtime: static
     rootDir: frontend
-    plan: free
     # nixpacks.toml in frontend/ installs the Flutter SDK; this builds the
     # release bundle. API_BASE_URL is injected at build time from the API
     # service host, so the dashboard always talks to the service above.
