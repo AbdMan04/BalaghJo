@@ -2,19 +2,23 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:provider/provider.dart';
+import 'core/firebase_service.dart';
 import 'core/locale_state.dart';
 import 'core/route_observer.dart';
 import 'core/theme.dart';
 import 'state/auth_state.dart';
 import 'ui/auth/splash_screen.dart';
 
-void main() {
+Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
   SystemChrome.setSystemUIOverlayStyle(const SystemUiOverlayStyle(
     systemNavigationBarColor: Colors.white,
     systemNavigationBarIconBrightness: Brightness.dark,
     systemNavigationBarDividerColor: Colors.transparent,
   ));
+  // Push plumbing (background handler + listeners) must be registered
+  // before the first frame; a no-op on the web dashboard build.
+  await FirebaseService.init();
   runApp(const BalaghjoApp());
 }
 

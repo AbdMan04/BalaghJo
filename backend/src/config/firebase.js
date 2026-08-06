@@ -6,19 +6,27 @@
 let messaging = null;
 
 try {
-  const serviceAccountPath = process.env.FCM_SERVICE_ACCOUNT_PATH;
-  if (serviceAccountPath) {
-    const path = require('path');
-    const admin = require('firebase-admin');
-    // Resolve relative paths against the backend root so the server works
-    // regardless of the directory it is started from.
-    const resolved = path.resolve(__dirname, '../..', serviceAccountPath);
-    admin.initializeApp({ credential: admin.cert(resolved) });
+  const path = require('path');
+  const admin = require('firebase-admin');
+  // Credentials can arrive two ways: FCM_SERVICE_ACCOUNT_JSON (the raw
+  // service-account JSON, the portable option for hosters like Render that
+  // only accept env vars) or FCM_SERVICE_ACCOUNT_PATH (a file path, used in
+  // local dev). Paths are resolved against the backend root.
+  let credentials = null;
+  const rawJson = process.env.FCM_SERVICE_ACCOUNT_JSON;
+  const filePath = process.env.FCM_SERVICE_ACCOUNT_PATH;
+  if (rawJson) {
+    credentials = JSON.parse(rawJson);
+  } else if (filePath) {
+    credentials = require(path.resolve(__dirname, '../..', filePath));
+  }
+  if (credentials) {
+    admin.initializeApp({ credential: admin.cert(credentials) });
     const { getMessaging } = require('firebase-admin/messaging');
     messaging = getMessaging();
     console.log('[fcm] Firebase Admin initialized');
   } else {
-    console.log('[fcm] FCM_SERVICE_ACCOUNT_PATH not set; push notifications disabled');
+    console.log('[fcm] FCM_SERVICE_ACCOUNT_JSON/PATH not set; push notifications disabled');
   }
 } catch (err) {
   console.error('[fcm] init failed, push disabled:', err.message);

@@ -5,6 +5,7 @@
     <uses-permission android:name="android.permission.READ_MEDIA_IMAGES"/>
     <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" android:maxSdkVersion="32"/>
     <uses-permission android:name="android.permission.CAMERA"/>
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS"/>
 
     <application
         android:label="Balagh Jo"
@@ -30,6 +31,11 @@
         <meta-data
             android:name="flutterEmbedding"
             android:value="2"/>
+        <!-- Background FCM pushes land in the same channel the app uses for
+             foreground notifications, so both show identically. -->
+        <meta-data
+            android:name="com.google.firebase.messaging.default_notification_channel_id"
+            android:value="balaghjo"/>
     </application>
 
     <queries>

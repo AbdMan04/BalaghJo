@@ -1,8 +1,14 @@
 // AdminApi — dashboard (F5) data access for role=admin users.
 //
-// Talks to the admin-gated report feed (GET /api/admin/reports) and the
-// shared status-update endpoint (PATCH /api/reports/:id/status), both of
-// which require a Bearer token whose role claim is 'admin'.
+// Talks to the admin-gated report feed (GET /api/admin/reports), the
+// shared status-update endpoint (PATCH /api/reports/:id/status), the
+// dashboard-wide stats (GET /api/admin/stats), user management
+// (GET /api/admin/users + role changes) and broadcasts
+// (GET/POST /api/admin/announcements). Every call requires a Bearer
+// token whose role claim is 'admin'.
+import '../models/admin_stats.dart';
+import '../models/admin_user.dart';
+import '../models/announcement.dart';
 import '../models/report.dart';
 import 'api_client.dart';
 
@@ -44,5 +50,51 @@ class AdminApi {
   Future<Report> updateStatus(String id, String status) async {
     final res = await _api.patch('/api/reports/$id/status', {'status': status});
     return Report.fromJson(res['report']);
+  }
+
+  Future<AdminStats> stats() async {
+    final res = await _api.get('/api/admin/stats');
+    return AdminStats.fromJson(res['stats'] as Map<String, dynamic>);
+  }
+
+  Future<List<AdminUser>> listUsers({String? query}) async {
+    final q = <String, String>{};
+    if (query != null && query.isNotEmpty) q['q'] = query;
+    final res = await _api.get('/api/admin/users', query: q);
+    return ((res['users'] as List?) ?? [])
+        .map((e) => AdminUser.fromJson(e as Map<String, dynamic>))
+        .toList();
+  }
+
+  Future<void> setRole(String id, String role) async {
+    await _api.patch('/api/admin/users/$id/role', {'role': role});
+  }
+
+  Future<List<AdminAnnouncement>> listAnnouncements() async {
+    final res = await _api.get('/api/admin/announcements');
+    return ((res['announcements'] as List?) ?? [])
+        .map((e) => AdminAnnouncement.fromJson(e as Map<String, dynamic>))
+        .toList();
+  }
+
+  Future<AdminAnnouncement> sendAnnouncement({
+    required String title,
+    required String body,
+    required String audienceType,
+    String? category,
+    String? userId,
+    String? phone,
+  }) async {
+    final res = await _api.post('/api/admin/announcements', {
+      'title': title,
+      'body': body,
+      'audience': {
+        'type': audienceType,
+        if (category != null) 'category': category,
+        if (userId != null) 'userId': userId,
+        if (phone != null) 'phone': phone,
+      },
+    });
+    return AdminAnnouncement.fromJson(res['announcement']);
   }
 }
