@@ -1,0 +1,6 @@
+# Installs the Flutter SDK into Render's Nixpacks build environment so the
+# static site can run `flutter build web`. Configure the Render static site
+# with: Root Directory = frontend, Build Command = flutter build web,
+# Publish Directory = build/web.
+[phases.setup]
+nixPkgs = ["flutter", "git"]
