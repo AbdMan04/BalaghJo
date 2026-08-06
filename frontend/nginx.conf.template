@@ -9,12 +9,12 @@ server {
         return 200 "ok";
     }
 
+    # Flutter web output isn't content-hashed and the service worker must be
+    # revalidated on every load, otherwise browsers cache an old app forever
+    # (an immutable/1y cache is why stale builds stick after redeploy).
+    # no-cache + ETag gives conditional 304s: always fresh, still fast.
     location / {
         try_files $uri $uri/ /index.html;
-    }
-
-    location ~* \.(js|css|wasm|ttf|otf|png|svg)$ {
-        expires 1y;
-        add_header Cache-Control "public, immutable";
+        add_header Cache-Control "no-cache";
     }
 }
