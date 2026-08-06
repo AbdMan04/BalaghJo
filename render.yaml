@@ -11,9 +11,10 @@ services:
   - type: web
     name: balaghjo-dashboard
     runtime: docker
-    rootDir: frontend
     plan: free
-    dockerfilePath: Dockerfile
+    # Paths are relative to the repo root (not rootDir).
+    dockerfilePath: frontend/Dockerfile
+    dockerContext: frontend
     autoDeploy: true
     buildFilter:
       paths:
