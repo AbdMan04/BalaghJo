@@ -1,61 +1,20 @@
-# Render Blueprint for BALAGHJO.
+# Render Blueprint for BALAGHJO — dashboard (Flutter web).
 #
-# Deploys two services from this repo:
-#   1. balaghjo-api      — Express/Mongoose backend (web service)
-#   2. balaghjo-dashboard — Flutter web static site (F5 admin + citizen web UI)
+# The API is intentionally NOT defined here: the existing service at
+# balaghjo.onrender.com is the single source of truth and the dashboard
+# points at it via the API_BASE_URL default in frontend/lib/core/config.dart.
 #
-# Applying this blueprint creates NEW services. If you already run the API
-# manually (balaghjo.onrender.com), either keep it and delete the duplicate
-# the blueprint creates, or delete the old one after the new API is healthy.
-# The dashboard's API base URL is wired to the API service below via
-# --dart-define, so it always matches the service defined in this file.
+# The dashboard is a Docker web service because Render's native runtimes and
+# static sites cannot run the Flutter SDK; the multi-stage Dockerfile builds
+# the bundle with the official Flutter image and serves it with nginx.
 services:
-  # ───────────────────────────── Backend API ─────────────────────────────
-  - type: web
-    name: balaghjo-api
-    runtime: node
-    rootDir: backend
-    plan: free
-    buildCommand: npm install
-    startCommand: npm start
-    healthCheckPath: /health
-    autoDeploy: true
-    buildFilter:
-      paths:
-        - backend/**
-    envVars:
-      - key: NODE_ENV
-        value: production
-      - key: MONGO_URI
-        sync: false # set in the Render dashboard
-      - key: JWT_SECRET
-        sync: false # set in the Render dashboard (min 32 chars)
-      - key: CLOUDINARY_URL
-        sync: false # set in the Render dashboard
-      - key: CORS_ORIGINS
-        sync: false # optional; empty = allow all origins
-
-  # ───────────────────────────── Dashboard ───────────────────────────────
   - type: web
     name: balaghjo-dashboard
-    runtime: static
+    runtime: docker
     rootDir: frontend
-    # nixpacks.toml in frontend/ installs the Flutter SDK; this builds the
-    # release bundle. API_BASE_URL is injected at build time from the API
-    # service host, so the dashboard always talks to the service above.
-    buildCommand: flutter build web --dart-define=API_BASE_URL=$API_BASE_URL
-    staticPublishPath: build/web
+    plan: free
+    dockerfilePath: Dockerfile
     autoDeploy: true
     buildFilter:
       paths:
         - frontend/**
-    routes:
-      - type: rewrite
-        source: /*
-        destination: /index.html
-    envVars:
-      - key: API_BASE_URL
-        fromService:
-          type: web
-          name: balaghjo-api
-          property: host
