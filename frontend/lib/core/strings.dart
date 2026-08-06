@@ -372,6 +372,15 @@ class AppStrings {
     final map = isAr ? _ar : _en;
     return map[key] ?? _en[key] ?? key;
   }
+
+  // Same lookup without listening — safe inside event handlers/async
+  // callbacks, where context.watch is illegal. The parameter is the
+  // LocaleState instance, read via context.read.
+  static String ofLocaleState(LocaleState state, String key) {
+    final isAr = state.isArabic;
+    final map = isAr ? _ar : _en;
+    return map[key] ?? _en[key] ?? key;
+  }
 }
 
 extension AppStringsX on BuildContext {

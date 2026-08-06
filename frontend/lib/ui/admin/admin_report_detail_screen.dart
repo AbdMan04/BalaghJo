@@ -10,6 +10,7 @@ import 'package:flutter/services.dart';
 import 'package:latlong2/latlong.dart';
 import 'package:provider/provider.dart';
 import '../../core/config.dart';
+import '../../core/locale_state.dart';
 import '../../core/map_config.dart';
 import '../../core/strings.dart';
 import '../../core/theme.dart';
@@ -32,9 +33,15 @@ class _AdminReportDetailScreenState extends State<AdminReportDetailScreen> {
   bool _saving = false;
   String? _error;
 
-  // Valid forward moves only: the dropdown offers the next status in the
-  // workflow, so admins can't skip or regress (mirrors FR-16).
-  static const _order = [ReportStatus.pending, ReportStatus.inProgress, ReportStatus.resolved];
+  // FR-16 controlled workflow: a report can only move forward
+  // (Pending -> In Progress -> Resolved). The dropdown offers the current
+  // status (selected) plus the valid next one, so admins can't skip or
+  // regress, and the backend independently enforces it too.
+  static const _forward = {
+    ReportStatus.pending: [ReportStatus.pending, ReportStatus.inProgress],
+    ReportStatus.inProgress: [ReportStatus.inProgress, ReportStatus.resolved],
+    ReportStatus.resolved: [ReportStatus.resolved],
+  };
 
   bool get _isTerminal => _report.status == ReportStatus.resolved;
 
@@ -44,9 +51,10 @@ class _AdminReportDetailScreenState extends State<AdminReportDetailScreen> {
       _saving = true;
       _error = null;
     });
-    // Capture localized text before the await: context.t() uses
+    // Resolve localized text before the await: build-time t() uses
     // context.watch, which is illegal from an async event handler.
-    final successMsg = context.t('admin.status_updated');
+    final successMsg = AppStrings.ofLocaleState(
+        context.read<LocaleState>(), 'admin.status_updated');
     try {
       final updated = await AdminApi().updateStatus(_report.id, next.apiValue);
       if (!mounted) return;
@@ -71,7 +79,8 @@ class _AdminReportDetailScreenState extends State<AdminReportDetailScreen> {
   }
 
   Future<void> _copyCoords() async {
-    final copiedMsg = context.t('admin.coords_copied');
+    final copiedMsg = AppStrings.ofLocaleState(
+        context.read<LocaleState>(), 'admin.coords_copied');
     await Clipboard.setData(ClipboardData(text: '${_report.lat}, ${_report.lng}'));
     if (!mounted) return;
     ScaffoldMessenger.of(context).showSnackBar(
@@ -185,21 +194,7 @@ class _AdminReportDetailScreenState extends State<AdminReportDetailScreen> {
                           child: Text('Resolved', style: TextStyle(color: AppColors.success, fontWeight: FontWeight.w700)),
                         ),
                       )
-                    : DropdownButtonFormField<ReportStatus>(
-                        key: const ValueKey('admin-status-dropdown'),
-                        // initialValue must be present in items (assertion);
-                        // the current status is always included and shown
-                        // selected, so pick a new value to update.
-                        initialValue: _report.status,
-                        items: [
-                          for (final s in _order)
-                            DropdownMenuItem(
-                              value: s,
-                              child: Text(s.bilingualLabel,
-                                style: const TextStyle(fontSize: 13),
-                              ),
-                            ),
-                        ],
+                    : InputDecorator(
                         decoration: InputDecoration(
                           labelText: context.t('admin.change_status'),
                           prefixIcon: const Icon(
@@ -207,9 +202,26 @@ class _AdminReportDetailScreenState extends State<AdminReportDetailScreen> {
                             color: AppColors.textMuted,
                           ),
                         ),
-                        onChanged: _saving ? null : (s) {
-                          if (s != null && s != _report.status) _changeStatus(s);
-                        },
+                        child: DropdownButtonHideUnderline(
+                          child: DropdownButton<ReportStatus>(
+                            key: const ValueKey('admin-status-dropdown'),
+                            value: _report.status,
+                            isExpanded: true,
+                            borderRadius: BorderRadius.circular(AppRadius.md),
+                            items: [
+                              for (final s in _forward[_report.status] ?? const [])
+                                DropdownMenuItem(
+                                  value: s,
+                                  child: Text(s.bilingualLabel,
+                                    style: const TextStyle(fontSize: 13),
+                                  ),
+                                ),
+                            ],
+                            onChanged: _saving ? null : (s) {
+                              if (s != null && s != _report.status) _changeStatus(s);
+                            },
+                          ),
+                        ),
                       ),
               ),
             ]),
