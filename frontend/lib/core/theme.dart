@@ -1,21 +1,48 @@
 import 'package:flutter/material.dart';
 import 'page_transitions.dart';
 
+// Civic "municipal board" palette: asphalt, warm paper, road-sign yellow.
+// The legacy names (navy/blue/surface/border/textMuted) are kept as aliases
+// so existing call sites keep compiling; new code should use the names below.
 class AppColors {
-  static const navy = Color(0xFF0D1F3C);
-  static const blue = Color(0xFF1B4FD8);
-  static const calmBlue = Color(0xFF34558B);
-  static const sky = Color(0xFF4A9EFF);
-  static const success = Color(0xFF22C55E);
-  static const warning = Color(0xFFF59E0B);
-  static const danger = Color(0xFFEF4444);
-  static const surface = Color(0xFFF8FAFC);
-  static const border = Color(0xFFE2E8F0);
-  static const textMuted = Color(0xFF475569);
+  /// Asphalt — the primary surface/action color. Replaces the old navy.
+  static const ink = Color(0xFF17191C);
 
-  static const tilePothole = Color(0xFFFFEAC9); 
-  static const tileWaste = Color(0xFFDDF3E1);
-  static const tileLighting = Color(0xFFFFF1BF);
+  /// Warm off-white scaffold. Replaces the cool slate gray.
+  static const paper = Color(0xFFF7F4EF);
+
+  /// Road-sign yellow — the single brand accent.
+  static const safety = Color(0xFFFFC72B);
+
+  /// Civic blue for links and interactive text only.
+  static const link = Color(0xFF0B5CA8);
+
+  /// Warm hairline for borders and dividers.
+  static const line = Color(0xFFE3DED4);
+
+  /// Secondary text.
+  static const muted = Color(0xFF5B5F57);
+
+  // Semantic (traffic) colors.
+  static const success = Color(0xFF1E7E34);
+  static const warning = Color(0xFFE8A013);
+  static const danger = Color(0xFFC63D2F);
+
+  // Legacy aliases.
+  static const navy = ink;
+  static const blue = link;
+  static const surface = paper;
+  static const border = line;
+  static const textMuted = muted;
+  static const sky = Color(0xFFBBD6EE);
+
+  /// Legacy accent used for charts/avatars; kept as a neutral slate-blue.
+  static const calmBlue = Color(0xFF6B7482);
+
+  // Category tile backgrounds, tuned to sit quietly on paper.
+  static const tilePothole = Color(0xFFF4EBDC);
+  static const tileWaste = Color(0xFFE4EEE3);
+  static const tileLighting = Color(0xFFF5EFD6);
 }
 
 class AppRadius {
@@ -26,22 +53,22 @@ class AppRadius {
 }
 
 ThemeData buildAppTheme() {
-  const fontFamily = 'PlusJakartaSans';
+  const fontFamily = 'Cairo';
   final base = ThemeData(
     useMaterial3: true,
     colorScheme: ColorScheme.fromSeed(
-      seedColor: AppColors.blue,
-      primary: AppColors.navy,
-      secondary: AppColors.blue,
+      seedColor: AppColors.ink,
+      primary: AppColors.ink,
+      secondary: AppColors.safety,
       surface: Colors.white,
     ),
-    scaffoldBackgroundColor: AppColors.surface,
+    scaffoldBackgroundColor: AppColors.paper,
   );
   return base.copyWith(
-    textTheme: base.textTheme.apply(fontFamily: fontFamily, bodyColor: AppColors.navy),
+    textTheme: base.textTheme.apply(fontFamily: fontFamily, bodyColor: AppColors.ink),
     appBarTheme: const AppBarTheme(
       backgroundColor: Colors.white,
-      foregroundColor: AppColors.navy,
+      foregroundColor: AppColors.ink,
       elevation: 0,
       centerTitle: false,
     ),
@@ -51,27 +78,28 @@ ThemeData buildAppTheme() {
       contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
       border: OutlineInputBorder(
         borderRadius: BorderRadius.circular(AppRadius.md),
-        borderSide: const BorderSide(color: AppColors.border),
+        borderSide: const BorderSide(color: AppColors.line),
       ),
       enabledBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(AppRadius.md),
-        borderSide: const BorderSide(color: AppColors.border),
+        borderSide: const BorderSide(color: AppColors.line),
       ),
       focusedBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(AppRadius.md),
-        borderSide: const BorderSide(color: AppColors.blue, width: 1.4),
+        borderSide: const BorderSide(color: AppColors.ink, width: 1.4),
       ),
     ),
     elevatedButtonTheme: ElevatedButtonThemeData(
       style: ElevatedButton.styleFrom(
-        backgroundColor: AppColors.navy,
+        backgroundColor: AppColors.ink,
         foregroundColor: Colors.white,
         minimumSize: const Size.fromHeight(52),
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(AppRadius.md)),
         textStyle: const TextStyle(fontWeight: FontWeight.w700, fontSize: 15),
       )
-      // White-ish ripple so presses are visible on the navy fill.
+      // Flat, no shadow: solid fills and hairlines carry the structure.
       .copyWith(
+        elevation: WidgetStateProperty.all(0),
         overlayColor: WidgetStateProperty.resolveWith(
           (states) => states.contains(WidgetState.pressed)
               ? Colors.white.withValues(alpha: 0.20)

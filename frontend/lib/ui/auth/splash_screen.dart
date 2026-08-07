@@ -4,6 +4,7 @@ import '../../core/theme.dart';
 import '../../state/auth_state.dart';
 import '../home/main_shell.dart';
 import '../widgets/animations.dart';
+import '../widgets/app_logo.dart';
 import 'onboarding_screen.dart';
 
 class SplashScreen extends StatefulWidget {
@@ -56,76 +57,66 @@ class _SplashScreenState extends State<SplashScreen>
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: Stack(
-        children: [
-          Container(
-            decoration: const BoxDecoration(
-              color: AppColors.navy,
-            ),
-          ),
-          Center(
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                AnimatedBuilder(
-                  animation: _logo,
-                  builder: (_, __) {
-                    return Transform.scale(
-                      scale: _scale.value,
-                      child: Container(
-                        padding: const EdgeInsets.all(22),
-                        decoration: BoxDecoration(
-                          shape: BoxShape.circle,
-                          color: Colors.white.withValues(alpha: 0.1),
-                          boxShadow: [
-                            BoxShadow(
-                              color: AppColors.sky.withValues(alpha: 0.4),
-                              blurRadius: 30,
-                              spreadRadius: 2,
-                            ),
-                          ],
-                        ),
-                        child: const Hero(
-                          tag: 'app-logo',
-                          child: Icon(Icons.location_on, color: Colors.white, size: 64),
-                        ),
-                      ),
-                    );
-                  },
-                ),
-                const SizedBox(height: 24),
-                FadeTransition(
-                  opacity: _fade,
-                  child: const Column(
-                    children: [
-                      Text('BALAGHJO',
-                          style: TextStyle(
-                              color: Colors.white,
-                              fontSize: 28,
-                              fontWeight: FontWeight.w800,
-                              letterSpacing: 5)),
-                      SizedBox(height: 8),
-                      Text('بلِّغ · سجِّل · غيِّر',
-                          style: TextStyle(color: Colors.white70, fontSize: 14, letterSpacing: 2)),
-                    ],
+      backgroundColor: AppColors.ink,
+      body: Center(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            AnimatedBuilder(
+              animation: _logo,
+              builder: (_, __) {
+                return Transform.scale(
+                  scale: _scale.value,
+                  child: const Hero(
+                    tag: 'app-logo',
+                    // The mark is a road-sign tile: safety yellow with an
+                    // asphalt pin, echoing the municipal notice-board theme.
+                    child: AppLogoMark(size: 92, iconSize: 56),
                   ),
-                ),
-                const SizedBox(height: 48),
-                FadeTransition(
-                  opacity: _fade,
-                  child: const SizedBox(
-                    width: 28,
-                    height: 28,
-                    child: CircularProgressIndicator(
-                      color: Colors.white,
-                      strokeWidth: 2.5,
+                );
+              },
+            ),
+            const SizedBox(height: 28),
+            FadeTransition(
+              opacity: _fade,
+              child: const Column(
+                children: [
+                  Text('BALAGHJO',
+                      style: TextStyle(
+                          color: Colors.white,
+                          fontSize: 26,
+                          fontWeight: FontWeight.w900,
+                          letterSpacing: 6)),
+                  SizedBox(height: 12),
+                  // Thin sign rule under the wordmark.
+                  SizedBox(
+                    width: 40,
+                    height: 3,
+                    child: DecoratedBox(
+                      decoration: BoxDecoration(color: AppColors.safety),
                     ),
                   ),
-                ),
-              ],
+                  SizedBox(height: 12),
+                  Text('بلِّغ · سجِّل · غيّر',
+                      style:
+                          TextStyle(color: Colors.white70, fontSize: 14, letterSpacing: 2)),
+                ],
+              ),
             ),
-          ),
-        ],
+            const SizedBox(height: 56),
+            FadeTransition(
+              opacity: _fade,
+              child: const SizedBox(
+                width: 26,
+                height: 26,
+                child: CircularProgressIndicator(
+                  color: AppColors.safety,
+                  strokeWidth: 2.5,
+                ),
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }

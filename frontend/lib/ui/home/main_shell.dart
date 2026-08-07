@@ -174,8 +174,7 @@ class _BottomBar extends StatelessWidget {
               mainAxisAlignment: MainAxisAlignment.spaceAround,
               children: [
                 _NavItem(
-                  icon: Icons.home_outlined,
-                  activeIcon: Icons.home_rounded,
+                  icon: Icons.home_rounded,
                   label: context.t('nav.home'),
                   active: index == 0,
                   onTap: () => onTap(0),
@@ -183,14 +182,12 @@ class _BottomBar extends StatelessWidget {
                 _ReportFab(active: index == 1, onTap: () => onTap(1)),
                 _NavItem(
                   icon: Icons.description_outlined,
-                  activeIcon: Icons.description,
                   label: context.t('nav.my_reports'),
                   active: index == 2,
                   onTap: () => onTap(2),
                 ),
                 _NavItem(
                   icon: Icons.person_outline,
-                  activeIcon: Icons.person,
                   label: context.t('nav.profile'),
                   active: index == 3,
                   onTap: () => onTap(3),
@@ -206,13 +203,11 @@ class _BottomBar extends StatelessWidget {
 
 class _NavItem extends StatelessWidget {
   final IconData icon;
-  final IconData activeIcon;
   final String label;
   final bool active;
   final VoidCallback onTap;
   const _NavItem({
     required this.icon,
-    required this.activeIcon,
     required this.label,
     required this.active,
     required this.onTap,
@@ -227,45 +222,39 @@ class _NavItem extends StatelessWidget {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            AnimatedContainer(
-              duration: const Duration(milliseconds: 280),
-              curve: Curves.easeOutCubic,
-              width: active ? 32 : 0,
-              height: 3,
-              margin: const EdgeInsets.only(bottom: 6),
-              decoration: BoxDecoration(
-                color: AppColors.blue,
-                borderRadius: BorderRadius.circular(2),
-              ),
-            ),
-            AnimatedSwitcher(
-              duration: const Duration(milliseconds: 220),
-              transitionBuilder: (child, a) => ScaleTransition(scale: a, child: child),
-              child: Icon(
-                active ? activeIcon : icon,
-                key: ValueKey(active),
-                color: active ? AppColors.blue : AppColors.textMuted,
-                size: 24,
-              ),
+            Icon(
+              icon,
+              color: active ? AppColors.ink : AppColors.textMuted,
+              size: 24,
             ),
             const SizedBox(height: 4),
             // A3: the 10px label is intentionally tiny; cap how much system
             // text scaling can inflate it so it never overflows the 70px tab.
             MediaQuery.withClampedTextScaling(
               maxScaleFactor: 1.3,
-              child: AnimatedDefaultTextStyle(
-                duration: const Duration(milliseconds: 220),
+              child: Text(
+                label,
+                textAlign: TextAlign.center,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
                 style: TextStyle(
                   fontSize: 10,
-                  fontWeight: FontWeight.w700,
-                  color: active ? AppColors.blue : AppColors.textMuted,
+                  fontWeight: active ? FontWeight.w800 : FontWeight.w600,
+                  color: active ? AppColors.ink : AppColors.textMuted,
                 ),
-                child: Text(
-                  label,
-                  textAlign: TextAlign.center,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                ),
+              ),
+            ),
+            const SizedBox(height: 4),
+            // The active tab gets a short safety-yellow underline, like a
+            // painted road marking.
+            AnimatedContainer(
+              duration: const Duration(milliseconds: 220),
+              curve: Curves.easeOutCubic,
+              width: active ? 22 : 0,
+              height: 3,
+              decoration: BoxDecoration(
+                color: AppColors.safety,
+                borderRadius: BorderRadius.circular(2),
               ),
             ),
           ],
@@ -293,20 +282,16 @@ class _ReportFab extends StatelessWidget {
             width: 52,
             height: 52,
             decoration: BoxDecoration(
-              color: AppColors.calmBlue,
+              // The report button is a painted road button: safety yellow
+              // with an asphalt plus sign.
+              color: AppColors.safety,
               shape: BoxShape.circle,
-              boxShadow: [
-                BoxShadow(
-                  color: AppColors.blue.withValues(alpha: active ? 0.55 : 0.3),
-                  blurRadius: active ? 20 : 12,
-                  offset: const Offset(0, 6),
-                ),
-              ],
+              border: Border.all(color: Colors.black.withValues(alpha: 0.08)),
             ),
             child: AnimatedRotation(
               duration: const Duration(milliseconds: 320),
               turns: active ? 0.125 : 0,
-              child: const Icon(Icons.add, color: Colors.white, size: 26),
+              child: const Icon(Icons.add, color: AppColors.ink, size: 26),
             ),
           ),
           const SizedBox(height: 4),

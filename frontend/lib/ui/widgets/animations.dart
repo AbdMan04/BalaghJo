@@ -239,8 +239,8 @@ class _SkeletonBoxState extends State<SkeletonBox>
         width: widget.width,
         decoration: BoxDecoration(
           color: Color.lerp(
-            const Color(0xFFE2E8F0),
-            const Color(0xFFF1F5F9),
+            const Color(0xFFE7E1D5),
+            const Color(0xFFF1ECE2),
             _c.value,
           ),
           borderRadius: widget.borderRadius ?? BorderRadius.circular(8),

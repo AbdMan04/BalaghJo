@@ -119,29 +119,17 @@ class _HomeScreenState extends State<HomeScreen> with RouteAwarePolling {
                       decoration: BoxDecoration(
                         color: AppColors.navy,
                         borderRadius: BorderRadius.circular(AppRadius.md),
-                        boxShadow: [
-                          BoxShadow(
-                            color: AppColors.navy.withValues(alpha: 0.25),
-                            blurRadius: 16,
-                            offset: const Offset(0, 6),
-                          ),
-                        ],
                       ),
                       child: Row(
                         children: [
                           Container(
                             padding: const EdgeInsets.all(10),
                             decoration: BoxDecoration(
-                              color: AppColors.blue,
+                              color: AppColors.safety,
                               borderRadius: BorderRadius.circular(AppRadius.sm),
-                              boxShadow: [
-                                BoxShadow(
-                                    color: AppColors.sky.withValues(alpha: 0.5),
-                                    blurRadius: 12),
-                              ],
                             ),
                             child: const Icon(Icons.add,
-                                color: Colors.white, size: 20),
+                                color: AppColors.ink, size: 20),
                           ),
                           const SizedBox(width: 14),
                           Expanded(
@@ -214,13 +202,6 @@ class _HomeScreenState extends State<HomeScreen> with RouteAwarePolling {
                         color: Colors.white,
                         borderRadius: BorderRadius.circular(AppRadius.md),
                         border: Border.all(color: AppColors.border),
-                        boxShadow: [
-                          BoxShadow(
-                            color: Colors.black.withValues(alpha: 0.03),
-                            blurRadius: 10,
-                            offset: const Offset(0, 4),
-                          ),
-                        ],
                       ),
                       child: Stack(
                         children: [
@@ -237,12 +218,6 @@ class _HomeScreenState extends State<HomeScreen> with RouteAwarePolling {
                                 decoration: BoxDecoration(
                                   color: AppColors.navy,
                                   borderRadius: BorderRadius.circular(AppRadius.sm),
-                                  boxShadow: [
-                                    BoxShadow(
-                                      color: AppColors.navy.withValues(alpha: 0.35),
-                                      blurRadius: 10,
-                                    ),
-                                  ],
                                 ),
                                 child: const Icon(Icons.map_outlined,
                                     color: Colors.white, size: 20),

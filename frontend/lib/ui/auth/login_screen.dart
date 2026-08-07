@@ -8,6 +8,7 @@ import '../../core/theme.dart';
 import '../../state/auth_state.dart';
 import '../home/main_shell.dart';
 import '../widgets/animations.dart';
+import '../widgets/app_logo.dart';
 import '../widgets/password_visibility_toggle.dart';
 import 'register_screen.dart';
 
@@ -72,26 +73,19 @@ class _LoginScreenState extends State<LoginScreen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  FadeSlideIn(
+                  const FadeSlideIn(
                     child: Row(
                       children: [
                         Hero(
                           tag: 'app-logo',
-                          child: Container(
-                            padding: const EdgeInsets.all(10),
-                            decoration: BoxDecoration(
-                              color: AppColors.navy,
-                              borderRadius: BorderRadius.circular(AppRadius.sm),
-                            ),
-                            child: const Icon(Icons.location_on, color: Colors.white, size: 22),
-                          ),
+                          child: AppLogoMark(size: 44, iconSize: 24),
                         ),
-                        const SizedBox(width: 10),
-                        const Column(
+                        SizedBox(width: 10),
+                        Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Text('BALAGHJO',
-                                style: TextStyle(fontSize: 14, fontWeight: FontWeight.w800, letterSpacing: 2)),
+                                style: TextStyle(fontSize: 14, fontWeight: FontWeight.w900, letterSpacing: 2)),
                             Text('Civic Reporting Platform',
                                 style: TextStyle(fontSize: 11, color: AppColors.textMuted)),
                           ],
@@ -200,13 +194,6 @@ class _LoginScreenState extends State<LoginScreen> {
                         decoration: BoxDecoration(
                           color: AppColors.navy,
                           borderRadius: BorderRadius.circular(AppRadius.md),
-                          boxShadow: [
-                            BoxShadow(
-                              color: AppColors.navy.withValues(alpha: 0.25),
-                              blurRadius: 16,
-                              offset: const Offset(0, 6),
-                            ),
-                          ],
                         ),
                         child: AnimatedSwitcher(
                           duration: const Duration(milliseconds: 250),

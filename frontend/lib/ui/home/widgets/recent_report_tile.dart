@@ -23,6 +23,7 @@ class RecentReportTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final title = reportDisplayTitle(report, context);
+    final cat = ReportCategory.fromApi(report.category);
     return Padding(
       padding: const EdgeInsets.fromLTRB(20, 6, 20, 6),
       child: ClipRRect(
@@ -62,10 +63,14 @@ class RecentReportTile extends StatelessWidget {
               decoration: BoxDecoration(
                 color: Colors.white,
                 borderRadius: BorderRadius.circular(AppRadius.md),
-                border: Border.all(color: AppColors.border),
-                boxShadow: [
-                  BoxShadow(color: Colors.black.withValues(alpha: 0.02), blurRadius: 8, offset: const Offset(0, 2)),
-                ],
+                // Ticket stub: a category-coloured bar along the leading
+                // edge carries the category; the report ID labels the stub.
+                border: Border(
+                  left: BorderSide(color: cat.tint, width: 3),
+                  top: const BorderSide(color: AppColors.border),
+                  right: const BorderSide(color: AppColors.border),
+                  bottom: const BorderSide(color: AppColors.border),
+                ),
               ),
               child: Row(
                 children: [
@@ -81,6 +86,18 @@ class RecentReportTile extends StatelessWidget {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
+                        Text(
+                          report.reportId,
+                          style: TextStyle(
+                            fontSize: 10,
+                            fontWeight: FontWeight.w800,
+                            letterSpacing: 0.6,
+                            color: cat.tint,
+                          ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                        const SizedBox(height: 2),
                         Text(
                           reportDisplayTitle(report, context),
                           style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 14),

@@ -232,13 +232,6 @@ class _RegisterScreenState extends State<RegisterScreen> {
                         decoration: BoxDecoration(
                           color: AppColors.navy,
                           borderRadius: BorderRadius.circular(AppRadius.md),
-                          boxShadow: [
-                            BoxShadow(
-                              color: AppColors.navy.withValues(alpha: 0.35),
-                              blurRadius: 18,
-                              offset: const Offset(0, 6),
-                            ),
-                          ],
                         ),
                         child: AnimatedSwitcher(
                           duration: const Duration(milliseconds: 250),

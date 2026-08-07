@@ -1,7 +1,7 @@
-// HomeStatsHeader — the blue gradient banner at the top of the home
-// screen, containing the three live stats (Total / Resolved / Active)
-// fed by the report-summary future. Includes the decorative sky-tinted
-// gradient blob in the top-right corner.
+// HomeStatsHeader — the flat asphalt band at the top of the home screen
+// with the three live stats (Total / Resolved / Active) fed by the
+// report-summary future. Civic notice-board treatment: numbers sit directly
+// on the band, separated by hairlines, no inner card or shadow.
 import 'package:flutter/material.dart';
 import '../../../core/strings.dart';
 import '../../../core/theme.dart';
@@ -16,44 +16,25 @@ class HomeStatsHeader extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       width: double.infinity,
-      decoration: const BoxDecoration(
-        color: AppColors.navy,
-        borderRadius: BorderRadius.vertical(bottom: Radius.circular(32)),
-      ),
-      padding: const EdgeInsets.fromLTRB(20, 40, 20, 32),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          FadeSlideIn(
-            child: FutureBuilder<ReportSummary>(
-              future: future,
-              builder: (_, snap) {
-                final s = snap.data;
-                return Container(
-                  padding:
-                      const EdgeInsets.symmetric(vertical: 14, horizontal: 8),
-                  decoration: BoxDecoration(
-                    color: Colors.white.withValues(alpha: 0.1),
-                    borderRadius: BorderRadius.circular(AppRadius.md),
-                    border: Border.all(color: Colors.white12),
-                  ),
-                  child: Row(
-                    children: [
-                      _stat(Icons.description_outlined,
-                          context.t('home.stat_total'), s?.total ?? 0),
-                      _divider(),
-                      _stat(Icons.check_circle_outline,
-                          context.t('home.stat_resolved'), s?.resolved ?? 0),
-                      _divider(),
-                      _stat(Icons.pending_actions_outlined,
-                          context.t('home.stat_active'), s?.active ?? 0),
-                    ],
-                  ),
-                );
-              },
-            ),
-          ),
-        ],
+      color: AppColors.ink,
+      padding: const EdgeInsets.fromLTRB(20, 44, 20, 26),
+      child: FutureBuilder<ReportSummary>(
+        future: future,
+        builder: (_, snap) {
+          final s = snap.data;
+          return Row(
+            children: [
+              _stat(Icons.description_outlined,
+                  context.t('home.stat_total'), s?.total ?? 0),
+              _divider(),
+              _stat(Icons.check_circle_outline,
+                  context.t('home.stat_resolved'), s?.resolved ?? 0),
+              _divider(),
+              _stat(Icons.pending_actions_outlined,
+                  context.t('home.stat_active'), s?.active ?? 0),
+            ],
+          );
+        },
       ),
     );
   }
@@ -61,14 +42,15 @@ class HomeStatsHeader extends StatelessWidget {
   Widget _stat(IconData icon, String label, int value) => Expanded(
         child: Column(
           children: [
-            Icon(icon, size: 16, color: Colors.white70),
+            Icon(icon, size: 16, color: AppColors.safety),
             const SizedBox(height: 4),
             AnimatedCounter(
               value: value,
               style: const TextStyle(
                   color: Colors.white,
-                  fontSize: 24,
-                  fontWeight: FontWeight.w800),
+                  fontSize: 26,
+                  fontWeight: FontWeight.w900,
+                  height: 1.1),
             ),
             const SizedBox(height: 2),
             Text(label,
@@ -80,5 +62,5 @@ class HomeStatsHeader extends StatelessWidget {
         ),
       );
 
-  Widget _divider() => Container(width: 1, height: 32, color: Colors.white24);
+  Widget _divider() => Container(width: 1, height: 40, color: Colors.white24);
 }
