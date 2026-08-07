@@ -3,7 +3,7 @@
 // Wrapped in a Dismissible for swipe-to-delete with a confirmation
 // callback supplied by the parent screen.
 import 'package:flutter/material.dart';
-import 'package:intl/intl.dart';
+import '../../../core/date_format.dart';
 import '../../../core/strings.dart';
 import '../../../core/theme.dart';
 import '../../../data/models/report.dart';
@@ -25,6 +25,7 @@ class MyReportsRow extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final title = reportDisplayTitle(report, context);
+    final cat = ReportCategory.fromApi(report.category);
     return Padding(
       padding: const EdgeInsets.only(bottom: 10),
       child: ClipRRect(
@@ -64,10 +65,14 @@ class MyReportsRow extends StatelessWidget {
               decoration: BoxDecoration(
                 color: Colors.white,
                 borderRadius: BorderRadius.circular(AppRadius.md),
-                border: Border.all(color: AppColors.border),
-                boxShadow: [
-                  BoxShadow(color: Colors.black.withValues(alpha: 0.02), blurRadius: 8, offset: const Offset(0, 2)),
-                ],
+                // Ticket stub: category-coloured bar along the leading edge
+                // carries the category; the report ID labels the stub.
+                border: Border(
+                  left: BorderSide(color: cat.tint, width: 3),
+                  top: const BorderSide(color: AppColors.border),
+                  right: const BorderSide(color: AppColors.border),
+                  bottom: const BorderSide(color: AppColors.border),
+                ),
               ),
               child: Row(
                 children: [
@@ -84,15 +89,29 @@ class MyReportsRow extends StatelessWidget {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
+                          report.reportId,
+                          style: TextStyle(
+                            fontSize: 10,
+                            fontWeight: FontWeight.w800,
+                            letterSpacing: 0.6,
+                            color: cat.tint,
+                          ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                        const SizedBox(height: 2),
+                        Text(
                           reportDisplayTitle(report, context),
-                          style: const TextStyle(fontWeight: FontWeight.w700),
+                          style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 14),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
                         ),
                         const SizedBox(height: 6),
                         Row(
                           children: [
                             StatusBadge(report.status),
                             const SizedBox(width: 8),
-                            Text(DateFormat.yMMMd().format(report.createdAt),
+                            Text(formatDate(report.createdAt),
                                 style: const TextStyle(color: AppColors.textMuted, fontSize: 11)),
                           ],
                         ),

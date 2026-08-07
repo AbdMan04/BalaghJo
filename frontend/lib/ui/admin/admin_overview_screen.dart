@@ -186,7 +186,7 @@ class _TrendChart extends StatelessWidget {
                     height: 90 * (entry.value / max),
                     margin: const EdgeInsets.symmetric(horizontal: 3),
                     decoration: BoxDecoration(
-                      color: entry.value == 0 ? AppColors.border : AppColors.blue,
+                      color: entry.value == 0 ? AppColors.border : AppColors.ink,
                       borderRadius: const BorderRadius.vertical(top: Radius.circular(3)),
                     ),
                   ),

@@ -14,6 +14,7 @@ import 'package:intl/intl.dart';
 import 'package:share_plus/share_plus.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../../core/config.dart';
+import '../../core/date_format.dart';
 import '../../core/strings.dart';
 import '../../core/theme.dart';
 import '../../data/api/geocoding_api.dart';
@@ -125,9 +126,14 @@ class _ReportDetailScreenState extends State<ReportDetailScreen>
                       decoration: BoxDecoration(
                         color: AppColors.surface,
                         borderRadius: BorderRadius.circular(AppRadius.lg),
-                        boxShadow: [
-                          BoxShadow(color: Colors.black.withValues(alpha: 0.06), blurRadius: 16, offset: const Offset(0, 6)),
-                        ],
+                        // Ticket stub: a category bar along the top edge.
+                        border: Border(
+                          top: BorderSide(
+                              color: colorForCategory(r.category), width: 3),
+                          left: const BorderSide(color: AppColors.border),
+                          right: const BorderSide(color: AppColors.border),
+                          bottom: const BorderSide(color: AppColors.border),
+                        ),
                       ),
                       child: r.photoUrl.isEmpty
                           ? Container(
@@ -175,16 +181,37 @@ class _ReportDetailScreenState extends State<ReportDetailScreen>
                 ),
                 const SizedBox(height: 10),
                 FadeSlideIn(
+                  delay: const Duration(milliseconds: 120),
+                  child: Row(
+                    children: [
+                      Icon(iconForCategory(r.category),
+                          size: 14, color: colorForCategory(r.category)),
+                      const SizedBox(width: 6),
+                      Text(
+                        r.reportId,
+                        style: TextStyle(
+                          fontSize: 11,
+                          fontWeight: FontWeight.w800,
+                          letterSpacing: 0.6,
+                          color: colorForCategory(r.category),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 10),
+                FadeSlideIn(
                   delay: const Duration(milliseconds: 200),
                   child: Container(
                     padding: const EdgeInsets.all(12),
                     decoration: BoxDecoration(
-                      color: AppColors.blue.withValues(alpha: 0.06),
+                      color: Colors.white,
                       borderRadius: BorderRadius.circular(AppRadius.sm),
+                      border: Border.all(color: AppColors.border),
                     ),
                     child: Row(
                       children: [
-                        const Icon(Icons.location_on, size: 16, color: AppColors.blue),
+                        const Icon(Icons.location_on, size: 16, color: AppColors.ink),
                         const SizedBox(width: 6),
                         Expanded(child: _LocationText(report: r)),
                       ],
@@ -204,13 +231,13 @@ class _ReportDetailScreenState extends State<ReportDetailScreen>
                 const SizedBox(height: 22),
                 FadeSlideIn(delay: const Duration(milliseconds: 260), child: _section(context.t('detail.report_info'))),
                 FadeSlideIn(delay: const Duration(milliseconds: 300), child: _kv(context.t('detail.category'), context.t('cat.${r.category}'))),
-                FadeSlideIn(delay: const Duration(milliseconds: 340), child: _kv(context.t('detail.submitted_on'), DateFormat.yMMMd().format(r.createdAt))),
+                FadeSlideIn(delay: const Duration(milliseconds: 340), child: _kv(context.t('detail.submitted_on'), formatDate(r.createdAt))),
                 if (r.statusChangedAt != null)
-                  FadeSlideIn(delay: const Duration(milliseconds: 360), child: _kv(context.t('detail.last_updated'), DateFormat.yMMMd().add_Hm().format(r.statusChangedAt!))),
+                  FadeSlideIn(delay: const Duration(milliseconds: 360), child: _kv(context.t('detail.last_updated'), DateFormat.MMMd().add_Hm().format(r.statusChangedAt!))),
                 if (r.assignedTo.isNotEmpty)
                   FadeSlideIn(delay: const Duration(milliseconds: 380), child: _kv(context.t('detail.assigned_to'), r.assignedTo)),
                 if (r.estimatedFix != null)
-                  FadeSlideIn(delay: const Duration(milliseconds: 420), child: _kv(context.t('detail.est_fix'), DateFormat.yMMMd().format(r.estimatedFix!))),
+                  FadeSlideIn(delay: const Duration(milliseconds: 420), child: _kv(context.t('detail.est_fix'), formatDate(r.estimatedFix!))),
                 const SizedBox(height: 18),
                 if (r.reporterPhone.isNotEmpty || r.reporterName.isNotEmpty) ...[
                   FadeSlideIn(delay: const Duration(milliseconds: 440), child: _section(context.t('detail.reporter_contact'))),
@@ -268,8 +295,8 @@ class _ReportDetailScreenState extends State<ReportDetailScreen>
                             height: 48,
                             alignment: Alignment.center,
                             decoration: BoxDecoration(
-                              color: _following ? AppColors.blue : AppColors.blue.withValues(alpha: 0.08),
-                              border: Border.all(color: AppColors.blue),
+                              color: _following ? AppColors.ink : Colors.white,
+                              border: Border.all(color: AppColors.ink),
                               borderRadius: BorderRadius.circular(AppRadius.md),
                             ),
                             child: Row(
@@ -278,13 +305,13 @@ class _ReportDetailScreenState extends State<ReportDetailScreen>
                                 Icon(
                                   _following ? Icons.notifications_active : Icons.notifications_outlined,
                                   size: 18,
-                                  color: _following ? Colors.white : AppColors.blue,
+                                  color: _following ? Colors.white : AppColors.ink,
                                 ),
                                 const SizedBox(width: 6),
                                 Text(
                                   _following ? context.t('detail.following') : context.t('detail.follow'),
                                   style: TextStyle(
-                                    color: _following ? Colors.white : AppColors.blue,
+                                    color: _following ? Colors.white : AppColors.ink,
                                     fontWeight: FontWeight.w700,
                                   ),
                                 ),
@@ -417,17 +444,8 @@ class _ReporterCard extends StatelessWidget {
                   child: Container(
                     padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
                     decoration: BoxDecoration(
-                      gradient: const LinearGradient(
-                        colors: [AppColors.success, Color(0xFF16A34A)],
-                      ),
+                      color: AppColors.success,
                       borderRadius: BorderRadius.circular(AppRadius.sm),
-                      boxShadow: [
-                        BoxShadow(
-                          color: AppColors.success.withValues(alpha: 0.35),
-                          blurRadius: 10,
-                          offset: const Offset(0, 4),
-                        ),
-                      ],
                     ),
                     child: const Row(
                       children: [
@@ -745,7 +763,7 @@ class _StatusTimeline extends StatelessWidget {
           final tint = isDone
               ? AppColors.success
               : isActive
-                  ? AppColors.blue
+                  ? AppColors.ink
                   : AppColors.textMuted.withValues(alpha: 0.6);
           return Column(
             mainAxisSize: MainAxisSize.min,
@@ -758,14 +776,6 @@ class _StatusTimeline extends StatelessWidget {
                   color: isDone || isActive ? tint : Colors.white,
                   border: Border.all(color: tint, width: isActive ? 2 : 1.5),
                   shape: BoxShape.circle,
-                  boxShadow: isActive
-                      ? [
-                          BoxShadow(
-                            color: tint.withValues(alpha: 0.35),
-                            blurRadius: 12,
-                          ),
-                        ]
-                      : null,
                 ),
                 child: Icon(
                   isDone ? Icons.check_rounded : step.icon,

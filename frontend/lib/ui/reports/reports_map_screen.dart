@@ -9,9 +9,9 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_map/flutter_map.dart';
-import 'package:intl/intl.dart';
 import 'package:latlong2/latlong.dart';
 import '../../core/config.dart';
+import '../../core/date_format.dart';
 import '../../core/location_helper.dart';
 import '../../core/map_config.dart';
 import '../../core/strings.dart';
@@ -355,9 +355,6 @@ class _FilterBar extends StatelessWidget {
             color: active ? tint : Colors.white,
             borderRadius: BorderRadius.circular(20),
             border: Border.all(color: active ? tint : AppColors.border),
-            boxShadow: active
-                ? [BoxShadow(color: tint.withValues(alpha: 0.35), blurRadius: 10)]
-                : [BoxShadow(color: Colors.black.withValues(alpha: 0.08), blurRadius: 8)],
           ),
           child: Text(
             label,
@@ -389,7 +386,6 @@ class _FilterBar extends StatelessWidget {
               color: active ? tint : AppColors.border,
               width: active ? 1.4 : 1,
             ),
-            boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.06), blurRadius: 8)],
           ),
           child: Row(
             mainAxisSize: MainAxisSize.min,
@@ -542,7 +538,7 @@ class _MarkerCard extends StatelessWidget {
                         children: [
                           StatusBadge(report.status),
                           const SizedBox(width: 8),
-                          Text(DateFormat.MMMd().format(report.createdAt),
+                          Text(formatDate(report.createdAt),
                               style: const TextStyle(color: AppColors.textMuted, fontSize: 11)),
                         ],
                       ),

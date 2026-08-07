@@ -1,5 +1,5 @@
 // Filter-chip widgets used at the top of the My Reports and Reports
-// Map screens. StatusFilterChip is a solid pill (navy when active,
+// Map screens. StatusFilterChip is a solid pill (ink when active,
 // white otherwise). CategoryFilterChip is a tinted outlined pill with
 // an optional leading category icon.
 import 'package:flutter/material.dart';
@@ -32,9 +32,6 @@ class StatusFilterChip extends StatelessWidget {
             color: active ? AppColors.navy : Colors.white,
             borderRadius: BorderRadius.circular(20),
             border: Border.all(color: active ? AppColors.navy : AppColors.border),
-            boxShadow: active
-                ? [BoxShadow(color: AppColors.navy.withValues(alpha: 0.25), blurRadius: 12, offset: const Offset(0, 4))]
-                : null,
           ),
           child: AnimatedDefaultTextStyle(
             duration: const Duration(milliseconds: 240),

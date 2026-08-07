@@ -143,6 +143,9 @@ class _FilterBar extends StatelessWidget {
     return Container(
       color: Colors.white,
       padding: const EdgeInsets.fromLTRB(16, 12, 16, 8),
+      decoration: const BoxDecoration(
+        border: Border(bottom: BorderSide(color: AppColors.border)),
+      ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -207,72 +210,91 @@ class _AdminRow extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final cat = ReportCategory.fromApi(report.category);
-    return Material(
-      color: Colors.white,
-      borderRadius: BorderRadius.circular(AppRadius.md),
-      child: InkWell(
+    return Container(
+      decoration: BoxDecoration(
+        color: Colors.white,
         borderRadius: BorderRadius.circular(AppRadius.md),
-        onTap: onTap,
-        child: Padding(
-          padding: const EdgeInsets.all(12),
-          child: Row(
-            children: [
-              ClipRRect(
-                borderRadius: BorderRadius.circular(AppRadius.sm),
-                child: report.photoUrl.isNotEmpty
-                    ? Image.network(
-                        AppConfig.imageUrl(report.photoUrl),
-                        width: 56,
-                        height: 56,
-                        fit: BoxFit.cover,
-                        errorBuilder: (_, __, ___) => _thumbFallback(cat.icon, cat.tileBg),
-                      )
-                    : _thumbFallback(cat.icon, cat.tileBg),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
+        // Ticket stub: category-coloured bar along the leading edge.
+        border: Border(
+          left: BorderSide(color: cat.tint, width: 3),
+          top: const BorderSide(color: AppColors.border),
+          right: const BorderSide(color: AppColors.border),
+          bottom: const BorderSide(color: AppColors.border),
+        ),
+      ),
+      clipBehavior: Clip.antiAlias,
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          onTap: onTap,
+          child: Padding(
+            padding: const EdgeInsets.all(12),
+            child: Row(
+              children: [
+                ClipRRect(
+                  borderRadius: BorderRadius.circular(AppRadius.sm),
+                  child: report.photoUrl.isNotEmpty
+                      ? Image.network(
+                          AppConfig.imageUrl(report.photoUrl),
+                          width: 56,
+                          height: 56,
+                          fit: BoxFit.cover,
+                          errorBuilder: (_, __, ___) => _thumbFallback(cat.icon, cat.tileBg),
+                        )
+                      : _thumbFallback(cat.icon, cat.tileBg),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        children: [
+                          Text(
+                            report.reportId,
+                            style: TextStyle(
+                              fontWeight: FontWeight.w800,
+                              fontSize: 12,
+                              letterSpacing: 0.6,
+                              color: cat.tint,
+                            ),
+                          ),
+                          const SizedBox(width: 8),
+                          StatusBadge(report.status),
+                        ],
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        report.title.isNotEmpty ? report.title : cat.label,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: const TextStyle(fontSize: 12, color: AppColors.textMuted),
+                      ),
+                      const SizedBox(height: 2),
+                      Text(
+                        '${report.reporterName.isEmpty ? '-' : report.reporterName}'
+                        '${report.reporterPhone.isNotEmpty ? ' · ${report.reporterPhone}' : ''}',
+                        style: const TextStyle(fontSize: 11, color: AppColors.textMuted),
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(width: 8),
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.end,
                   children: [
-                    Row(
-                      children: [
-                        Text(report.reportId,
-                            style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 13)),
-                        const SizedBox(width: 8),
-                        StatusBadge(report.status),
-                      ],
-                    ),
+                    Icon(cat.icon, color: cat.tint, size: 18),
                     const SizedBox(height: 4),
                     Text(
-                      report.title.isNotEmpty ? report.title : cat.label,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(fontSize: 12, color: AppColors.textMuted),
-                    ),
-                    const SizedBox(height: 2),
-                    Text(
-                      '${report.reporterName.isEmpty ? '-' : report.reporterName}'
-                      '${report.reporterPhone.isNotEmpty ? ' · ${report.reporterPhone}' : ''}',
+                      formatDate(report.createdAt),
                       style: const TextStyle(fontSize: 11, color: AppColors.textMuted),
                     ),
                   ],
                 ),
-              ),
-              const SizedBox(width: 8),
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.end,
-                children: [
-                  Icon(cat.icon, color: cat.tint, size: 18),
-                  const SizedBox(height: 4),
-                  Text(
-                    formatDate(report.createdAt),
-                    style: const TextStyle(fontSize: 11, color: AppColors.textMuted),
-                  ),
-                ],
-              ),
-              const SizedBox(width: 4),
-              const Icon(Icons.chevron_right, color: AppColors.textMuted),
-            ],
+                const SizedBox(width: 4),
+                const Icon(Icons.chevron_right, color: AppColors.textMuted),
+              ],
+            ),
           ),
         ),
       ),
@@ -304,6 +326,9 @@ class _PagerBar extends StatelessWidget {
     return Container(
       color: Colors.white,
       padding: const EdgeInsets.all(12),
+      decoration: const BoxDecoration(
+        border: Border(top: BorderSide(color: AppColors.border)),
+      ),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
