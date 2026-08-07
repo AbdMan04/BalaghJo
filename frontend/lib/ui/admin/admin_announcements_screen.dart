@@ -4,11 +4,13 @@
 // or to a single phone number. Recipients receive an in-app Notification
 // row and an FCM push (when the backend has Firebase configured).
 import 'package:flutter/material.dart';
+import '../../core/date_format.dart';
 import '../../core/strings.dart';
 import '../../core/theme.dart';
 import '../../data/api/admin_api.dart';
 import '../../data/models/announcement.dart';
 import '../widgets/category_icon.dart';
+import '../widgets/remote_view.dart';
 
 class AdminAnnouncementsScreen extends StatefulWidget {
   const AdminAnnouncementsScreen({super.key});
@@ -19,37 +21,8 @@ class AdminAnnouncementsScreen extends StatefulWidget {
 
 class _AdminAnnouncementsScreenState extends State<AdminAnnouncementsScreen> {
   final _api = AdminApi();
-  List<AdminAnnouncement>? _announcements;
-  String? _error;
-  bool _loading = true;
+  final _listKey = GlobalKey<RemoteViewState<List<AdminAnnouncement>>>();
   bool _sending = false;
-
-  @override
-  void initState() {
-    super.initState();
-    _load();
-  }
-
-  Future<void> _load() async {
-    setState(() {
-      _loading = true;
-      _error = null;
-    });
-    try {
-      final list = await _api.listAnnouncements();
-      if (!mounted) return;
-      setState(() {
-        _announcements = list;
-        _loading = false;
-      });
-    } catch (e) {
-      if (!mounted) return;
-      setState(() {
-        _error = '$e';
-        _loading = false;
-      });
-    }
-  }
 
   Future<void> _compose() async {
     final result = await showDialog<_AnnouncementDraft>(
@@ -70,7 +43,7 @@ class _AdminAnnouncementsScreenState extends State<AdminAnnouncementsScreen> {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text(context.t('admin.announce_sent').replaceAll('{n}', '${sent.recipients}'))),
       );
-      await _load();
+      _listKey.currentState?.reload();
     } catch (e) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('$e')));
@@ -103,50 +76,22 @@ class _AdminAnnouncementsScreenState extends State<AdminAnnouncementsScreen> {
             ],
           ),
         ),
-        Expanded(child: _buildBody()),
-      ],
-    );
-  }
-
-  Widget _buildBody() {
-    if (_loading && _announcements == null) {
-      return const Center(child: CircularProgressIndicator(color: AppColors.blue));
-    }
-    if (_error != null && _announcements == null) {
-      return Center(
-        child: Padding(
-          padding: const EdgeInsets.all(24),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              const Icon(Icons.error_outline, color: AppColors.danger, size: 40),
-              const SizedBox(height: 12),
-              Text(_error!, textAlign: TextAlign.center),
-              const SizedBox(height: 16),
-              ElevatedButton(onPressed: _load, child: Text(context.t('common.retry'))),
-            ],
+        Expanded(
+          child: RemoteView<List<AdminAnnouncement>>(
+            key: _listKey,
+            load: _api.listAnnouncements,
+            isEmpty: (l) => l.isEmpty,
+            emptyMessage: context.t('admin.announce_empty'),
+            emptyIcon: Icons.campaign_outlined,
+            builder: (context, list) => ListView.separated(
+              padding: const EdgeInsets.all(16),
+              itemCount: list.length,
+              separatorBuilder: (_, __) => const SizedBox(height: 10),
+              itemBuilder: (_, i) => _AnnouncementCard(announcement: list[i]),
+            ),
           ),
         ),
-      );
-    }
-    final list = _announcements ?? const <AdminAnnouncement>[];
-    if (list.isEmpty) {
-      return Center(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            const Icon(Icons.campaign_outlined, color: AppColors.textMuted, size: 44),
-            const SizedBox(height: 12),
-            Text(context.t('admin.announce_empty')),
-          ],
-        ),
-      );
-    }
-    return ListView.separated(
-      padding: const EdgeInsets.all(16),
-      itemCount: list.length,
-      separatorBuilder: (_, __) => const SizedBox(height: 10),
-      itemBuilder: (_, i) => _AnnouncementCard(announcement: list[i]),
+      ],
     );
   }
 }
@@ -333,7 +278,7 @@ class _AnnouncementCard extends StatelessWidget {
                 ),
               ),
               Text(
-                _date(announcement.createdAt),
+                formatDate(announcement.createdAt),
                 style: const TextStyle(fontSize: 11, color: AppColors.textMuted),
               ),
             ],
@@ -365,9 +310,4 @@ class _AnnouncementCard extends StatelessWidget {
           Text(text, style: const TextStyle(fontSize: 11, color: AppColors.textMuted)),
         ],
       );
-
-  String _date(DateTime d) {
-    final local = d.toLocal();
-    return '${local.month}/${local.day}/${local.year}';
-  }
 }

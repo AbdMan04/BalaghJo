@@ -4,7 +4,6 @@ const notificationSchema = new mongoose.Schema(
   {
     user: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true, index: true },
     type: { type: String, default: 'report_status' },
-    report: { type: mongoose.Schema.Types.ObjectId, ref: 'Report', default: null },
     reportId: { type: String, default: '' },
     title: { type: String, default: '' },
     body: { type: String, default: '' },

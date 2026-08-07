@@ -5,15 +5,17 @@
 // FR-14: status / category filters (and a free-text search) reduce the
 // visible set; the backend applies the same filters to the query.
 // Rows open AdminReportDetailScreen for the photo + GPS + status workflow.
-import 'dart:async';
 import 'package:flutter/material.dart';
 import '../../core/config.dart';
+import '../../core/date_format.dart';
+import '../../core/debounced_search.dart';
 import '../../core/strings.dart';
 import '../../core/theme.dart';
 import '../../data/api/admin_api.dart';
 import '../../data/models/report.dart';
 import '../widgets/animations.dart';
 import '../widgets/category_icon.dart';
+import '../widgets/remote_view.dart';
 import '../widgets/status_badge.dart';
 import 'admin_report_detail_screen.dart';
 
@@ -25,70 +27,30 @@ class AdminReportsScreen extends StatefulWidget {
 }
 
 class _AdminReportsScreenState extends State<AdminReportsScreen> {
-  static const _statusOptions = ['pending', 'in_progress', 'resolved'];
-  static const _categoryOptions = ['pothole', 'waste', 'lighting', 'other'];
-
   final _api = AdminApi();
-  final _search = TextEditingController();
-  Timer? _debounce;
-
-  List<Report>? _reports;
-  String? _error;
-  bool _loading = true;
+  final _search = DebouncedSearch();
+  final _listKey = GlobalKey<RemoteViewState<AdminReportPage>>();
+  String? _pageCursor;
   String? _nextCursor;
-  String? _prevCursor;
   String? _statusFilter;
   String? _categoryFilter;
 
   @override
   void initState() {
     super.initState();
-    _search.addListener(_onSearchChanged);
-    _load();
+    _search.onQuery = () => _listKey.currentState?.reload();
+    _search.attach();
   }
 
   @override
   void dispose() {
-    _debounce?.cancel();
-    _search.removeListener(_onSearchChanged);
     _search.dispose();
     super.dispose();
   }
 
-  void _onSearchChanged() {
-    _debounce?.cancel();
-    _debounce = Timer(const Duration(milliseconds: 400), () {
-      if (mounted) _load();
-    });
-  }
-
-  Future<void> _load({String? before}) async {
-    setState(() {
-      _loading = true;
-      _error = null;
-    });
-    try {
-      final query = _search.text.trim();
-      final page = await _api.listReports(
-        status: _statusFilter,
-        category: _categoryFilter,
-        query: query.isEmpty ? null : query,
-        before: before,
-      );
-      if (!mounted) return;
-      setState(() {
-        _reports = page.reports;
-        _nextCursor = page.nextCursor;
-        _prevCursor = before;
-        _loading = false;
-      });
-    } catch (e) {
-      if (!mounted) return;
-      setState(() {
-        _error = '$e';
-        _loading = false;
-      });
-    }
+  void _reload() {
+    setState(() => _pageCursor = null);
+    _listKey.currentState?.reload();
   }
 
   @override
@@ -99,70 +61,62 @@ class _AdminReportsScreenState extends State<AdminReportsScreen> {
         _FilterBar(
           statusFilter: _statusFilter,
           categoryFilter: _categoryFilter,
-          searchController: _search,
+          searchController: _search.controller,
           onStatus: (v) {
             setState(() => _statusFilter = v);
-            _load();
+            _reload();
           },
           onCategory: (v) {
             setState(() => _categoryFilter = v);
-            _load();
+            _reload();
           },
         ),
-        Expanded(child: _buildBody()),
-      ],
-    );
-  }
-
-  Widget _buildBody() {
-    if (_loading && _reports == null) {
-      return const Center(child: CircularProgressIndicator(color: AppColors.blue));
-    }
-    if (_error != null && _reports == null) {
-      return Center(
-        child: Padding(
-          padding: const EdgeInsets.all(24),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              const Icon(Icons.error_outline, color: AppColors.danger, size: 40),
-              const SizedBox(height: 12),
-              Text(_error!, textAlign: TextAlign.center),
-              const SizedBox(height: 16),
-              ElevatedButton(onPressed: _load, child: Text(context.t('common.retry'))),
-            ],
-          ),
-        ),
-      );
-    }
-    final reports = _reports ?? const <Report>[];
-    if (reports.isEmpty) {
-      return Center(child: Text(context.t('admin.no_reports')));
-    }
-    return Column(
-      children: [
         Expanded(
-          child: ListView.separated(
-            padding: const EdgeInsets.all(16),
-            itemCount: reports.length,
-            separatorBuilder: (_, __) => const SizedBox(height: 10),
-            itemBuilder: (_, i) => _AdminRow(
-              report: reports[i],
-              onTap: () async {
-                await Navigator.of(context).push(
-                  instantRoute(AdminReportDetailScreen(report: reports[i])),
-                );
-                // Status may have changed on the detail screen; refresh.
-                if (mounted) _load(before: _prevCursor);
-              },
+          child: RemoteView<AdminReportPage>(
+            key: _listKey,
+            onData: (page) => _nextCursor = page.nextCursor,
+            load: () => _api.listReports(
+              status: _statusFilter,
+              category: _categoryFilter,
+              query: _search.query.isEmpty ? null : _search.query,
+              before: _pageCursor,
+            ),
+            isEmpty: (page) => page.reports.isEmpty,
+            emptyMessage: context.t('admin.no_reports'),
+            builder: (context, page) => Column(
+              children: [
+                Expanded(
+                  child: ListView.separated(
+                    padding: const EdgeInsets.all(16),
+                    itemCount: page.reports.length,
+                    separatorBuilder: (_, __) => const SizedBox(height: 10),
+                    itemBuilder: (_, i) => _AdminRow(
+                      report: page.reports[i],
+                      onTap: () async {
+                        await Navigator.of(context).push(
+                          instantRoute(AdminReportDetailScreen(report: page.reports[i])),
+                        );
+                        // Status may have changed on the detail screen; refresh.
+                        if (mounted) _listKey.currentState?.reload();
+                      },
+                    ),
+                  ),
+                ),
+                _PagerBar(
+                  nextCursor: _nextCursor,
+                  prevCursor: _pageCursor,
+                  onNext: () {
+                    setState(() => _pageCursor = _nextCursor);
+                    _listKey.currentState?.reload();
+                  },
+                  onPrev: () {
+                    setState(() => _pageCursor = null);
+                    _listKey.currentState?.reload();
+                  },
+                ),
+              ],
             ),
           ),
-        ),
-        _PagerBar(
-          nextCursor: _nextCursor,
-          prevCursor: _prevCursor,
-          onNext: () => _load(before: _nextCursor),
-          onPrev: () => _load(before: null),
         ),
       ],
     );
@@ -207,13 +161,13 @@ class _FilterBar extends StatelessWidget {
               scrollDirection: Axis.horizontal,
               children: [
                 _filterChip(context, context.t('status.all'), null, statusFilter, onStatus),
-                for (final s in _AdminReportsScreenState._statusOptions)
-                  _filterChip(context, _statusLabel(s), s, statusFilter, onStatus),
+                for (final s in ReportStatus.values)
+                  _filterChip(context, s.label, s.apiValue, statusFilter, onStatus),
                 const SizedBox(width: 8),
                 _filterChip(context, context.t('cat.all'), null, categoryFilter, onCategory),
-                for (final c in _AdminReportsScreenState._categoryOptions)
+                for (final c in ReportCategory.values)
                   _filterChip(
-                      context, ReportCategory.fromApi(c).label, c, categoryFilter, onCategory),
+                      context, c.label, c.apiValue, categoryFilter, onCategory),
               ],
             ),
           ),
@@ -243,13 +197,6 @@ class _FilterBar extends StatelessWidget {
       ),
     );
   }
-
-  String _statusLabel(String s) => switch (s) {
-        'pending' => 'Sent',
-        'in_progress' => 'Processing',
-        'resolved' => 'Resolved',
-        _ => s,
-      };
 }
 
 class _AdminRow extends StatelessWidget {
@@ -318,7 +265,7 @@ class _AdminRow extends StatelessWidget {
                   Icon(cat.icon, color: cat.tint, size: 18),
                   const SizedBox(height: 4),
                   Text(
-                    _date(report.createdAt),
+                    formatDate(report.createdAt),
                     style: const TextStyle(fontSize: 11, color: AppColors.textMuted),
                   ),
                 ],
@@ -338,11 +285,6 @@ class _AdminRow extends StatelessWidget {
         color: bg,
         child: Icon(icon, color: AppColors.textMuted, size: 26),
       );
-
-  String _date(DateTime d) {
-    final local = d.toLocal();
-    return '${local.month}/${local.day}/${local.year}';
-  }
 }
 
 class _PagerBar extends StatelessWidget {

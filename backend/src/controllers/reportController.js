@@ -10,10 +10,9 @@ const mongoose = require('mongoose');
 const { validationResult } = require('express-validator');
 const Report = require('../models/Report');
 const User = require('../models/User');
-const Notification = require('../models/Notification');
-const { sendPush } = require('../config/firebase');
 const { uploader } = require('../config/cloudinary');
 const wrap = require('../utils/asyncHandler');
+const { notifyUsers } = require('../services/notifyService');
 const { TtlCache } = require('../utils/ttlCache');
 const { STATUSES, CATEGORIES, STATUS_TRANSITIONS } = require('../models/Report');
 
@@ -459,23 +458,16 @@ exports.updateStatus = wrap(async (req, res) => {
   const label = STATUS_LABELS[status] || status;
   void (async () => {
     try {
-      await Notification.create({
-        user: report.userId,
+      await notifyUsers({
+        recipients: [report.userId],
         type: 'report_status',
-        report: report._id,
         reportId: report.reportId,
         title: `Report ${report.reportId}`,
         body: `Status changed to ${label}`,
+        pushTitle: `Report ${report.reportId} — ${label}`,
+        pushBody: report.title ? report.title : 'Your report status changed',
+        data: { type: 'report_status', reportId: report.reportId, status },
       });
-      const owner = await User.findById(report.userId).select('deviceTokens');
-      if (owner && owner.deviceTokens && owner.deviceTokens.length) {
-        await sendPush({
-          tokens: owner.deviceTokens,
-          title: `Report ${report.reportId} — ${label}`,
-          body: report.title ? report.title : 'Your report status changed',
-          data: { type: 'report_status', reportId: report.reportId, status },
-        });
-      }
     } catch (err) {
       console.error('[notif] failed to create notification:', err.message);
     }

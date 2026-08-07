@@ -9,6 +9,7 @@ import '../../data/api/admin_api.dart';
 import '../../data/models/admin_stats.dart';
 import '../widgets/animations.dart';
 import '../widgets/category_icon.dart';
+import '../widgets/remote_view.dart';
 
 class AdminOverviewScreen extends StatefulWidget {
   const AdminOverviewScreen({super.key});
@@ -19,83 +20,35 @@ class AdminOverviewScreen extends StatefulWidget {
 
 class _AdminOverviewScreenState extends State<AdminOverviewScreen> {
   final _api = AdminApi();
-  AdminStats? _stats;
-  String? _error;
-  bool _loading = true;
-
-  @override
-  void initState() {
-    super.initState();
-    _load();
-  }
-
-  Future<void> _load() async {
-    setState(() {
-      _loading = true;
-      _error = null;
-    });
-    try {
-      final s = await _api.stats();
-      if (!mounted) return;
-      setState(() {
-        _stats = s;
-        _loading = false;
-      });
-    } catch (e) {
-      if (!mounted) return;
-      setState(() {
-        _error = '$e';
-        _loading = false;
-      });
-    }
-  }
 
   @override
   Widget build(BuildContext context) {
-    if (_loading && _stats == null) {
-      return const Center(child: CircularProgressIndicator(color: AppColors.blue));
-    }
-    if (_error != null && _stats == null) {
-      return Center(
-        child: Padding(
-          padding: const EdgeInsets.all(24),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
+    return RemoteView<AdminStats>(
+      load: _api.stats,
+      builder: (context, s) => ListView(
+        padding: const EdgeInsets.all(16),
+        children: [
+          Wrap(
+            spacing: 12,
+            runSpacing: 12,
             children: [
-              const Icon(Icons.error_outline, color: AppColors.danger, size: 40),
-              const SizedBox(height: 12),
-              Text(_error!, textAlign: TextAlign.center),
-              const SizedBox(height: 16),
-              ElevatedButton(onPressed: _load, child: Text(context.t('common.retry'))),
+              _statCard(context, Icons.description_outlined, context.t('admin.stat_total'), s.total, AppColors.navy),
+              _statCard(context, Icons.pending_actions_outlined, context.t('admin.stat_active'), s.active, AppColors.warning),
+              _statCard(context, Icons.check_circle_outline, context.t('admin.stat_resolved'), s.resolved, AppColors.success),
+              _statCard(context, Icons.schedule, context.t('admin.stat_pending'), s.pending, AppColors.blue),
+              _statCard(context, Icons.people_outline, context.t('admin.stat_users'), s.users, AppColors.calmBlue),
             ],
           ),
-        ),
-      );
-    }
-    final s = _stats!;
-    return ListView(
-      padding: const EdgeInsets.all(16),
-      children: [
-        Wrap(
-          spacing: 12,
-          runSpacing: 12,
-          children: [
-            _statCard(context, Icons.description_outlined, context.t('admin.stat_total'), s.total, AppColors.navy),
-            _statCard(context, Icons.pending_actions_outlined, context.t('admin.stat_active'), s.active, AppColors.warning),
-            _statCard(context, Icons.check_circle_outline, context.t('admin.stat_resolved'), s.resolved, AppColors.success),
-            _statCard(context, Icons.schedule, context.t('admin.stat_pending'), s.pending, AppColors.blue),
-            _statCard(context, Icons.people_outline, context.t('admin.stat_users'), s.users, AppColors.calmBlue),
-          ],
-        ),
-        const SizedBox(height: 24),
-        _sectionTitle(context, context.t('admin.trend_title')),
-        const SizedBox(height: 12),
-        _TrendChart(daily: s.daily),
-        const SizedBox(height: 24),
-        _sectionTitle(context, context.t('admin.by_category')),
-        const SizedBox(height: 12),
-        _CategoryBreakdown(categories: s.categories),
-      ],
+          const SizedBox(height: 24),
+          _sectionTitle(context, context.t('admin.trend_title')),
+          const SizedBox(height: 12),
+          _TrendChart(daily: s.daily),
+          const SizedBox(height: 24),
+          _sectionTitle(context, context.t('admin.by_category')),
+          const SizedBox(height: 12),
+          _CategoryBreakdown(categories: s.categories),
+        ],
+      ),
     );
   }
 

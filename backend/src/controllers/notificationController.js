@@ -9,7 +9,6 @@ exports.list = wrap(async (req, res) => {
     notifications: notifications.map((n) => ({
       id: n._id,
       type: n.type,
-      report: n.report,
       reportId: n.reportId,
       title: n.title,
       body: n.body,

@@ -5,15 +5,12 @@
 - profile view and edit (FR-3), bcrypt password hashing (NFR-1), and
 - 30-minute JWT expiry (NFR-2). New accounts are verified at
 - registration, so no OTP code is required to log in.
-- Login uses the Strategy pattern in ../strategies/identifierStrategy.js
-- to resolve the submitted phone number.
  */
 const jwt = require('jsonwebtoken');
 const crypto = require('crypto');
 const { validationResult } = require('express-validator');
 const User = require('../models/User');
 const wrap = require('../utils/asyncHandler');
-const { resolveIdentifierStrategy } = require('../strategies/identifierStrategy');
 
 const REFRESH_TTL_MS = 30 * 24 * 60 * 60 * 1000;
 const MAX_REFRESH_TOKENS = 5;
@@ -93,10 +90,7 @@ exports.login = wrap(async (req, res) => {
 
   const raw = String(req.body.identifier || '').trim();
   const { password } = req.body;
-  const strategy = resolveIdentifierStrategy(raw);
-  if (!strategy) return res.status(401).json({ error: 'Incorrect password' });
-
-  const user = await User.findOne(strategy.toQuery(raw)).select('+passwordHash +refreshTokens');
+  const user = await User.findOne({ phone: raw }).select('+passwordHash +refreshTokens');
   if (!user) return res.status(401).json({ error: 'Incorrect Phone Number!' });
   const ok = await user.comparePassword(password);
   if (!ok) return res.status(401).json({ error: 'Incorrect password' });

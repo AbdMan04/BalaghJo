@@ -10,6 +10,7 @@ import 'package:flutter/services.dart';
 import 'package:latlong2/latlong.dart';
 import 'package:provider/provider.dart';
 import '../../core/config.dart';
+import '../../core/date_format.dart';
 import '../../core/locale_state.dart';
 import '../../core/map_config.dart';
 import '../../core/strings.dart';
@@ -140,7 +141,7 @@ class _AdminReportDetailScreenState extends State<AdminReportDetailScreen> {
                 StatusBadge(_report.status, large: true),
                 const Spacer(),
                 Text(
-                  _date(_report.createdAt),
+                  formatDate(_report.createdAt),
                   style: const TextStyle(color: AppColors.textMuted, fontSize: 12),
                 ),
               ],
@@ -148,9 +149,9 @@ class _AdminReportDetailScreenState extends State<AdminReportDetailScreen> {
             const SizedBox(height: 16),
             _sectionTitle(context.t('detail.report_info'), [
               _kv(context, context.t('detail.category'), cat.label),
-              _kv(context, context.t('detail.submitted_on'), _date(_report.createdAt)),
+              _kv(context, context.t('detail.submitted_on'), formatDate(_report.createdAt)),
               if (_report.updatedAt != null)
-                _kv(context, context.t('detail.last_updated'), _date(_report.updatedAt!)),
+                _kv(context, context.t('detail.last_updated'), formatDate(_report.updatedAt!)),
               _kv(context, context.t('detail.assigned_to'), _report.assignedTo.isEmpty ? '—' : _report.assignedTo),
             ]),
             const SizedBox(height: 16),
@@ -334,11 +335,4 @@ class _AdminReportDetailScreenState extends State<AdminReportDetailScreen> {
       ),
     ]);
   }
-
-  String _date(DateTime d) {
-    final local = d.toLocal();
-    return '${local.day} ${_month(local.month)} ${local.year}';
-  }
-
-  String _month(int m) => ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'][m - 1];
 }

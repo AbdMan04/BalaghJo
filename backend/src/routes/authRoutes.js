@@ -3,6 +3,7 @@ const { body } = require('express-validator');
 const { rateLimit, ipKeyGenerator } = require('express-rate-limit');
 const ctrl = require('../controllers/authController');
 const { authRequired } = require('../middleware/auth');
+const { isValidPhone } = require('../utils/phone');
 
 const registerLimiter = rateLimit({
   windowMs: 60 * 60 * 1000,
@@ -51,7 +52,7 @@ router.post(
   [
     body('firstName').isString().trim().notEmpty(),
     body('lastName').isString().trim().notEmpty(),
-    body('phone').isString().trim().matches(/^07[789]\d{7}$/).withMessage('Phone must start with 077, 078, or 079'),
+    body('phone').isString().trim().custom(isValidPhone).withMessage('Phone must start with 077, 078, or 079'),
     body('password').isString().isLength({ min: 6 }),
   ],
   ctrl.register
@@ -62,7 +63,7 @@ router.post(
   ...limiter(loginLimiter),
   ...limiter(phoneLoginLimiter),
   [
-    body('identifier').isString().trim().matches(/^07[789]\d{7}$/).withMessage('Phone must start with 077, 078, or 079'),
+    body('identifier').isString().trim().custom(isValidPhone).withMessage('Phone must start with 077, 078, or 079'),
     body('password').isString().notEmpty().withMessage('Enter your password'),
   ],
   ctrl.login
@@ -97,7 +98,7 @@ router.patch(
     body('lastName').optional().isString().trim().isLength({ min: 1, max: 50 }),
     body('phone')
       .optional()
-      .custom((v) => v === '' || /^07[789]\d{7}$/.test(v))
+      .custom((v) => v === '' || isValidPhone(v))
       .withMessage('Phone must start with 077, 078, or 079'),
     // Phone is the login identifier: require the password before it changes.
     body('currentPassword')
