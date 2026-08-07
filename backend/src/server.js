@@ -16,6 +16,33 @@ process.on('uncaughtException', (err) => {
 const PORT = process.env.PORT || 4000;
 const MONGO_URI = process.env.MONGO_URI || 'mongodb://127.0.0.1:27017/balaghjo';
 
+// Render free instances hibernate after ~15 minutes without traffic, so the
+// next request pays a cold start. When deployed (RENDER_EXTERNAL_URL) we
+// self-ping the health route on a 10-minute cadence to keep the box warm.
+// Purely optional: skipped when the URL is unknown, and the ping loop is
+// unref()'d so it can never keep the process alive on its own.
+function startKeepAlive() {
+  const baseUrl = process.env.RENDER_EXTERNAL_URL || process.env.PUBLIC_BASE_URL;
+  if (!baseUrl) {
+    if (process.env.NODE_ENV === 'production') {
+      console.warn(
+        '[keepalive] no RENDER_EXTERNAL_URL/PUBLIC_BASE_URL set; cold-start protection is off'
+      );
+    }
+    return;
+  }
+  const intervalMs = Number(process.env.KEEPALIVE_INTERVAL_MS) || 10 * 60 * 1000;
+  const timer = setInterval(() => {
+    fetch(`${baseUrl}/health`, { signal: AbortSignal.timeout(10_000) }).catch(
+      (err) => console.warn('[keepalive] ping failed:', err.message)
+    );
+  }, intervalMs);
+  timer.unref();
+  console.log(
+    `[keepalive] self-pinging ${baseUrl}/health every ${Math.round(intervalMs / 60000)}m`
+  );
+}
+
 // JWT secret handling. A missing value would break every login (signing
 // throws), so never refuse to boot here — otherwise a misconfigured env
 // turns into a crashing deploy. Warn loudly instead, and only fall back to
@@ -51,11 +78,13 @@ if (cluster.isPrimary && !process.env.DISABLE_CLUSTER && workerCount > 1) {
     console.error(`[cluster] worker ${worker.process.pid} exited (${signal || code}); restarting`);
     cluster.fork();
   });
+  startKeepAlive();
 } else {
   (async () => {
     try {
       await connectDB(MONGO_URI);
       app.listen(PORT, () => console.log(`[api] listening on http://localhost:${PORT}`));
+      startKeepAlive();
     } catch (err) {
       console.error('[startup] failed:', err);
       process.exit(1);
