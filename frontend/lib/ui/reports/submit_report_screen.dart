@@ -553,16 +553,19 @@ class _SubmitReportScreenState extends State<SubmitReportScreen> {
         width: double.infinity,
         padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 10),
         decoration: BoxDecoration(
-          color: selected ? AppColors.navy.withValues(alpha: 0.12) : Colors.white,
+          color: selected
+              ? AppColors.amber.withValues(alpha: 0.14)
+              : Colors.white,
           border: Border.all(
-            color: selected ? AppColors.navy : AppColors.border,
+            color: selected ? AppColors.amber : AppColors.border,
             width: selected ? 1.5 : 1,
           ),
           borderRadius: BorderRadius.circular(AppRadius.sm),
           boxShadow: selected
               ? [
                   BoxShadow(
-                      color: AppColors.navy.withValues(alpha: 0.25), blurRadius: 10)
+                      color: AppColors.amber.withValues(alpha: 0.30),
+                      blurRadius: 10)
                 ]
               : null,
         ),
