@@ -12,6 +12,16 @@ try {
     cloudinary.config({ cloudinary_url: cloudinaryUrl });
     uploader = cloudinary.uploader;
     console.log('[cloudinary] configured');
+  } else if (process.env.NODE_ENV === 'production') {
+    // Fail fast in production: without Cloudinary the API would write photos
+    // to the local uploads/ dir, which is ephemeral on Render and wiped on
+    // redeploy. Report submissions are refused (storePhoto throws) until a
+    // CLOUDINARY_URL is set, so images are never silently lost.
+    console.error(
+      '[cloudinary] CRITICAL: CLOUDINARY_URL is not set in production. ' +
+        'Photo submissions are disabled; photos would otherwise be written ' +
+        'to the ephemeral disk and lost on the next redeploy.'
+    );
   } else {
     console.log('[cloudinary] CLOUDINARY_URL not set; photos stored locally');
   }

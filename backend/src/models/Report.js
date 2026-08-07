@@ -51,6 +51,15 @@ reportSchema.index({ userId: 1, createdAt: -1 });
 reportSchema.index({ userId: 1, status: 1, createdAt: -1 });
 reportSchema.index({ status: 1, createdAt: -1 });
 reportSchema.index({ category: 1, createdAt: -1 });
+// Text index backing the admin report search (q=): word-based, index-backed
+// instead of a collection-scanning case-insensitive $regex. Word/token
+// matching (not arbitrary substring), which is fine for report titles,
+// addresses and ticket numbers. Created on the deployed DB via
+// `npm run sync-indexes`.
+reportSchema.index(
+  { title: 'text', description: 'text', address: 'text', reportId: 'text' },
+  { name: 'search_text' }
+);
 
 // Atomic sequence used to mint unique reportIds. A single document in
 // the counters collection is incremented with findOneAndUpdate, so two

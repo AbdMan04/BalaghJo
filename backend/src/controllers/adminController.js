@@ -10,6 +10,7 @@
 const User = require('../models/User');
 const Report = require('../models/Report');
 const wrap = require('../utils/asyncHandler');
+const { escapeRegExp } = require('../utils/regex');
 
 const MAX_PAGE_SIZE = 100;
 
@@ -70,10 +71,15 @@ exports.listUsers = wrap(async (req, res) => {
   if (q && typeof q === 'string') {
     const term = q.trim();
     if (term) {
+      // Substring $regex is kept here (not a text index) so partial phone
+      // numbers still match, and the user table is small/bounded. The term
+      // is escaped so a crafted query can't inject regex or trigger
+      // catastrophic backtracking (ReDoS).
+      const rx = escapeRegExp(term);
       filter.$or = [
-        { firstName: { $regex: term, $options: 'i' } },
-        { lastName: { $regex: term, $options: 'i' } },
-        { phone: { $regex: term, $options: 'i' } },
+        { firstName: { $regex: rx, $options: 'i' } },
+        { lastName: { $regex: rx, $options: 'i' } },
+        { phone: { $regex: rx, $options: 'i' } },
       ];
     }
   }

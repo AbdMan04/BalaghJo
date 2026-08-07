@@ -112,6 +112,26 @@ describe('admin dashboard (stats, users, announcements)', () => {
     expect(demote.status).toBe(200);
   });
 
+  test('user search matches partial phone and treats regex metacharacters as literals', async () => {
+    const admin = await adminTokenFor('0791001001');
+    await registerUser(agent, '0771004002');
+
+    const partial = await agent
+      .get('/api/admin/users')
+      .query({ q: '0771004' })
+      .set('Authorization', `Bearer ${admin}`);
+    expect(partial.status).toBe(200);
+    expect(partial.body.users.some((u) => u.phone === '0771004002')).toBe(true);
+
+    // A crafted term must not crash or reshape the query (ReDoS/injection).
+    const hostile = await agent
+      .get('/api/admin/users')
+      .query({ q: '.*+?^${}()[]\\' })
+      .set('Authorization', `Bearer ${admin}`);
+    expect(hostile.status).toBe(200);
+    expect(hostile.body.users).toHaveLength(0);
+  });
+
   test('an admin cannot change their own role', async () => {
     const admin = await adminTokenFor('0791001001');
     const me = await User.findOne({ phone: '0791001001' });

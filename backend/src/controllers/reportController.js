@@ -82,6 +82,9 @@ function cursorFor(last) {
 
 // FR-5: store the uploaded photo on Cloudinary when configured; otherwise
 // keep the local uploads/ path. The local file is a temp copy either way.
+// In production the local fallback is disabled: Render's filesystem is
+// ephemeral, so a photo written there silently vanishes on the next
+// redeploy. Fail the submission loudly instead of losing the image.
 async function storePhoto(file) {
   if (!file) return '';
   if (uploader) {
@@ -91,7 +94,13 @@ async function storePhoto(file) {
       return result.secure_url;
     } catch (err) {
       console.error('[cloudinary] upload failed:', err.message);
+      if (process.env.NODE_ENV === 'production') {
+        fs.unlink(file.path, () => {});
+        throw new Error('Photo upload failed. Please try again.');
+      }
     }
+  } else if (process.env.NODE_ENV === 'production') {
+    throw new Error('Photo storage is not configured. Please contact support.');
   }
   return `/uploads/${file.filename}`;
 }
@@ -268,12 +277,11 @@ exports.listAdminReports = wrap(async (req, res) => {
   if (q && typeof q === 'string') {
     const term = q.trim();
     if (term) {
-      filter.$or = [
-        { title: { $regex: term, $options: 'i' } },
-        { description: { $regex: term, $options: 'i' } },
-        { address: { $regex: term, $options: 'i' } },
-        { reportId: { $regex: term, $options: 'i' } },
-      ];
+      // Text-index search across title/description/address/reportId. Being
+      // a top-level operator (not filter.$or) means the cursor pagination's
+      // own filter.$or (applyCursor) no longer clobbers the search clause —
+      // previously the term silently dropped on page 2+.
+      filter.$text = { $search: term };
     }
   }
   applyCursor(filter, req.query.before);

@@ -299,4 +299,50 @@ describe('reports', () => {
       .set('Authorization', `Bearer ${admin}`);
     expect(resolved.body.reports).toHaveLength(0);
   });
+
+  test('admin report feed searches by text and keeps the term across pages', async () => {
+    const token = (await registerUser(agent, '0783015017')).token;
+    await createReport(token, {
+      description: 'Deep pothole blocking the university gate',
+    });
+    await createReport(token, {
+      description: 'Streetlight out near the university roundabout',
+    });
+    await createReport(token, {
+      description: 'Unrelated litter in the old market',
+    });
+
+    const admin = await adminTokenFor('0784015018');
+    const search = await agent
+      .get('/api/admin/reports')
+      .query({ q: 'university' })
+      .set('Authorization', `Bearer ${admin}`);
+    expect(search.status).toBe(200);
+    expect(search.body.reports).toHaveLength(2);
+
+    // Searching the ticket number must match too (it is in the text index).
+    const ticket = search.body.reports[0].reportId;
+    const byTicket = await agent
+      .get('/api/admin/reports')
+      .query({ q: ticket })
+      .set('Authorization', `Bearer ${admin}`);
+    expect(byTicket.body.reports.map((r) => r.reportId)).toContain(ticket);
+
+    // Page 2 with a search term still applies the filter (the cursor's
+    // filter.$or used to clobber the regex search clause).
+    const page1 = await agent
+      .get('/api/admin/reports')
+      .query({ q: 'university', limit: 1 })
+      .set('Authorization', `Bearer ${admin}`);
+    expect(page1.body.reports).toHaveLength(1);
+    expect(page1.body.nextCursor).not.toBeNull();
+    const page2 = await agent
+      .get('/api/admin/reports')
+      .query({ q: 'university', limit: 1, before: page1.body.nextCursor })
+      .set('Authorization', `Bearer ${admin}`);
+    expect(page2.status).toBe(200);
+    expect(page2.body.reports).toHaveLength(1);
+    expect(page2.body.reports[0].description).toContain('university');
+    expect(page2.body.reports[0].id).not.toBe(page1.body.reports[0].id);
+  });
 });

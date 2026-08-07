@@ -16,7 +16,20 @@ async function stopDb() {
 
 async function cleanDb() {
   if (mongoose.connection.readyState === 1) {
-    await mongoose.connection.dropDatabase();
+    // Clear documents, not the database: dropDatabase() also wipes the
+    // collections' indexes, and Mongoose only auto-builds them at first
+    // connect — so a dropped text index would make admin $text searches
+    // fail for the rest of the suite.
+    const Report = require('../src/models/Report');
+    const User = require('../src/models/User');
+    const Notification = require('../src/models/Notification');
+    const Announcement = require('../src/models/Announcement');
+    await Promise.all([
+      Report.deleteMany({}),
+      User.deleteMany({}),
+      Notification.deleteMany({}),
+      Announcement.deleteMany({}),
+    ]);
   }
 }
 
