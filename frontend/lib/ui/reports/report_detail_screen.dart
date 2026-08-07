@@ -126,14 +126,7 @@ class _ReportDetailScreenState extends State<ReportDetailScreen>
                       decoration: BoxDecoration(
                         color: AppColors.surface,
                         borderRadius: BorderRadius.circular(AppRadius.lg),
-                        // Ticket stub: a category bar along the top edge.
-                        border: Border(
-                          top: BorderSide(
-                              color: colorForCategory(r.category), width: 3),
-                          left: const BorderSide(color: AppColors.border),
-                          right: const BorderSide(color: AppColors.border),
-                          bottom: const BorderSide(color: AppColors.border),
-                        ),
+                        border: Border.all(color: AppColors.border),
                       ),
                       child: r.photoUrl.isEmpty
                           ? Container(

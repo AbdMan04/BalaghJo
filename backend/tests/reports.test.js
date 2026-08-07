@@ -236,6 +236,25 @@ describe('reports', () => {
     expect(user.id).toBeTruthy();
   });
 
+  test('GET detail resolves by ticket number (RPT-xxxx) as well as Mongo id', async () => {
+    const { token } = await registerUser(agent, '0785016017');
+    const created = await createReport(token);
+    const ticket = created.body.report.reportId;
+
+    const byId = await agent
+      .get(`/api/reports/${created.body.report.id}`)
+      .set('Authorization', `Bearer ${token}`);
+    expect(byId.status).toBe(200);
+
+    // In-app notifications historically stored the ticket string in their
+    // reportId field; tapping one must open the report, not a CastError.
+    const byTicket = await agent
+      .get(`/api/reports/${ticket}`)
+      .set('Authorization', `Bearer ${token}`);
+    expect(byTicket.status).toBe(200);
+    expect(byTicket.body.report.id).toBe(created.body.report.id);
+  });
+
   test('admin report feed requires the admin role', async () => {
     const { token } = await registerUser(agent, '0782013014');
     const asUser = await agent

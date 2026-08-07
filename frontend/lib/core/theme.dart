@@ -23,6 +23,9 @@ class AppColors {
   /// Secondary text.
   static const muted = Color(0xFF5B5F57);
 
+  /// Amber confirm/acknowledge accent (road-sign hazard yellow).
+  static const amber = Color(0xFFEAB308);
+
   // Semantic (traffic) colors.
   static const success = Color(0xFF1E7E34);
   static const warning = Color(0xFFE8A013);

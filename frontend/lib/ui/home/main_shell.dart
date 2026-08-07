@@ -94,7 +94,7 @@ class _MainShellState extends State<MainShell> {
     final leave = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
-        backgroundColor: Colors.white,
+        backgroundColor: Colors.white.withValues(alpha: 0.96),
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(AppRadius.lg)),
         title: Text(ctx.t('app.exit_title'), style: const TextStyle(fontWeight: FontWeight.w800)),
         content: Text(
@@ -121,8 +121,8 @@ class _MainShellState extends State<MainShell> {
                   child: ElevatedButton(
                     onPressed: () => Navigator.of(ctx).pop(true),
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: AppColors.blue,
-                      foregroundColor: Colors.white,
+                      backgroundColor: AppColors.amber,
+                      foregroundColor: AppColors.ink,
                       elevation: 0,
                       minimumSize: const Size.fromHeight(42),
                       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(AppRadius.sm)),

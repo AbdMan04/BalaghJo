@@ -302,7 +302,14 @@ exports.listAdminReports = wrap(async (req, res) => {
 });
 
 exports.getReport = wrap(async (req, res) => {
-  const report = await Report.findById(req.params.id).populate('userId', 'firstName lastName phone');
+  // The detail lookup accepts either the Mongo _id or the human ticket
+  // number (RPT-xxxx): older in-app notifications stored the ticket
+  // string in their reportId field, so navigating from those must still
+  // resolve to the report.
+  const query = mongoose.isValidObjectId(req.params.id)
+    ? { _id: req.params.id }
+    : { reportId: req.params.id };
+  const report = await Report.findOne(query).populate('userId', 'firstName lastName phone');
   if (!report) return res.status(404).json({ error: 'Not found' });
   const allowed = isOwnerOrAdmin(report.userId, req.user);
   const reporter = report.userId;
@@ -461,7 +468,7 @@ exports.updateStatus = wrap(async (req, res) => {
       await notifyUsers({
         recipients: [report.userId],
         type: 'report_status',
-        reportId: report.reportId,
+        reportId: report.id,
         title: `Report ${report.reportId}`,
         body: `Status changed to ${label}`,
         pushTitle: `Report ${report.reportId} — ${label}`,
