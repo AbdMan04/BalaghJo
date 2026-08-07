@@ -225,6 +225,9 @@ class AppStrings {
     'admin.you': 'you',
     'admin.sent': 'Sent:',
     'admin.solved': 'Solved:',
+    'admin.last_updated': 'Last updated',
+    'admin.refresh': 'Refresh',
+    'admin.session_expired': 'Your session expired. Please sign in again.',
   };
 
   static const _ar = <String, String>{
@@ -449,6 +452,9 @@ class AppStrings {
     'admin.you': 'أنت',
     'admin.sent': 'أُرسل:',
     'admin.solved': 'تم الحل:',
+    'admin.last_updated': 'آخر تحديث',
+    'admin.refresh': 'تحديث',
+    'admin.session_expired': 'انتهت جلستك. يرجى تسجيل الدخول مجدداً.',
   };
 
   // Resolves a key against the active locale. Watches LocaleState so any

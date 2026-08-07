@@ -9,25 +9,54 @@ import '../../data/api/admin_api.dart';
 import '../../data/models/admin_stats.dart';
 import '../widgets/animations.dart';
 import '../widgets/category_icon.dart';
+import '../widgets/freshness_bar.dart';
 import '../widgets/remote_view.dart';
+import '../widgets/route_aware_polling.dart';
 
 class AdminOverviewScreen extends StatefulWidget {
-  const AdminOverviewScreen({super.key});
+  /// True while this tab is the selected dashboard tab; polling is gated on
+  /// it so only the visible tab issues background refreshes.
+  final bool active;
+  const AdminOverviewScreen({super.key, this.active = true});
 
   @override
   State<AdminOverviewScreen> createState() => _AdminOverviewScreenState();
 }
 
-class _AdminOverviewScreenState extends State<AdminOverviewScreen> {
+class _AdminOverviewScreenState extends State<AdminOverviewScreen>
+    with RouteAwarePolling {
   final _api = AdminApi();
+  final _viewKey = GlobalKey<RemoteViewState<AdminStats>>();
+  DateTime? _lastUpdated;
+
+  @override
+  Duration get pollInterval => const Duration(seconds: 30);
+
+  @override
+  Future<void> poll() async {
+    if (!widget.active) return;
+    _viewKey.currentState?.reload();
+  }
+
+  @override
+  void didUpdateWidget(AdminOverviewScreen old) {
+    super.didUpdateWidget(old);
+    if (widget.active && !old.active) poll();
+  }
 
   @override
   Widget build(BuildContext context) {
     return RemoteView<AdminStats>(
+      key: _viewKey,
       load: _api.stats,
+      onData: (_) {
+        if (mounted) setState(() => _lastUpdated = DateTime.now());
+      },
       builder: (context, s) => ListView(
         padding: const EdgeInsets.all(16),
         children: [
+          FreshnessBar(lastUpdated: _lastUpdated, onRefresh: poll),
+          const SizedBox(height: 8),
           Wrap(
             spacing: 12,
             runSpacing: 12,

@@ -15,18 +15,24 @@ import '../../data/api/admin_api.dart';
 import '../../data/models/report.dart';
 import '../widgets/animations.dart';
 import '../widgets/category_icon.dart';
+import '../widgets/freshness_bar.dart';
 import '../widgets/remote_view.dart';
+import '../widgets/route_aware_polling.dart';
 import '../widgets/status_badge.dart';
 import 'admin_report_detail_screen.dart';
 
 class AdminReportsScreen extends StatefulWidget {
-  const AdminReportsScreen({super.key});
+  /// True while this tab is the selected dashboard tab; polling is gated on
+  /// it so only the visible tab issues background refreshes.
+  final bool active;
+  const AdminReportsScreen({super.key, this.active = true});
 
   @override
   State<AdminReportsScreen> createState() => _AdminReportsScreenState();
 }
 
-class _AdminReportsScreenState extends State<AdminReportsScreen> {
+class _AdminReportsScreenState extends State<AdminReportsScreen>
+    with RouteAwarePolling {
   final _api = AdminApi();
   final _search = DebouncedSearch();
   final _listKey = GlobalKey<RemoteViewState<AdminReportPage>>();
@@ -34,6 +40,10 @@ class _AdminReportsScreenState extends State<AdminReportsScreen> {
   String? _nextCursor;
   String? _statusFilter;
   String? _categoryFilter;
+  DateTime? _lastUpdated;
+
+  @override
+  Duration get pollInterval => const Duration(seconds: 30);
 
   @override
   void initState() {
@@ -46,6 +56,18 @@ class _AdminReportsScreenState extends State<AdminReportsScreen> {
   void dispose() {
     _search.dispose();
     super.dispose();
+  }
+
+  @override
+  Future<void> poll() async {
+    if (!widget.active) return;
+    _listKey.currentState?.reload();
+  }
+
+  @override
+  void didUpdateWidget(AdminReportsScreen old) {
+    super.didUpdateWidget(old);
+    if (widget.active && !old.active) _listKey.currentState?.reload();
   }
 
   void _reload() {
@@ -62,6 +84,8 @@ class _AdminReportsScreenState extends State<AdminReportsScreen> {
           statusFilter: _statusFilter,
           categoryFilter: _categoryFilter,
           searchController: _search.controller,
+          lastUpdated: _lastUpdated,
+          onRefresh: poll,
           onStatus: (v) {
             setState(() => _statusFilter = v);
             _reload();
@@ -74,7 +98,10 @@ class _AdminReportsScreenState extends State<AdminReportsScreen> {
         Expanded(
           child: RemoteView<AdminReportPage>(
             key: _listKey,
-            onData: (page) => _nextCursor = page.nextCursor,
+            onData: (page) {
+              _nextCursor = page.nextCursor;
+              if (mounted) setState(() => _lastUpdated = DateTime.now());
+            },
             load: () => _api.listReports(
               status: _statusFilter,
               category: _categoryFilter,
@@ -127,6 +154,8 @@ class _FilterBar extends StatelessWidget {
   final String? statusFilter;
   final String? categoryFilter;
   final TextEditingController searchController;
+  final DateTime? lastUpdated;
+  final VoidCallback onRefresh;
   final ValueChanged<String?> onStatus;
   final ValueChanged<String?> onCategory;
 
@@ -134,6 +163,8 @@ class _FilterBar extends StatelessWidget {
     required this.statusFilter,
     required this.categoryFilter,
     required this.searchController,
+    required this.lastUpdated,
+    required this.onRefresh,
     required this.onStatus,
     required this.onCategory,
   });
@@ -174,6 +205,8 @@ class _FilterBar extends StatelessWidget {
               ],
             ),
           ),
+          const SizedBox(height: 6),
+          FreshnessBar(lastUpdated: lastUpdated, onRefresh: onRefresh),
         ],
       ),
     );

@@ -4,6 +4,7 @@
 // GlobalKey<RemoteViewState<T>> when filters or pagination change.
 // The interface is the whole loading contract: screens become declarative.
 import 'package:flutter/material.dart';
+import '../../core/api_errors.dart';
 import '../../core/strings.dart';
 import '../../core/theme.dart';
 
@@ -66,7 +67,7 @@ class RemoteViewState<T> extends State<RemoteView<T>> {
     } catch (e) {
       if (!mounted) return;
       setState(() {
-        _error = '$e';
+        _error = cleanErrorMessage(e);
         _loading = false;
       });
     }
