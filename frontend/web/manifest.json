@@ -1,11 +1,11 @@
 {
-    "name": "balaghjo",
-    "short_name": "balaghjo",
+    "name": "BalaghJo — Civic Reports",
+    "short_name": "BalaghJo",
     "start_url": ".",
     "display": "standalone",
-    "background_color": "#0175C2",
-    "theme_color": "#0175C2",
-    "description": "A new Flutter project.",
+    "background_color": "#F7F4EF",
+    "theme_color": "#17191C",
+    "description": "BalaghJo civic reporting app and admin dashboard.",
     "orientation": "portrait-primary",
     "prefer_related_applications": false,
     "icons": [
