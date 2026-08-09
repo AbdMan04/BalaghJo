@@ -111,13 +111,18 @@ Future<bool> runReportDeleteFlow({
     if (!snackbarClosed) messenger.hideCurrentSnackBar();
   });
   controller.closed.then((_) async {
-    if (!context.mounted) return;
+    // Undo check: tapping Undo removes the id from pendingIds, so this
+    // becomes a no-op. Reading the shared set is safe even after the owning
+    // screen is disposed.
     if (!pendingIds.contains(report.id)) return;
+    // The API delete must fire even if the owning screen was disposed by a
+    // quick tab switch — otherwise the report silently survives and
+    // reappears on the next visit. Mutating pendingIds is harmless without
+    // a rebuild because the screen is gone.
     try {
       await api.delete(report.id);
-      if (!context.mounted) return;
       pendingIds.remove(report.id);
-      await onDeleted();
+      if (context.mounted) await onDeleted();
     } catch (e) {
       if (!context.mounted) return;
       setState(() => pendingIds.remove(report.id));
