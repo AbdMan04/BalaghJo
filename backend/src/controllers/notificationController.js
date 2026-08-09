@@ -18,6 +18,14 @@ exports.list = wrap(async (req, res) => {
   });
 });
 
+exports.unreadCount = wrap(async (req, res) => {
+  const unread = await Notification.countDocuments({
+    user: req.user.id,
+    read: false,
+  });
+  res.json({ unread });
+});
+
 exports.markRead = wrap(async (req, res) => {
   const { ids } = req.body;
   const list = Array.isArray(ids) ? ids.filter((x) => typeof x === 'string') : [];

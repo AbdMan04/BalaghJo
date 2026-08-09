@@ -11,6 +11,11 @@ class NotificationApi {
         .toList();
   }
 
+  Future<int> unreadCount() async {
+    final res = await _api.get('/api/notifications/unread-count');
+    return (res['unread'] as num?)?.toInt() ?? 0;
+  }
+
   Future<void> markRead(List<String> ids) async {
     if (ids.isEmpty) return;
     await _api.patch('/api/notifications/read', {'ids': ids});

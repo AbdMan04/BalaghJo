@@ -5,6 +5,7 @@ const ctrl = require('../controllers/notificationController');
 router.use(authRequired);
 
 router.get('/', ctrl.list);
+router.get('/unread-count', ctrl.unreadCount);
 router.patch('/read', ctrl.markRead);
 
 module.exports = router;
