@@ -172,9 +172,9 @@ class _FilterBar extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      color: Colors.white,
       padding: const EdgeInsets.fromLTRB(16, 12, 16, 8),
       decoration: const BoxDecoration(
+        color: Colors.white,
         border: Border(bottom: BorderSide(color: AppColors.border)),
       ),
       child: Column(
@@ -357,9 +357,9 @@ class _PagerBar extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      color: Colors.white,
       padding: const EdgeInsets.all(12),
       decoration: const BoxDecoration(
+        color: Colors.white,
         border: Border(top: BorderSide(color: AppColors.border)),
       ),
       child: Row(

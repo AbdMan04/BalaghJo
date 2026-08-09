@@ -11,8 +11,17 @@ class AppColors {
   /// Warm off-white scaffold. Replaces the cool slate gray.
   static const paper = Color(0xFFF7F4EF);
 
+  /// Deeper warm paper for nested shells and chart backdrops.
+  static const paperDeep = Color(0xFFEFE9DF);
+
   /// Road-sign yellow — the single brand accent.
   static const safety = Color(0xFFFFC72B);
+
+  /// Softer safety yellow for gradients and glows.
+  static const safetySoft = Color(0xFFFFD84D);
+
+  /// Asphalt lifted a step — hero gradients, hover fills on the sidebar.
+  static const inkElevated = Color(0xFF23262C);
 
   /// Civic blue for links and interactive text only.
   static const link = Color(0xFF0B5CA8);

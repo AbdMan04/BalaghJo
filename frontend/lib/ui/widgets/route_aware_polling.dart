@@ -16,6 +16,7 @@ mixin RouteAwarePolling<T extends StatefulWidget> on State<T>
   Timer? _pollTimer;
   bool _polling = false;
   bool _screenActive = false;
+  bool _subscribed = false;
   final _LifecycleForwarder _lifecycle = _LifecycleForwarder();
 
   // Single-device latency between server cache refresh (5s public, 15s
@@ -29,14 +30,24 @@ mixin RouteAwarePolling<T extends StatefulWidget> on State<T>
     super.initState();
     _lifecycle.host = this;
     WidgetsBinding.instance.addObserver(_lifecycle);
-    final route = ModalRoute.of(context);
-    if (route is ModalRoute<void>) {
-      appRouteObserver.subscribe(this, route);
-    }
     // Newly mounted screens run their own initial load, so just arm the
     // timer instead of issuing a redundant fetch here.
     _screenActive = true;
     _pollTimer = Timer.periodic(pollInterval, (_) => _poll());
+  }
+
+  // ModalRoute.of resolves through an inherited widget, which is illegal
+  // before initState completes, so the route subscription is deferred until
+  // the first dependency pass. Guarded so it subscribes exactly once.
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    if (_subscribed) return;
+    _subscribed = true;
+    final route = ModalRoute.of(context);
+    if (route is ModalRoute<void>) {
+      appRouteObserver.subscribe(this, route);
+    }
   }
 
   @override
