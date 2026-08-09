@@ -62,9 +62,11 @@ class MyReportsRow extends StatelessWidget {
                 instantRoute(ReportDetailScreen(reportId: report.id))),
             child: Container(
               padding: const EdgeInsets.all(14),
+              // The outer ClipRRect provides the rounded corners, so the
+              // card itself must NOT combine borderRadius with the
+              // non-uniform Border below — that asserts during paint().
               decoration: BoxDecoration(
                 color: Colors.white,
-                borderRadius: BorderRadius.circular(AppRadius.md),
                 // Ticket stub: category-coloured bar along the leading edge
                 // carries the category; the report ID labels the stub.
                 border: Border(
