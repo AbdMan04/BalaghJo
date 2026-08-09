@@ -154,6 +154,30 @@ exports.createReport = wrap(async (req, res) => {
   invalidateUserSummary(req.user.id);
   invalidatePublicLists();
   invalidateMyLists();
+
+  // New-report notification: in-app row + FCM push to every admin's
+  // registered devices (covers the web-dashboard push path). Fire-and-
+  // forget so submission isn't serialized behind the admin fan-out.
+  void (async () => {
+    try {
+      const admins = await User.find({ role: 'admin' }).select('_id');
+      if (admins.length === 0) return;
+      const headline = report.title || 'A new report was submitted';
+      await notifyUsers({
+        recipients: admins.map((a) => a._id),
+        type: 'new_report',
+        reportId: report.id,
+        title: `New report ${report.reportId}`,
+        body: headline,
+        pushTitle: `New report ${report.reportId}`,
+        pushBody: headline,
+        data: { type: 'new_report', reportId: report.reportId },
+      });
+    } catch (err) {
+      console.error('[notif] failed to notify admins:', err.message);
+    }
+  })();
+
   res.status(201).json({ report: report.toPublicJSON() });
 });
 

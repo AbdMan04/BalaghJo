@@ -1,25 +1,37 @@
 // FirebaseService — FCM push notifications (FR-7).
 //
 // Initializes Firebase, keeps the backend's device-token list in sync so
-// the API can push report-status updates and announcements (Phase 5), and
-// renders notifications on the device itself:
-//   - background/terminated: the top-level background handler shows the
-//     system notification via flutter_local_notifications,
-//   - foreground: onMessage shows a local notification (FCM only shows the
-//     tray notification automatically when the app is not in the
-//     foreground), and
-//   - a refreshed FCM token is re-registered with the backend.
-// Everything is guarded: on web (admin dashboard), on platforms without a
-// google-services.json, or when the API has push disabled, these calls are
-// safe no-ops.
+// the API can push report-status updates, announcements, and new-report
+// alerts (Phase 5), and renders notifications:
+//   - mobile background/terminated: the top-level background handler shows
+//     the system notification via flutter_local_notifications,
+//   - mobile foreground: onMessage shows a local notification (FCM only
+//     shows the tray notification automatically when the app is not in the
+//     foreground),
+//   - web (admin dashboard): background/closed-tab pushes are displayed by
+//     web/firebase-messaging-sw.js (the browser's own service worker), so
+//     nothing runs here while the page is open; getToken() still registers
+//     a web token with the backend so the API can push to the browser.
+// Everything is guarded: on platforms without a google-services.json or
+// when the API has push disabled, these calls are safe no-ops.
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import '../data/api/notification_api.dart';
+import '../firebase_options.dart';
 
 const _channelId = 'balaghjo';
 const _channelName = 'BalaghJo';
+
+// Web-push VAPID key (Firebase Console -> Project settings -> Cloud
+// Messaging -> Web Push certificates). It is a public key — safe to commit
+// here; the private key stays in the Firebase Console. Override at build
+// time with `--dart-define=FCM_VAPID_KEY=<key>` if the project changes.
+const _vapidKeyOverride = String.fromEnvironment('FCM_VAPID_KEY');
+const _vapidKey = _vapidKeyOverride == ''
+    ? 'BLsEoWh7aarVUQeJoaaDxh4TmlupNs_-aSsLelbBb8CqmSxId1bKahNamRZ96o1q3vMHia1YfJqzuLzjHZ-lZjQ'
+    : _vapidKeyOverride;
 
 final _localNotifications = FlutterLocalNotificationsPlugin();
 
@@ -62,7 +74,23 @@ class FirebaseService {
   static bool _ready = false;
 
   static Future<void> init() async {
-    if (_ready || kIsWeb) return;
+    if (_ready) return;
+    if (kIsWeb) {
+      // Web path: initialize the web project so getToken() can issue a
+      // browser push token. No local-notifications/background handler —
+      // the service worker at /firebase-messaging-sw.js owns those. The
+      // browser's permission prompt is deferred to registerToken(), which
+      // runs after login, not here at startup.
+      try {
+        await Firebase.initializeApp(
+          options: DefaultFirebaseOptions.currentPlatform,
+        );
+        _ready = true;
+      } catch (_) {
+        // Firebase not configured for this project; push is a no-op.
+      }
+      return;
+    }
     try {
       await Firebase.initializeApp();
       await _initLocalNotifications();
@@ -84,7 +112,9 @@ class FirebaseService {
   static Future<void> registerToken() async {
     if (!_ready) return;
     try {
-      final token = await FirebaseMessaging.instance.getToken();
+      final token = await FirebaseMessaging.instance.getToken(
+        vapidKey: kIsWeb ? _vapidKey : null,
+      );
       if (token != null) await NotificationApi().registerDeviceToken(token);
     } catch (_) {}
   }
@@ -92,7 +122,9 @@ class FirebaseService {
   static Future<void> unregisterToken() async {
     if (!_ready) return;
     try {
-      final token = await FirebaseMessaging.instance.getToken();
+      final token = await FirebaseMessaging.instance.getToken(
+        vapidKey: kIsWeb ? _vapidKey : null,
+      );
       if (token != null) await NotificationApi().unregisterDeviceToken(token);
     } catch (_) {}
   }

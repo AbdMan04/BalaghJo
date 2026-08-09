@@ -160,6 +160,9 @@ class AuthState extends ChangeNotifier {
 
   void _syncPush() {
     if (_token == null) return;
+    // On the web dashboard only admins need pushes (new-report alerts); a
+    // citizen opening the site shouldn't be asked for notification access.
+    if (kIsWeb && _user?.role != 'admin') return;
     unawaited(
       FirebaseService.init().then((_) => FirebaseService.registerToken()),
     );
