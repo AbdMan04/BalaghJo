@@ -16,8 +16,6 @@ const { notifyUsers } = require('../services/notifyService');
 const { TtlCache } = require('../utils/ttlCache');
 const { STATUSES, CATEGORIES, STATUS_TRANSITIONS } = require('../models/Report');
 
-const STATUS_LABELS = { pending: 'Pending', in_progress: 'In Progress', resolved: 'Resolved' };
-
 // Per-user summary is safe to cache for 15s because every write that can
 // change it (create/delete/status update) invalidates the owner's entry.
 const summaryCache = new TtlCache({ maxEntries: 2000 });
@@ -162,15 +160,18 @@ exports.createReport = wrap(async (req, res) => {
     try {
       const admins = await User.find({ role: 'admin' }).select('_id');
       if (admins.length === 0) return;
-      const headline = report.title || 'A new report was submitted';
+      const placeName =
+        report.address && report.address.trim()
+          ? report.address.trim()
+          : (report.title || '').trim() || 'موقع غير محدد';
       await notifyUsers({
         recipients: admins.map((a) => a._id),
         type: 'new_report',
         reportId: report.id,
-        title: `New report ${report.reportId}`,
-        body: headline,
-        pushTitle: `New report ${report.reportId}`,
-        pushBody: headline,
+        title: 'تحقق من هذا البلاغ',
+        body: placeName,
+        pushTitle: 'تحقق من هذا البلاغ',
+        pushBody: placeName,
         data: { type: 'new_report', reportId: report.reportId },
       });
     } catch (err) {
@@ -494,17 +495,25 @@ exports.updateStatus = wrap(async (req, res) => {
   // FR-7: persist an in-app notification and fire an FCM push to the
   // reporter's registered devices. C6: fire-and-forget so the status
   // PATCH isn't serialized behind notification writes + push fan-out.
-  const label = STATUS_LABELS[status] || status;
+  const placeName =
+    report.address && report.address.trim() ? report.address.trim() : '';
+  const isResolved = status === 'resolved';
+  const title = isResolved
+    ? placeName
+      ? `تم حل المشكلة في ${placeName}`
+      : 'تم حل المشكلة!'
+    : 'جارٍ العمل على حل المشكلة';
+  const body = isResolved ? 'سعدنا بخدمتك، استمتع بوقتك!' : 'تحقق من التقدم';
   void (async () => {
     try {
       await notifyUsers({
         recipients: [report.userId],
         type: 'report_status',
         reportId: report.id,
-        title: `Report ${report.reportId}`,
-        body: `Status changed to ${label}`,
-        pushTitle: `Report ${report.reportId} — ${label}`,
-        pushBody: report.title ? report.title : 'Your report status changed',
+        title,
+        body,
+        pushTitle: title,
+        pushBody: body,
         data: { type: 'report_status', reportId: report.reportId, status },
       });
     } catch (err) {

@@ -14,6 +14,8 @@
 //     a web token with the backend so the API can push to the browser.
 // Everything is guarded: on platforms without a google-services.json or
 // when the API has push disabled, these calls are safe no-ops.
+import 'dart:ui' show Color;
+
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/foundation.dart';
@@ -45,7 +47,9 @@ Future<void> firebaseMessagingBackgroundHandler(RemoteMessage message) async {
 }
 
 Future<void> _initLocalNotifications() async {
-  const android = AndroidInitializationSettings('@mipmap/ic_launcher');
+  // Transparent brand pin (drawable/ic_notification.xml) instead of the
+  // full-color launcher icon, so the status bar shows a clean silhouette.
+  const android = AndroidInitializationSettings('ic_notification');
   await _localNotifications.initialize(const InitializationSettings(android: android));
 }
 
@@ -59,6 +63,9 @@ Future<void> _showLocalNotification(RemoteMessage message) async {
       channelDescription: 'Report status updates and announcements',
       importance: Importance.high,
       priority: Priority.high,
+      icon: 'ic_notification',
+      // Road-sign safety yellow — tints the pin instead of the default white.
+      color: Color(0xFFFFC72B),
     ),
   );
   await _localNotifications.show(
