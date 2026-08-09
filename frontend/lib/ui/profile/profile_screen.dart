@@ -14,7 +14,6 @@ import '../../core/theme.dart';
 import '../../data/models/user.dart';
 import '../../state/auth_state.dart';
 import '../auth/onboarding_screen.dart';
-import '../notifications/notifications_screen.dart';
 import '../widgets/animations.dart';
 import '../widgets/password_visibility_toggle.dart';
 
@@ -39,15 +38,6 @@ class ProfileScreen extends StatelessWidget {
                         Icons.lock_outline,
                         context.t('profile.change_password'),
                         () => _showChangePassword(context)),
-                  ),
-                  FadeSlideIn(
-                    delay: const Duration(milliseconds: 320),
-                    child: _row(
-                      Icons.notifications_none,
-                      context.t('profile.notifications'),
-                      () => Navigator.of(context).push(
-                          instantRoute(const NotificationsScreen())),
-                    ),
                   ),
                   FadeSlideIn(
                     delay: const Duration(milliseconds: 380),
@@ -705,7 +695,7 @@ class _CoverHeader extends StatelessWidget {
                             child: Container(
                               padding: const EdgeInsets.all(8),
                               decoration: const BoxDecoration(
-                                color: AppColors.blue,
+                                color: AppColors.safety,
                                 shape: BoxShape.circle,
                                 boxShadow: [
                                   BoxShadow(
@@ -713,7 +703,7 @@ class _CoverHeader extends StatelessWidget {
                                 ],
                               ),
                               child: const Icon(Icons.edit,
-                                  color: Colors.white, size: 16),
+                                  color: AppColors.ink, size: 16),
                             ),
                           ),
                         ),

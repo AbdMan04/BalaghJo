@@ -1,11 +1,14 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter/foundation.dart';
 import 'package:provider/provider.dart';
 import '../../core/strings.dart';
 import '../../core/theme.dart';
+import '../../data/api/notification_api.dart';
 import '../../state/auth_state.dart';
 import '../admin/admin_shell.dart';
+import '../notifications/notifications_screen.dart';
 import '../profile/profile_screen.dart';
 import '../reports/my_reports_screen.dart';
 import '../reports/submit_report_screen.dart';
@@ -44,6 +47,47 @@ class _MainShellState extends State<MainShell> {
     ProfileScreen(),
   ];
 
+  // The notification bell lives in the shell (not a page) so it sits in a
+  // fixed spot above the bottom bar and never animates with page switches.
+  // It is only shown on the My Reports and Profile tabs. The unread badge
+  // refreshes on a short timer so it stays current without an app restart.
+  final _notifApi = NotificationApi();
+  int _unread = 0;
+  Timer? _unreadTimer;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadUnread();
+    _unreadTimer = Timer.periodic(
+        const Duration(seconds: 5), (_) => _loadUnread());
+  }
+
+  @override
+  void dispose() {
+    _unreadTimer?.cancel();
+    super.dispose();
+  }
+
+  Future<void> _loadUnread() async {
+    try {
+      final unread = await _notifApi.unreadCount();
+      if (!mounted || unread == _unread) return;
+      setState(() => _unread = unread);
+    } catch (_) {
+      // Badge is best-effort; keep the last known count on failure.
+    }
+  }
+
+  Future<void> _openNotifications() async {
+    await Navigator.of(context).push(
+      instantRoute(const NotificationsScreen()),
+    );
+    if (!mounted) return;
+    // Returning usually means something was marked read.
+    await _loadUnread();
+  }
+
   void _setIndex(int i) {
     if (i == _index) return;
     setState(() {
@@ -62,27 +106,52 @@ class _MainShellState extends State<MainShell> {
           if (!didPop) _confirmExit(context);
         },
         child: Scaffold(
-          body: AnimatedSwitcher(
-            duration: const Duration(milliseconds: 300),
-            switchInCurve: Curves.easeOutCubic,
-            switchOutCurve: Curves.easeInCubic,
-            transitionBuilder: (child, anim) {
-              final curved =
-                  CurvedAnimation(parent: anim, curve: Curves.easeOutCubic);
-              return FadeTransition(
-                opacity: anim,
-                child: SlideTransition(
-                  position: Tween<Offset>(
-                          begin: Offset(_navDirection, 0), end: Offset.zero)
-                      .animate(curved),
-                  child: child,
+          body: Stack(
+            children: [
+              Positioned.fill(
+                child: AnimatedSwitcher(
+                  duration: const Duration(milliseconds: 300),
+                  switchInCurve: Curves.easeOutCubic,
+                  switchOutCurve: Curves.easeInCubic,
+                  transitionBuilder: (child, anim) {
+                    final curved = CurvedAnimation(
+                        parent: anim, curve: Curves.easeOutCubic);
+                    return FadeTransition(
+                      opacity: anim,
+                      child: SlideTransition(
+                        position: Tween<Offset>(
+                                begin: Offset(_navDirection, 0),
+                                end: Offset.zero)
+                            .animate(curved),
+                        child: child,
+                      ),
+                    );
+                  },
+                  child: KeyedSubtree(
+                    key: ValueKey(_index),
+                    child: _pages[_index],
+                  ),
                 ),
-              );
-            },
-            child: KeyedSubtree(
-              key: ValueKey(_index),
-              child: _pages[_index],
-            ),
+              ),
+              // Fixed above the bottom bar, outside the AnimatedSwitcher so
+              // it never slides/fades on tab changes. Shown on Home, My
+              // Reports and Profile (every tab except Submit Report).
+              if (_index != 1)
+                SafeArea(
+                  top: false,
+                  child: Align(
+                    alignment: AlignmentDirectional.bottomEnd,
+                    child: Padding(
+                      padding: const EdgeInsetsDirectional.only(
+                          bottom: 16, end: 14),
+                      child: _NotificationButton(
+                        count: _unread,
+                        onTap: _openNotifications,
+                      ),
+                    ),
+                  ),
+                ),
+            ],
           ),
           bottomNavigationBar: _BottomBar(index: _index, onTap: _setIndex),
         ),
@@ -138,6 +207,73 @@ class _MainShellState extends State<MainShell> {
       ),
     );
     if (leave == true) SystemNavigator.pop();
+  }
+}
+
+class _NotificationButton extends StatelessWidget {
+  final int count;
+  final VoidCallback onTap;
+  const _NotificationButton({required this.count, required this.onTap});
+
+  @override
+  Widget build(BuildContext context) {
+    return Semantics(
+      button: true,
+      label: context.t('notif.title'),
+      child: PressableScale(
+        onTap: onTap,
+        child: Container(
+          width: 46,
+          height: 46,
+          decoration: BoxDecoration(
+            // Painted road-button treatment, like the report FAB: safety
+            // yellow disc with a black bell, floating above the bottom bar.
+            color: AppColors.safety,
+            shape: BoxShape.circle,
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withValues(alpha: 0.18),
+                blurRadius: 10,
+                offset: const Offset(0, 3),
+              ),
+            ],
+          ),
+          child: Stack(
+            clipBehavior: Clip.none,
+            children: [
+              const Center(
+                child: Icon(Icons.notifications_none,
+                    color: AppColors.ink, size: 22),
+              ),
+              if (count > 0)
+                Positioned(
+                  top: -2,
+                  right: -2,
+                  child: Container(
+                    constraints: const BoxConstraints(minWidth: 16),
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 5, vertical: 1.5),
+                    decoration: BoxDecoration(
+                      color: AppColors.amber,
+                      borderRadius: BorderRadius.circular(9),
+                      border: Border.all(color: Colors.white, width: 1.5),
+                    ),
+                    child: Text(
+                      count > 99 ? '99+' : '$count',
+                      textAlign: TextAlign.center,
+                      style: const TextStyle(
+                        fontSize: 9,
+                        fontWeight: FontWeight.w800,
+                        color: AppColors.ink,
+                      ),
+                    ),
+                  ),
+                ),
+            ],
+          ),
+        ),
+      ),
+    );
   }
 }
 

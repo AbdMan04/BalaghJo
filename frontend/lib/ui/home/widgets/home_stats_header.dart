@@ -24,14 +24,11 @@ class HomeStatsHeader extends StatelessWidget {
           final s = snap.data;
           return Row(
             children: [
-              _stat(Icons.description_outlined,
-                  context.t('home.stat_total'), s?.total ?? 0),
+              _stat(context.t('home.stat_total'), s?.total ?? 0),
               _divider(),
-              _stat(Icons.check_circle_outline,
-                  context.t('home.stat_resolved'), s?.resolved ?? 0),
+              _stat(context.t('home.stat_resolved'), s?.resolved ?? 0),
               _divider(),
-              _stat(Icons.pending_actions_outlined,
-                  context.t('home.stat_active'), s?.active ?? 0),
+              _stat(context.t('home.stat_active'), s?.active ?? 0),
             ],
           );
         },
@@ -39,11 +36,9 @@ class HomeStatsHeader extends StatelessWidget {
     );
   }
 
-  Widget _stat(IconData icon, String label, int value) => Expanded(
+  Widget _stat(String label, int value) => Expanded(
         child: Column(
           children: [
-            Icon(icon, size: 16, color: AppColors.safety),
-            const SizedBox(height: 4),
             AnimatedCounter(
               value: value,
               style: const TextStyle(

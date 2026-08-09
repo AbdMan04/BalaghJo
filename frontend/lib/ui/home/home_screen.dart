@@ -2,10 +2,8 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import '../../core/strings.dart';
 import '../../core/theme.dart';
-import '../../data/api/notification_api.dart';
 import '../../data/api/report_api.dart';
 import '../../data/models/report.dart';
-import '../notifications/notifications_screen.dart';
 import '../reports/reports_map_screen.dart';
 import '../widgets/animations.dart';
 import '../widgets/report_delete_flow.dart';
@@ -25,12 +23,10 @@ class HomeScreen extends StatefulWidget {
 
 class _HomeScreenState extends State<HomeScreen> with RouteAwarePolling {
   final _api = ReportApi();
-  final _notifApi = NotificationApi();
   Future<ReportSummary>? _future;
   ReportSummary? _summary;
   final Set<String> _pendingDeletes = {};
   List<Report>? _lastRecent;
-  int _unread = 0;
 
   // F4/FR-11, NFR-6: poll every 3s so status badges on recent reports
   // refresh within ~5s without an app restart. The timer is paused
@@ -44,26 +40,6 @@ class _HomeScreenState extends State<HomeScreen> with RouteAwarePolling {
     super.initState();
     _future = _api.summary();
     _applySummary(_future!);
-    _loadUnread();
-  }
-
-  Future<void> _loadUnread() async {
-    try {
-      final unread = await _notifApi.unreadCount();
-      if (!mounted || unread == _unread) return;
-      setState(() => _unread = unread);
-    } catch (_) {
-      // Badge is best-effort; keep the last known count on failure.
-    }
-  }
-
-  Future<void> _openNotifications() async {
-    await Navigator.of(context).push(
-      instantRoute(const NotificationsScreen()),
-    );
-    if (!mounted) return;
-    // Returning usually means something was marked read.
-    await _loadUnread();
   }
 
   Future<void> _refresh() async {
@@ -73,7 +49,6 @@ class _HomeScreenState extends State<HomeScreen> with RouteAwarePolling {
       _future = _api.summary();
     });
     await _applySummary(_future!);
-    await _loadUnread();
   }
 
   // Keeps the total-reports counter (and any other summary fields) in sync
@@ -110,7 +85,6 @@ class _HomeScreenState extends State<HomeScreen> with RouteAwarePolling {
     } catch (_) {
       // Keep showing the last good summary on transient network errors.
     }
-    await _loadUnread();
   }
 
   Future<bool> _deleteReport(Report r) => runReportDeleteFlow(
@@ -386,84 +360,7 @@ class _HomeScreenState extends State<HomeScreen> with RouteAwarePolling {
           ),
         ),
       ),
-          SafeArea(
-            child: Align(
-              alignment: AlignmentDirectional.topEnd,
-              child: Padding(
-                padding: const EdgeInsetsDirectional.only(top: 10, end: 14),
-                child: _NotificationButton(
-                  count: _unread,
-                  onTap: _openNotifications,
-                ),
-              ),
-            ),
-          ),
         ],
-      ),
-    );
-  }
-}
-
-class _NotificationButton extends StatelessWidget {
-  final int count;
-  final VoidCallback onTap;
-  const _NotificationButton({required this.count, required this.onTap});
-
-  @override
-  Widget build(BuildContext context) {
-    return Semantics(
-      button: true,
-      label: context.t('notif.title'),
-      child: PressableScale(
-        onTap: onTap,
-        child: Container(
-          width: 46,
-          height: 46,
-          decoration: BoxDecoration(
-            color: Colors.white,
-            shape: BoxShape.circle,
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withValues(alpha: 0.18),
-                blurRadius: 10,
-                offset: const Offset(0, 3),
-              ),
-            ],
-          ),
-          child: Stack(
-            clipBehavior: Clip.none,
-            children: [
-              const Center(
-                child: Icon(Icons.notifications_none,
-                    color: AppColors.ink, size: 22),
-              ),
-              if (count > 0)
-                Positioned(
-                  top: -2,
-                  right: -2,
-                  child: Container(
-                    constraints: const BoxConstraints(minWidth: 16),
-                    padding: const EdgeInsets.symmetric(
-                        horizontal: 5, vertical: 1.5),
-                    decoration: BoxDecoration(
-                      color: AppColors.amber,
-                      borderRadius: BorderRadius.circular(9),
-                      border: Border.all(color: Colors.white, width: 1.5),
-                    ),
-                    child: Text(
-                      count > 99 ? '99+' : '$count',
-                      textAlign: TextAlign.center,
-                      style: const TextStyle(
-                        fontSize: 9,
-                        fontWeight: FontWeight.w800,
-                        color: AppColors.ink,
-                      ),
-                    ),
-                  ),
-                ),
-            ],
-          ),
-        ),
       ),
     );
   }

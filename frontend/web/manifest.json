@@ -3,7 +3,7 @@
     "short_name": "BalaghJo",
     "start_url": ".",
     "display": "standalone",
-    "background_color": "#F7F4EF",
+    "background_color": "#FFC72B",
     "theme_color": "#17191C",
     "description": "BalaghJo civic reporting app and admin dashboard.",
     "orientation": "portrait-primary",

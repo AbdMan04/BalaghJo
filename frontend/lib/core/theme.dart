@@ -73,6 +73,10 @@ ThemeData buildAppTheme() {
       backgroundColor: Colors.white,
       foregroundColor: AppColors.ink,
       elevation: 0,
+      // Keep the bar pure white when content scrolls under it — M3's default
+      // scrolled-under state tints it gray.
+      scrolledUnderElevation: 0,
+      surfaceTintColor: Colors.transparent,
       centerTitle: false,
     ),
     inputDecorationTheme: InputDecorationTheme(
