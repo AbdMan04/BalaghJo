@@ -24,6 +24,7 @@ class FadeSlideIn extends StatelessWidget {
 class PressableScale extends StatefulWidget {
   final Widget child;
   final VoidCallback? onTap;
+  final VoidCallback? onLongPress;
   final double scale;
 
   /// [scale] is how far the control shrinks on press.
@@ -31,6 +32,7 @@ class PressableScale extends StatefulWidget {
     super.key,
     required this.child,
     this.onTap,
+    this.onLongPress,
     this.scale = 0.96,
   });
 
@@ -75,6 +77,7 @@ class _PressableScaleState extends State<PressableScale>
         onTapUp: widget.onTap == null ? null : (_) => _c.reverse(),
         onTapCancel: widget.onTap == null ? null : () => _c.reverse(),
         onTap: widget.onTap,
+        onLongPress: widget.onLongPress,
         behavior: HitTestBehavior.opaque,
         child: AnimatedBuilder(
           animation: _pressed,

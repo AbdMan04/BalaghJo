@@ -21,6 +21,15 @@ class NotificationApi {
     await _api.patch('/api/notifications/read', {'ids': ids});
   }
 
+  Future<void> deleteSelected(List<String> ids) async {
+    if (ids.isEmpty) return;
+    await _api.delete('/api/notifications', body: {'ids': ids});
+  }
+
+  Future<void> deleteAll() async {
+    await _api.delete('/api/notifications');
+  }
+
   Future<void> registerDeviceToken(String token) =>
       _api.post('/api/auth/device-token', {'token': token});
 

@@ -29,6 +29,8 @@ class _NotificationsScreenState extends State<NotificationsScreen>
   bool _loading = true;
   bool _fetching = false;
   bool _error = false;
+  bool _selecting = false;
+  final Set<String> _selected = {};
 
   @override
   Duration get pollInterval => const Duration(seconds: 5);
@@ -65,6 +67,7 @@ class _NotificationsScreenState extends State<NotificationsScreen>
   }
 
   Future<void> _open(AppNotification n) async {
+    if (_selecting) return;
     if (!n.read) {
       await _api.markRead([n.id]);
       setState(() {
@@ -111,6 +114,111 @@ class _NotificationsScreenState extends State<NotificationsScreen>
 
   int get _unread => _items.where((n) => !n.read).length;
 
+  void _startSelecting(String id) {
+    setState(() {
+      _selecting = true;
+      _selected
+        ..clear()
+        ..add(id);
+    });
+  }
+
+  void _beginSelecting() {
+    setState(() {
+      _selecting = true;
+      _selected.clear();
+    });
+  }
+
+  void _exitSelecting() {
+    setState(() {
+      _selecting = false;
+      _selected.clear();
+    });
+  }
+
+  void _toggleSelect(String id) {
+    setState(() {
+      if (_selected.contains(id)) {
+        _selected.remove(id);
+      } else {
+        _selected.add(id);
+      }
+    });
+  }
+
+  void _toggleSelectAll() {
+    setState(() {
+      if (_selected.length == _items.length) {
+        _selected.clear();
+      } else {
+        _selected
+          ..clear()
+          ..addAll(_items.map((n) => n.id));
+      }
+    });
+  }
+
+  Future<void> _confirmDelete() async {
+    final ids = _selected.toList();
+    if (ids.isEmpty) return;
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: Colors.white.withValues(alpha: 0.96),
+        shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(AppRadius.lg)),
+        title: Text(ctx.t('notif.delete_confirm_title'),
+            style: const TextStyle(fontWeight: FontWeight.w800)),
+        content: Text(
+          ctx.t('notif.delete_confirm_body')
+              .replaceAll('{n}', '${ids.length}'),
+          style: const TextStyle(color: AppColors.textMuted, height: 1.4),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(false),
+            child: Text(ctx.t('common.cancel'),
+                style: const TextStyle(
+                    color: AppColors.navy, fontWeight: FontWeight.w700)),
+          ),
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(true),
+            child: Text(ctx.t('common.delete'),
+                style: const TextStyle(
+                    color: AppColors.amber, fontWeight: FontWeight.w700)),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true || !mounted) return;
+    try {
+      await _api.deleteSelected(ids);
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Failed to delete: $e')),
+      );
+      return;
+    }
+    if (!mounted) return;
+    setState(() {
+      _items = _items.where((n) => !ids.contains(n.id)).toList();
+      _selecting = false;
+      _selected.clear();
+    });
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        behavior: SnackBarBehavior.floating,
+        backgroundColor: Colors.black,
+        shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(AppRadius.md)),
+        content: Text(context.t('notif.deleted_toast'),
+            style: const TextStyle(color: Colors.white)),
+      ),
+    );
+  }
+
   String _timeAgo(BuildContext context, DateTime dt) {
     final locale = context.watch<LocaleState>().isArabic ? 'ar' : 'en';
     final diff = DateTime.now().difference(dt);
@@ -127,15 +235,46 @@ class _NotificationsScreenState extends State<NotificationsScreen>
       appBar: AppBar(
         backgroundColor: AppColors.surface,
         surfaceTintColor: Colors.transparent,
-        title: Text(context.t('notif.title'),
-            style: const TextStyle(fontWeight: FontWeight.w800)),
+        leading: _selecting
+            ? IconButton(
+                tooltip: context.t('common.close'),
+                onPressed: _exitSelecting,
+                icon: const Icon(Icons.close, color: AppColors.navy),
+              )
+            : null,
+        title: Text(
+          _selecting
+              ? context.t('notif.selected_count')
+                  .replaceAll('{n}', '${_selected.length}')
+              : context.t('notif.title'),
+          style: const TextStyle(fontWeight: FontWeight.w800),
+        ),
         actions: [
-          if (_unread > 0)
-            IconButton(
-              tooltip: context.t('notif.mark_all'),
-              onPressed: _markAll,
-              icon: const Icon(Icons.done_all, color: AppColors.navy),
+          if (_selecting) ...[
+            TextButton(
+              onPressed: _toggleSelectAll,
+              child: Text(context.t('notif.select_all'),
+                  style: const TextStyle(
+                      color: AppColors.navy, fontWeight: FontWeight.w700)),
             ),
+            IconButton(
+              tooltip: context.t('common.delete'),
+              onPressed: _selected.isEmpty ? null : _confirmDelete,
+              icon: const Icon(Icons.delete_outline, color: AppColors.navy),
+            ),
+          ] else ...[
+            if (_unread > 0)
+              IconButton(
+                tooltip: context.t('notif.mark_all'),
+                onPressed: _markAll,
+                icon: const Icon(Icons.done_all, color: AppColors.navy),
+              ),
+            IconButton(
+              tooltip: context.t('notif.delete'),
+              onPressed: _items.isEmpty ? null : _beginSelecting,
+              icon: const Icon(Icons.delete_outline, color: AppColors.navy),
+            ),
+          ],
         ],
       ),
       body: _buildBody(),
@@ -176,19 +315,45 @@ class _NotificationsScreenState extends State<NotificationsScreen>
   }
 
   Widget _tile(AppNotification n) {
+    final selected = _selected.contains(n.id);
     return PressableScale(
-      onTap: () => _open(n),
+      onTap: _selecting ? () => _toggleSelect(n.id) : () => _open(n),
+      onLongPress: _selecting ? null : () => _startSelecting(n.id),
       child: Container(
         padding: const EdgeInsets.all(14),
         decoration: BoxDecoration(
           color: Colors.white,
           borderRadius: BorderRadius.circular(AppRadius.md),
           border: Border.all(
-              color: n.read ? AppColors.border : AppColors.blue.withValues(alpha: 0.4)),
+            color: selected
+                ? AppColors.amber
+                : n.read
+                    ? AppColors.border
+                    : AppColors.blue.withValues(alpha: 0.4),
+          ),
         ),
         child: Row(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
+            if (_selecting) ...[
+              Container(
+                width: 24,
+                height: 24,
+                margin: const EdgeInsets.only(top: 2),
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: selected ? AppColors.amber : Colors.white,
+                  border: Border.all(
+                    color: selected ? AppColors.amber : AppColors.textMuted,
+                    width: 2,
+                  ),
+                ),
+                child: selected
+                    ? const Icon(Icons.check, size: 16, color: AppColors.ink)
+                    : null,
+              ),
+              const SizedBox(width: 12),
+            ],
             Container(
               padding: const EdgeInsets.all(9),
               decoration: BoxDecoration(

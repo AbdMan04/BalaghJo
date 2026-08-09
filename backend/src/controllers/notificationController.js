@@ -37,3 +37,17 @@ exports.markRead = wrap(async (req, res) => {
   }
   res.json({ ok: true });
 });
+
+// Delete specific notifications (body { ids: [...] }) or all of them when
+// no ids are given — used by the notifications screen's per-item and
+// select-all delete flows. Always scoped to the authenticated user.
+exports.remove = wrap(async (req, res) => {
+  const { ids } = req.body || {};
+  const list = Array.isArray(ids) ? ids.filter((x) => typeof x === 'string') : [];
+  if (list.length > 0) {
+    await Notification.deleteMany({ user: req.user.id, _id: { $in: list } });
+  } else {
+    await Notification.deleteMany({ user: req.user.id });
+  }
+  res.json({ ok: true });
+});

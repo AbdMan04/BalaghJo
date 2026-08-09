@@ -7,5 +7,6 @@ router.use(authRequired);
 router.get('/', ctrl.list);
 router.get('/unread-count', ctrl.unreadCount);
 router.patch('/read', ctrl.markRead);
+router.delete('/', ctrl.remove);
 
 module.exports = router;

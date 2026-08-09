@@ -17,6 +17,7 @@ import '../../core/config.dart';
 import '../../core/date_format.dart';
 import '../../core/strings.dart';
 import '../../core/theme.dart';
+import '../../data/api/api_client.dart';
 import '../../data/api/geocoding_api.dart';
 import '../../data/api/report_api.dart';
 import '../../data/models/report.dart';
@@ -110,7 +111,16 @@ class _ReportDetailScreenState extends State<ReportDetailScreen>
           if (snap.connectionState == ConnectionState.waiting && !snap.hasData) {
             return const Center(child: CircularProgressIndicator(color: AppColors.blue));
           }
-          if (snap.hasError) return Center(child: Text('Error: ${snap.error}'));
+          if (snap.hasError) {
+            // A 404 means the report was deleted; show a clear message
+            // instead of the raw API error (common when a stale
+            // notification opens a report that no longer exists).
+            final err = snap.error;
+            if (err is ApiException && err.status == 404) {
+              return _ReportGoneView();
+            }
+            return Center(child: Text('Error: ${snap.error}'));
+          }
           final r = snap.data!;
           return SingleChildScrollView(
             padding: const EdgeInsets.all(20),
@@ -796,6 +806,42 @@ class _StatusTimeline extends StatelessWidget {
             ],
           );
         }),
+      ),
+    );
+  }
+}
+
+// Shown when the report can't be found (e.g. it was deleted and a stale
+// notification tried to open it).
+class _ReportGoneView extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(32),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Icon(Icons.delete_outline, size: 52, color: AppColors.textMuted),
+            const SizedBox(height: 14),
+            Text(
+              context.t('detail.report_deleted'),
+              textAlign: TextAlign.center,
+              style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 17),
+            ),
+            const SizedBox(height: 6),
+            Text(
+              context.t('detail.report_deleted_sub'),
+              textAlign: TextAlign.center,
+              style: const TextStyle(color: AppColors.textMuted, fontSize: 13),
+            ),
+            const SizedBox(height: 18),
+            OutlinedButton(
+              onPressed: () => Navigator.of(context).maybePop(),
+              child: Text(context.t('common.close')),
+            ),
+          ],
+        ),
       ),
     );
   }

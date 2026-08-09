@@ -102,9 +102,13 @@ Future<bool> runReportDeleteFlow({
     ),
   );
   // Guarantee auto-dismiss at 3s even if the framework's snackbar timer
-  // is interrupted; controller.closed still fires so the delete below runs.
+  // is interrupted. The caller's context may be disposed by a quick tab
+  // switch, so hide via the app-level messenger (which survives navigation)
+  // and only if this snackbar hasn't already closed on its own.
+  var snackbarClosed = false;
+  controller.closed.whenComplete(() => snackbarClosed = true);
   Future.delayed(const Duration(seconds: 3), () {
-    if (context.mounted) messenger.hideCurrentSnackBar();
+    if (!snackbarClosed) messenger.hideCurrentSnackBar();
   });
   controller.closed.then((_) async {
     if (!context.mounted) return;
