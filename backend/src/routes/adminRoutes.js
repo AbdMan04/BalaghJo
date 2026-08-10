@@ -14,5 +14,7 @@ router.get('/users', adminCtrl.listUsers);
 router.patch('/users/:id/role', adminCtrl.updateRole);
 router.get('/announcements', annCtrl.list);
 router.post('/announcements', annCtrl.create);
+router.delete('/announcements/:id', annCtrl.removeOne);
+router.delete('/announcements', annCtrl.removeAll);
 
 module.exports = router;

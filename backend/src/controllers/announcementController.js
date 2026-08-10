@@ -6,6 +6,8 @@
   Fan-out and push are best-effort, fire-and-forget after the announcement
   document is persisted, so a slow push never blocks the admin response.
 - list(): broadcast history for the admin dashboard.
+- removeOne(): delete a single broadcast by id.
+- removeAll(): delete every broadcast.
  */
 const Announcement = require('../models/Announcement');
 const { resolveAudience } = require('../services/audienceResolver');
@@ -80,3 +82,36 @@ exports.list = wrap(async (req, res) => {
     })),
   });
 });
+
+exports.removeOne = wrap(async (req, res) => {
+  const { id } = req.params;
+  if (!id) {
+    return res.status(400).json({ error: 'Announcement id is required' });
+  }
+  const deleted = await Announcement.findByIdAndDelete(id);
+  if (!deleted) {
+    return res.status(404).json({ error: 'Announcement not found' });
+  }
+  res.json({
+    deleted: true,
+    announcements: await listAnnouncements(),
+  });
+});
+
+exports.removeAll = wrap(async (req, res) => {
+  await Announcement.deleteMany({});
+  res.json({ deleted: true, announcements: [] });
+});
+
+async function listAnnouncements() {
+  const announcements = await Announcement.find()
+    .sort({ createdAt: -1, _id: -1 })
+    .limit(50)
+    .populate('sentBy', 'firstName lastName');
+  return announcements.map((a) => ({
+    ...a.toJSON(),
+    sentBy: a.sentBy
+      ? `${a.sentBy.firstName ?? ''} ${a.sentBy.lastName ?? ''}`.trim()
+      : 'Unknown',
+  }));
+}

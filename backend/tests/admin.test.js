@@ -57,6 +57,8 @@ describe('admin dashboard (stats, users, announcements)', () => {
       agent.get('/api/admin/users'),
       agent.get('/api/admin/announcements'),
       agent.post('/api/admin/announcements').send({ title: 'x', body: 'y' }),
+      agent.delete('/api/admin/announcements/abc'),
+      agent.delete('/api/admin/announcements'),
       agent.patch('/api/admin/users/abc/role').send({ role: 'admin' }),
     ]) {
       const res = await req.set('Authorization', `Bearer ${token}`);
@@ -207,5 +209,63 @@ describe('admin dashboard (stats, users, announcements)', () => {
 
     await Announcement.deleteMany({});
     await Notification.deleteMany({});
+  });
+
+  test('an admin can delete a single announcement', async () => {
+    const admin = await adminTokenFor('0791001001');
+    await userTokenFor('0771005001');
+
+    const created = await agent
+      .post('/api/admin/announcements')
+      .set('Authorization', `Bearer ${admin}`)
+      .send({
+        title: 'To remove',
+        body: 'This one will be deleted.',
+        audience: { type: 'all' },
+      });
+    expect(created.status).toBe(201);
+    const id = created.body.announcement.id;
+
+    const gone = await agent
+      .delete(`/api/admin/announcements/${id}`)
+      .set('Authorization', `Bearer ${admin}`);
+    expect(gone.status).toBe(200);
+    expect(gone.body.deleted).toBe(true);
+    expect(gone.body.announcements).toHaveLength(0);
+
+    const missing = await agent
+      .delete(`/api/admin/announcements/${id}`)
+      .set('Authorization', `Bearer ${admin}`);
+    expect(missing.status).toBe(404);
+  });
+
+  test('an admin can delete all announcements', async () => {
+    const admin = await adminTokenFor('0791001001');
+    await userTokenFor('0771005001');
+
+    for (const i of [1, 2]) {
+      const res = await agent
+        .post('/api/admin/announcements')
+        .set('Authorization', `Bearer ${admin}`)
+        .send({
+          title: `Broadcast ${i}`,
+          body: 'Body text',
+          audience: { type: 'all' },
+        });
+      expect(res.status).toBe(201);
+    }
+
+    const cleared = await agent
+      .delete('/api/admin/announcements')
+      .set('Authorization', `Bearer ${admin}`);
+    expect(cleared.status).toBe(200);
+    expect(cleared.body.deleted).toBe(true);
+    expect(cleared.body.announcements).toHaveLength(0);
+
+    const history = await agent
+      .get('/api/admin/announcements')
+      .set('Authorization', `Bearer ${admin}`);
+    expect(history.status).toBe(200);
+    expect(history.body.announcements).toHaveLength(0);
   });
 });

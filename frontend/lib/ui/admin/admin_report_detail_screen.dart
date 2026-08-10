@@ -9,6 +9,7 @@ import 'package:flutter_map/flutter_map.dart';
 import 'package:flutter/services.dart';
 import 'package:latlong2/latlong.dart';
 import 'package:provider/provider.dart';
+import 'package:url_launcher/url_launcher.dart';
 import '../../core/config.dart';
 import '../../core/date_format.dart';
 import '../../core/locale_state.dart';
@@ -26,7 +27,8 @@ class AdminReportDetailScreen extends StatefulWidget {
   const AdminReportDetailScreen({super.key, required this.report});
 
   @override
-  State<AdminReportDetailScreen> createState() => _AdminReportDetailScreenState();
+  State<AdminReportDetailScreen> createState() =>
+      _AdminReportDetailScreenState();
 }
 
 class _AdminReportDetailScreenState extends State<AdminReportDetailScreen> {
@@ -66,7 +68,8 @@ class _AdminReportDetailScreenState extends State<AdminReportDetailScreen> {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           behavior: SnackBarBehavior.floating,
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(AppRadius.md)),
+          shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(AppRadius.md)),
           content: Text(successMsg),
         ),
       );
@@ -82,15 +85,33 @@ class _AdminReportDetailScreenState extends State<AdminReportDetailScreen> {
   Future<void> _copyCoords() async {
     final copiedMsg = AppStrings.ofLocaleState(
         context.read<LocaleState>(), 'admin.coords_copied');
-    await Clipboard.setData(ClipboardData(text: '${_report.lat}, ${_report.lng}'));
+    await Clipboard.setData(
+        ClipboardData(text: '${_report.lat}, ${_report.lng}'));
     if (!mounted) return;
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         behavior: SnackBarBehavior.floating,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(AppRadius.md)),
+        shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(AppRadius.md)),
         content: Text(copiedMsg),
       ),
     );
+  }
+
+  Future<void> _openInGoogleMaps() async {
+    final uri = Uri.parse(
+        'https://www.google.com/maps/search/?api=1&query=${_report.lat},${_report.lng}');
+    final opened = await launchUrl(uri, mode: LaunchMode.externalApplication);
+    if (!opened && mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          behavior: SnackBarBehavior.floating,
+          shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(AppRadius.md)),
+          content: Text(context.t('admin.report_gmaps_unavailable')),
+        ),
+      );
+    }
   }
 
   @override
@@ -98,7 +119,8 @@ class _AdminReportDetailScreenState extends State<AdminReportDetailScreen> {
     final cat = ReportCategory.fromApi(_report.category);
     return Scaffold(
       appBar: AppBar(
-        title: Text(_report.reportId, style: const TextStyle(fontWeight: FontWeight.w800)),
+        title: Text(_report.reportId,
+            style: const TextStyle(fontWeight: FontWeight.w800)),
         actions: [
           TextButton.icon(
             onPressed: () => context.read<AuthState>().logout(),
@@ -142,30 +164,38 @@ class _AdminReportDetailScreenState extends State<AdminReportDetailScreen> {
                 const Spacer(),
                 Text(
                   formatDate(_report.createdAt),
-                  style: const TextStyle(color: AppColors.textMuted, fontSize: 12),
+                  style:
+                      const TextStyle(color: AppColors.textMuted, fontSize: 12),
                 ),
               ],
             ),
             const SizedBox(height: 16),
             _sectionTitle(context.t('detail.report_info'), [
               _kv(context, context.t('detail.category'), cat.label),
-              _kv(context, context.t('detail.submitted_on'), formatDate(_report.createdAt)),
+              _kv(context, context.t('detail.submitted_on'),
+                  formatDate(_report.createdAt)),
               if (_report.updatedAt != null)
-                _kv(context, context.t('detail.last_updated'), formatDate(_report.updatedAt!)),
-              _kv(context, context.t('detail.assigned_to'), _report.assignedTo.isEmpty ? '—' : _report.assignedTo),
+                _kv(context, context.t('detail.last_updated'),
+                    formatDate(_report.updatedAt!)),
+              _kv(context, context.t('detail.assigned_to'),
+                  _report.assignedTo.isEmpty ? '—' : _report.assignedTo),
             ]),
             const SizedBox(height: 16),
             _sectionTitle(context.t('detail.reporter_contact'), [
-              _kv(context, 'Name', _report.reporterName.isEmpty ? '—' : _report.reporterName),
-              _kv(context, context.t('profile.phone'), _report.reporterPhone.isEmpty ? '—' : _report.reporterPhone),
+              _kv(context, 'Name',
+                  _report.reporterName.isEmpty ? '—' : _report.reporterName),
+              _kv(context, context.t('profile.phone'),
+                  _report.reporterPhone.isEmpty ? '—' : _report.reporterPhone),
             ]),
             const SizedBox(height: 16),
             _sectionTitle(context.t('detail.user_description'), [
               Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
                 child: Text(
                   _report.description.isEmpty ? '—' : _report.description,
-                  style: const TextStyle(color: AppColors.textMuted, height: 1.5),
+                  style:
+                      const TextStyle(color: AppColors.textMuted, height: 1.5),
                 ),
               ),
             ]),
@@ -179,7 +209,9 @@ class _AdminReportDetailScreenState extends State<AdminReportDetailScreen> {
                     color: AppColors.danger.withValues(alpha: 0.08),
                     borderRadius: BorderRadius.circular(AppRadius.sm),
                   ),
-                  child: Text(_error!, style: const TextStyle(color: AppColors.danger, fontSize: 12)),
+                  child: Text(_error!,
+                      style: const TextStyle(
+                          color: AppColors.danger, fontSize: 12)),
                 ),
               ),
             // Map pin at the stored coordinates (FR-15).
@@ -192,7 +224,10 @@ class _AdminReportDetailScreenState extends State<AdminReportDetailScreen> {
                     ? const SizedBox(
                         height: 52,
                         child: Center(
-                          child: Text('Resolved', style: TextStyle(color: AppColors.success, fontWeight: FontWeight.w700)),
+                          child: Text('Resolved',
+                              style: TextStyle(
+                                  color: AppColors.success,
+                                  fontWeight: FontWeight.w700)),
                         ),
                       )
                     : InputDecorator(
@@ -210,17 +245,23 @@ class _AdminReportDetailScreenState extends State<AdminReportDetailScreen> {
                             isExpanded: true,
                             borderRadius: BorderRadius.circular(AppRadius.md),
                             items: [
-                              for (final s in _forward[_report.status] ?? const [])
+                              for (final s
+                                  in _forward[_report.status] ?? const [])
                                 DropdownMenuItem(
                                   value: s,
-                                  child: Text('${s.labelAr} · ${s.label}',
+                                  child: Text(
+                                    '${s.labelAr} · ${s.label}',
                                     style: const TextStyle(fontSize: 13),
                                   ),
                                 ),
                             ],
-                            onChanged: _saving ? null : (s) {
-                              if (s != null && s != _report.status) _changeStatus(s);
-                            },
+                            onChanged: _saving
+                                ? null
+                                : (s) {
+                                    if (s != null && s != _report.status) {
+                                      _changeStatus(s);
+                                    }
+                                  },
                           ),
                         ),
                       ),
@@ -246,7 +287,11 @@ class _AdminReportDetailScreenState extends State<AdminReportDetailScreen> {
             padding: const EdgeInsets.all(16),
             child: Text(
               title,
-              style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w800, letterSpacing: 0.6, color: AppColors.textMuted),
+              style: const TextStyle(
+                  fontSize: 11,
+                  fontWeight: FontWeight.w800,
+                  letterSpacing: 0.6,
+                  color: AppColors.textMuted),
             ),
           ),
           const Divider(height: 1, color: AppColors.border),
@@ -264,10 +309,16 @@ class _AdminReportDetailScreenState extends State<AdminReportDetailScreen> {
         children: [
           SizedBox(
             width: 110,
-            child: Text(label, style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: AppColors.textMuted)),
+            child: Text(label,
+                style: const TextStyle(
+                    fontSize: 12,
+                    fontWeight: FontWeight.w700,
+                    color: AppColors.textMuted)),
           ),
           Expanded(
-            child: Text(value, style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600)),
+            child: Text(value,
+                style:
+                    const TextStyle(fontSize: 12, fontWeight: FontWeight.w600)),
           ),
         ],
       ),
@@ -287,28 +338,35 @@ class _AdminReportDetailScreenState extends State<AdminReportDetailScreen> {
                 child: SizedBox(
                   height: 180,
                   width: double.infinity,
-                  child: FlutterMap(
-                    options: MapOptions(
-                      initialCenter: LatLng(_report.lat, _report.lng),
-                      initialZoom: MapConfig.locationZoom,
-                      minZoom: MapConfig.minZoom,
-                      maxZoom: MapConfig.maxZoom,
-                      cameraConstraint: MapConfig.cameraConstraint(),
-                      interactionOptions: const InteractionOptions(flags: InteractiveFlag.drag | InteractiveFlag.pinchZoom | InteractiveFlag.doubleTapZoom),
-                    ),
-                    children: [
-                      MapConfig.tileLayer(),
-                      MarkerLayer(
-                        markers: [
-                          Marker(
-                            point: LatLng(_report.lat, _report.lng),
-                            width: 34,
-                            height: 34,
-                            child: const Icon(Icons.location_pin, color: AppColors.danger, size: 34),
-                          ),
-                        ],
+                  child: GestureDetector(
+                    onTap: _openInGoogleMaps,
+                    child: FlutterMap(
+                      options: MapOptions(
+                        initialCenter: LatLng(_report.lat, _report.lng),
+                        initialZoom: MapConfig.locationZoom,
+                        minZoom: MapConfig.minZoom,
+                        maxZoom: MapConfig.maxZoom,
+                        cameraConstraint: MapConfig.cameraConstraint(),
+                        interactionOptions: const InteractionOptions(
+                            flags: InteractiveFlag.drag |
+                                InteractiveFlag.pinchZoom |
+                                InteractiveFlag.doubleTapZoom),
                       ),
-                    ],
+                      children: [
+                        MapConfig.tileLayer(),
+                        MarkerLayer(
+                          markers: [
+                            Marker(
+                              point: LatLng(_report.lat, _report.lng),
+                              width: 34,
+                              height: 34,
+                              child: const Icon(Icons.location_pin,
+                                  color: AppColors.danger, size: 34),
+                            ),
+                          ],
+                        ),
+                      ],
+                    ),
                   ),
                 ),
               )
@@ -320,8 +378,14 @@ class _AdminReportDetailScreenState extends State<AdminReportDetailScreen> {
                 Expanded(
                   child: Text(
                     '${_report.lat.toStringAsFixed(6)}, ${_report.lng.toStringAsFixed(6)}',
-                    style: const TextStyle(fontSize: 12, color: AppColors.textMuted),
+                    style: const TextStyle(
+                        fontSize: 12, color: AppColors.textMuted),
                   ),
+                ),
+                TextButton.icon(
+                  onPressed: _openInGoogleMaps,
+                  icon: const Icon(Icons.map_outlined, size: 16),
+                  label: Text(context.t('admin.report_open_gmaps')),
                 ),
                 TextButton.icon(
                   onPressed: _copyCoords,

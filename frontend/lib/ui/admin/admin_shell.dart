@@ -6,6 +6,7 @@
 // (splash/routing) and the backend rejects non-admin JWTs anyway.
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import '../../core/locale_state.dart';
 import '../../core/strings.dart';
 import '../../core/theme.dart';
 import '../../data/models/user.dart';
@@ -29,10 +30,19 @@ class _AdminShellState extends State<AdminShell> {
   bool _wasAuthenticated = true;
   bool _manualLogout = false;
 
-  static const _titles = ['admin.nav_overview', 'admin.nav_reports', 'admin.nav_announcements', 'admin.nav_users'];
+  static const _titles = [
+    'admin.nav_overview',
+    'admin.nav_reports',
+    'admin.nav_announcements',
+    'admin.nav_users'
+  ];
 
   static const _nav = <(IconData, IconData, String)>[
-    (Icons.space_dashboard_outlined, Icons.space_dashboard, 'admin.nav_overview'),
+    (
+      Icons.space_dashboard_outlined,
+      Icons.space_dashboard,
+      'admin.nav_overview'
+    ),
     (Icons.assignment_outlined, Icons.assignment, 'admin.nav_reports'),
     (Icons.campaign_outlined, Icons.campaign, 'admin.nav_announcements'),
     (Icons.people_outline, Icons.people_outlined, 'admin.nav_users'),
@@ -95,7 +105,8 @@ class _AdminShellState extends State<AdminShell> {
                     onPressed: () => Navigator.of(ctx).pop(false),
                     child: Text(ctx.t('app.no'),
                         style: const TextStyle(
-                            color: AppColors.navy, fontWeight: FontWeight.w700)),
+                            color: AppColors.navy,
+                            fontWeight: FontWeight.w700)),
                   ),
                 ),
               ),
@@ -149,7 +160,8 @@ class _AdminShellState extends State<AdminShell> {
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
                     _WorkspaceHeader(index: _index, compact: compact),
-                    const Divider(height: 1, thickness: 1, color: AppColors.line),
+                    const Divider(
+                        height: 1, thickness: 1, color: AppColors.line),
                     Expanded(
                       child: IndexedStack(
                         index: _index,
@@ -337,8 +349,9 @@ class _NavItemState extends State<_NavItem> {
                   borderRadius: BorderRadius.circular(14),
                 ),
                 child: Row(
-                  mainAxisAlignment:
-                      widget.compact ? MainAxisAlignment.center : MainAxisAlignment.start,
+                  mainAxisAlignment: widget.compact
+                      ? MainAxisAlignment.center
+                      : MainAxisAlignment.start,
                   children: [
                     Icon(active ? widget.selectedIcon : widget.icon,
                         color: fg, size: 20),
@@ -351,7 +364,8 @@ class _NavItemState extends State<_NavItem> {
                           style: TextStyle(
                             color: fg,
                             fontSize: 13.5,
-                            fontWeight: active ? FontWeight.w800 : FontWeight.w600,
+                            fontWeight:
+                                active ? FontWeight.w800 : FontWeight.w600,
                           ),
                         ),
                       ),
@@ -450,8 +464,7 @@ class _SidebarFooter extends StatelessWidget {
 }
 
 // ---------------------------------------------------------------------------
-// Workspace header: admin badge eyebrow, the active section title and a quiet
-// "municipal operations" tag on the far side.
+// Workspace header: admin badge eyebrow and the active section title.
 // ---------------------------------------------------------------------------
 
 class _WorkspaceHeader extends StatelessWidget {
@@ -463,7 +476,8 @@ class _WorkspaceHeader extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       color: Colors.white,
-      padding: EdgeInsets.fromLTRB(compact ? 20 : 28, 14, compact ? 20 : 28, 14),
+      padding:
+          EdgeInsets.fromLTRB(compact ? 20 : 28, 14, compact ? 20 : 28, 14),
       child: Row(
         children: [
           Expanded(
@@ -471,7 +485,8 @@ class _WorkspaceHeader extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
                   decoration: BoxDecoration(
                     color: AppColors.safety,
                     borderRadius: BorderRadius.circular(6),
@@ -496,38 +511,87 @@ class _WorkspaceHeader extends StatelessWidget {
               ],
             ),
           ),
-          if (!compact) ...[
-            const SizedBox(width: 16),
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-              decoration: BoxDecoration(
-                color: AppColors.paper,
-                borderRadius: BorderRadius.circular(999),
-                border: Border.all(color: AppColors.line),
-              ),
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Container(
-                    width: 8,
-                    height: 8,
-                    decoration: const BoxDecoration(
-                        color: AppColors.safety, shape: BoxShape.circle),
-                  ),
-                  const SizedBox(width: 8),
-                  Text(
-                    context.t('admin.city'),
-                    style: const TextStyle(
-                        color: AppColors.textMuted,
-                        fontSize: 11,
-                        fontWeight: FontWeight.w700,
-                        letterSpacing: 0.4),
-                  ),
-                ],
-              ),
+          const _LanguageToggle(),
+        ],
+      ),
+    );
+  }
+}
+
+class _LanguageToggle extends StatelessWidget {
+  const _LanguageToggle();
+
+  @override
+  Widget build(BuildContext context) {
+    final locale = context.watch<LocaleState>();
+    final isArabic = locale.isArabic;
+    return PopupMenuButton<String>(
+      tooltip: context.t('admin.language_title'),
+      initialValue: isArabic ? 'ar' : 'en',
+      onSelected: (value) {
+        final state = context.read<LocaleState>();
+        final target = value == 'ar' ? const Locale('ar') : const Locale('en');
+        if (state.locale == target) return;
+        state.setLocale(target);
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            behavior: SnackBarBehavior.floating,
+            shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(AppRadius.md)),
+            content: Text(context.t('admin.language_updated')),
+          ),
+        );
+      },
+      itemBuilder: (ctx) => [
+        PopupMenuItem(
+          value: 'en',
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              if (!isArabic)
+                const Icon(Icons.check, size: 16, color: AppColors.safety),
+              const SizedBox(width: 8),
+              Text(ctx.t('admin.language_english')),
+            ],
+          ),
+        ),
+        PopupMenuItem(
+          value: 'ar',
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              if (isArabic)
+                const Icon(Icons.check, size: 16, color: AppColors.safety),
+              const SizedBox(width: 8),
+              Text(ctx.t('admin.language_arabic')),
+            ],
+          ),
+        ),
+      ],
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(AppRadius.md),
+          border: Border.all(color: AppColors.border),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Icon(Icons.language_rounded,
+                size: 16, color: AppColors.textMuted),
+            const SizedBox(width: 6),
+            Text(
+              isArabic
+                  ? context.t('admin.language_arabic')
+                  : context.t('admin.language_english'),
+              style: const TextStyle(
+                  fontSize: 12,
+                  fontWeight: FontWeight.w700,
+                  color: AppColors.ink),
             ),
           ],
-        ],
+        ),
       ),
     );
   }

@@ -16,13 +16,16 @@ class AdminAnnouncementsScreen extends StatefulWidget {
   const AdminAnnouncementsScreen({super.key});
 
   @override
-  State<AdminAnnouncementsScreen> createState() => _AdminAnnouncementsScreenState();
+  State<AdminAnnouncementsScreen> createState() =>
+      _AdminAnnouncementsScreenState();
 }
 
 class _AdminAnnouncementsScreenState extends State<AdminAnnouncementsScreen> {
   final _api = AdminApi();
   final _listKey = GlobalKey<RemoteViewState<List<AdminAnnouncement>>>();
   bool _sending = false;
+  String? _deletingId;
+  bool _deletingAll = false;
 
   Future<void> _compose() async {
     final result = await showDialog<_AnnouncementDraft>(
@@ -41,7 +44,10 @@ class _AdminAnnouncementsScreenState extends State<AdminAnnouncementsScreen> {
       );
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(context.t('admin.announce_sent').replaceAll('{n}', '${sent.recipients}'))),
+        SnackBar(
+            content: Text(context
+                .t('admin.announce_sent')
+                .replaceAll('{n}', '${sent.recipients}'))),
       );
       _listKey.currentState?.reload();
     } catch (e) {
@@ -49,6 +55,75 @@ class _AdminAnnouncementsScreenState extends State<AdminAnnouncementsScreen> {
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('$e')));
     } finally {
       if (mounted) setState(() => _sending = false);
+    }
+  }
+
+  Future<bool> _confirmDelete(
+      BuildContext context, String titleKey, String msgKey) async {
+    final ok = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: Text(ctx.t(titleKey)),
+        content: Text(ctx.t(msgKey)),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(false),
+            child: Text(ctx.t('common.cancel')),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.of(ctx).pop(true),
+            style: FilledButton.styleFrom(backgroundColor: AppColors.danger),
+            child: Text(ctx.t('common.delete')),
+          ),
+        ],
+      ),
+    );
+    return ok ?? false;
+  }
+
+  Future<void> _deleteOne(AdminAnnouncement announcement) async {
+    final ok = await _confirmDelete(
+      context,
+      'admin.announce_delete_confirm_title',
+      'admin.announce_delete_confirm_msg',
+    );
+    if (!ok || !mounted) return;
+    setState(() => _deletingId = announcement.id);
+    try {
+      await _api.deleteAnnouncement(announcement.id);
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(context.t('admin.announce_deleted'))),
+      );
+      _listKey.currentState?.reload();
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('$e')));
+    } finally {
+      if (mounted) setState(() => _deletingId = null);
+    }
+  }
+
+  Future<void> _deleteAll() async {
+    final ok = await _confirmDelete(
+      context,
+      'admin.announce_delete_all_confirm_title',
+      'admin.announce_delete_all_confirm_msg',
+    );
+    if (!ok || !mounted) return;
+    setState(() => _deletingAll = true);
+    try {
+      await _api.deleteAllAnnouncements();
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(context.t('admin.announce_delete_all_done'))),
+      );
+      _listKey.currentState?.reload();
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('$e')));
+    } finally {
+      if (mounted) setState(() => _deletingAll = false);
     }
   }
 
@@ -64,7 +139,8 @@ class _AdminAnnouncementsScreenState extends State<AdminAnnouncementsScreen> {
               Expanded(
                 child: Text(
                   context.t('admin.announcements_sub'),
-                  style: const TextStyle(fontSize: 13, color: AppColors.textMuted),
+                  style:
+                      const TextStyle(fontSize: 13, color: AppColors.textMuted),
                 ),
               ),
               ElevatedButton.icon(
@@ -83,11 +159,40 @@ class _AdminAnnouncementsScreenState extends State<AdminAnnouncementsScreen> {
             isEmpty: (l) => l.isEmpty,
             emptyMessage: context.t('admin.announce_empty'),
             emptyIcon: Icons.campaign_outlined,
-            builder: (context, list) => ListView.separated(
-              padding: const EdgeInsets.all(16),
-              itemCount: list.length,
-              separatorBuilder: (_, __) => const SizedBox(height: 10),
-              itemBuilder: (_, i) => _AnnouncementCard(announcement: list[i]),
+            builder: (context, list) => Column(
+              children: [
+                Expanded(
+                  child: ListView.separated(
+                    padding: const EdgeInsets.all(16),
+                    itemCount: list.length,
+                    separatorBuilder: (_, __) => const SizedBox(height: 10),
+                    itemBuilder: (_, i) => _AnnouncementCard(
+                      announcement: list[i],
+                      deleting: _deletingId == list[i].id,
+                      onDelete: () => _deleteOne(list[i]),
+                    ),
+                  ),
+                ),
+                if (list.isNotEmpty)
+                  Padding(
+                    padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+                    child: Align(
+                      alignment: Alignment.centerLeft,
+                      child: TextButton.icon(
+                        onPressed: _deletingAll ? null : _deleteAll,
+                        icon: _deletingAll
+                            ? const SizedBox(
+                                width: 14,
+                                height: 14,
+                                child:
+                                    CircularProgressIndicator(strokeWidth: 2),
+                              )
+                            : const Icon(Icons.delete_sweep_outlined, size: 16),
+                        label: Text(context.t('admin.announce_delete_all')),
+                      ),
+                    ),
+                  ),
+              ],
             ),
           ),
         ),
@@ -150,7 +255,9 @@ class _ComposeDialogState extends State<_ComposeDialog> {
       title: title,
       body: body,
       audience: _audience,
-      category: _audience == AnnouncementAudience.category ? _category.apiValue : null,
+      category: _audience == AnnouncementAudience.category
+          ? _category.apiValue
+          : null,
       phone: _audience == AnnouncementAudience.user ? phone : null,
     ));
   }
@@ -189,18 +296,26 @@ class _ComposeDialogState extends State<_ComposeDialog> {
               const SizedBox(height: 16),
               Text(
                 context.t('admin.announce_audience'),
-                style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 13),
+                style:
+                    const TextStyle(fontWeight: FontWeight.w700, fontSize: 13),
               ),
               const SizedBox(height: 8),
               DropdownButtonFormField<AnnouncementAudience>(
                 initialValue: _audience,
                 decoration: const InputDecoration(isDense: true),
                 items: const [
-                  DropdownMenuItem(value: AnnouncementAudience.all, child: Text('All users')),
-                  DropdownMenuItem(value: AnnouncementAudience.category, child: Text('Users who reported a category')),
-                  DropdownMenuItem(value: AnnouncementAudience.user, child: Text('A single user')),
+                  DropdownMenuItem(
+                      value: AnnouncementAudience.all,
+                      child: Text('All users')),
+                  DropdownMenuItem(
+                      value: AnnouncementAudience.category,
+                      child: Text('Users who reported a category')),
+                  DropdownMenuItem(
+                      value: AnnouncementAudience.user,
+                      child: Text('A single user')),
                 ],
-                onChanged: (v) => setState(() => _audience = v ?? AnnouncementAudience.all),
+                onChanged: (v) =>
+                    setState(() => _audience = v ?? AnnouncementAudience.all),
               ),
               const SizedBox(height: 12),
               if (_audience == AnnouncementAudience.category)
@@ -211,7 +326,8 @@ class _ComposeDialogState extends State<_ComposeDialog> {
                     for (final c in ReportCategory.userSelectable)
                       DropdownMenuItem(value: c, child: Text(c.label)),
                   ],
-                  onChanged: (v) => setState(() => _category = v ?? ReportCategory.pothole),
+                  onChanged: (v) =>
+                      setState(() => _category = v ?? ReportCategory.pothole),
                 ),
               if (_audience == AnnouncementAudience.user)
                 TextField(
@@ -225,7 +341,9 @@ class _ComposeDialogState extends State<_ComposeDialog> {
               if (_error != null)
                 Padding(
                   padding: const EdgeInsets.only(top: 12),
-                  child: Text(_error!, style: const TextStyle(color: AppColors.danger, fontSize: 12)),
+                  child: Text(_error!,
+                      style: const TextStyle(
+                          color: AppColors.danger, fontSize: 12)),
                 ),
             ],
           ),
@@ -248,7 +366,13 @@ class _ComposeDialogState extends State<_ComposeDialog> {
 
 class _AnnouncementCard extends StatelessWidget {
   final AdminAnnouncement announcement;
-  const _AnnouncementCard({required this.announcement});
+  final bool deleting;
+  final VoidCallback? onDelete;
+  const _AnnouncementCard({
+    required this.announcement,
+    this.deleting = false,
+    this.onDelete,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -274,17 +398,36 @@ class _AnnouncementCard extends StatelessWidget {
               Expanded(
                 child: Text(
                   announcement.title,
-                  style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 14),
+                  style: const TextStyle(
+                      fontWeight: FontWeight.w800, fontSize: 14),
                 ),
               ),
               Text(
                 formatDate(announcement.createdAt),
-                style: const TextStyle(fontSize: 11, color: AppColors.textMuted),
+                style:
+                    const TextStyle(fontSize: 11, color: AppColors.textMuted),
               ),
+              if (onDelete != null) ...[
+                const SizedBox(width: 8),
+                deleting
+                    ? const SizedBox(
+                        width: 16,
+                        height: 16,
+                        child: CircularProgressIndicator(strokeWidth: 2),
+                      )
+                    : IconButton(
+                        onPressed: onDelete,
+                        visualDensity: VisualDensity.compact,
+                        tooltip: context.t('admin.announce_delete'),
+                        icon: const Icon(Icons.delete_outline,
+                            size: 18, color: AppColors.danger),
+                      ),
+              ],
             ],
           ),
           const SizedBox(height: 6),
-          Text(announcement.body, style: const TextStyle(fontSize: 13, color: AppColors.textMuted)),
+          Text(announcement.body,
+              style: const TextStyle(fontSize: 13, color: AppColors.textMuted)),
           const SizedBox(height: 8),
           Wrap(
             spacing: 12,
@@ -307,7 +450,8 @@ class _AnnouncementCard extends StatelessWidget {
         children: [
           Icon(icon, size: 14, color: AppColors.textMuted),
           const SizedBox(width: 4),
-          Text(text, style: const TextStyle(fontSize: 11, color: AppColors.textMuted)),
+          Text(text,
+              style: const TextStyle(fontSize: 11, color: AppColors.textMuted)),
         ],
       );
 }

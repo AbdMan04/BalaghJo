@@ -97,4 +97,18 @@ class AdminApi {
     });
     return AdminAnnouncement.fromJson(res['announcement']);
   }
+
+  Future<List<AdminAnnouncement>> deleteAnnouncement(String id) async {
+    final res = await _api.delete('/api/admin/announcements/$id');
+    return ((res['announcements'] as List?) ?? [])
+        .map((e) => AdminAnnouncement.fromJson(e as Map<String, dynamic>))
+        .toList();
+  }
+
+  Future<List<AdminAnnouncement>> deleteAllAnnouncements() async {
+    final res = await _api.delete('/api/admin/announcements');
+    return ((res['announcements'] as List?) ?? [])
+        .map((e) => AdminAnnouncement.fromJson(e as Map<String, dynamic>))
+        .toList();
+  }
 }
