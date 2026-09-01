@@ -48,15 +48,20 @@ class _AdminShellState extends State<AdminShell> {
     (Icons.people_outline, Icons.people_outlined, 'admin.nav_users'),
   ];
 
+  late final AuthState _auth;
+
   @override
   void initState() {
     super.initState();
-    context.read<AuthState>().addListener(_onAuthChanged);
+    // Captured once: dispose() must not look up inherited widgets, which is
+    // unsafe once the element is being unmounted.
+    _auth = context.read<AuthState>();
+    _auth.addListener(_onAuthChanged);
   }
 
   @override
   void dispose() {
-    context.read<AuthState>().removeListener(_onAuthChanged);
+    _auth.removeListener(_onAuthChanged);
     super.dispose();
   }
 
@@ -141,45 +146,91 @@ class _AdminShellState extends State<AdminShell> {
     }
   }
 
+  // Below this width the shell swaps the sidebar for a phone layout (top
+  // app bar + bottom navigation), so the dashboard stays usable in a phone
+  // browser instead of shrinking the desktop rail down to nothing.
+  static const _phoneBreakpoint = 700.0;
+
+  void _setIndex(int i) {
+    if (i == _index) return;
+    setState(() => _index = i);
+  }
+
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      body: LayoutBuilder(
-        builder: (context, constraints) {
-          final compact = constraints.maxWidth < 900;
-          return Row(
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final isPhone = constraints.maxWidth < _phoneBreakpoint;
+        return Scaffold(
+          appBar: isPhone ? _buildPhoneAppBar(context) : null,
+          body: isPhone
+              ? _buildPhoneBody()
+              : _buildDesktopBody(context, constraints.maxWidth),
+          bottomNavigationBar:
+              isPhone ? _MobileNavBar(index: _index, onTap: _setIndex) : null,
+        );
+      },
+    );
+  }
+
+  Widget _buildDesktopBody(BuildContext context, double width) {
+    final compact = width < 900;
+    return Row(
+      children: [
+        _Sidebar(
+          key: const Key('admin_sidebar'),
+          index: _index,
+          compact: compact,
+          onSelect: _setIndex,
+          onLogout: _confirmLogout,
+        ),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              _Sidebar(
-                index: _index,
-                compact: compact,
-                onSelect: (i) => setState(() => _index = i),
-                onLogout: _confirmLogout,
-              ),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: [
-                    _WorkspaceHeader(index: _index, compact: compact),
-                    const Divider(
-                        height: 1, thickness: 1, color: AppColors.line),
-                    Expanded(
-                      child: IndexedStack(
-                        index: _index,
-                        children: [
-                          AdminOverviewScreen(active: _index == 0),
-                          AdminReportsScreen(active: _index == 1),
-                          const AdminAnnouncementsScreen(),
-                          const AdminUsersScreen(),
-                        ],
-                      ),
-                    ),
-                  ],
-                ),
-              ),
+              _WorkspaceHeader(index: _index, compact: compact),
+              const Divider(height: 1, thickness: 1, color: AppColors.line),
+              Expanded(child: _buildTabs()),
             ],
-          );
-        },
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildPhoneBody() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [Expanded(child: _buildTabs())],
+    );
+  }
+
+  Widget _buildTabs() => IndexedStack(
+        index: _index,
+        children: [
+          AdminOverviewScreen(active: _index == 0),
+          AdminReportsScreen(active: _index == 1),
+          const AdminAnnouncementsScreen(),
+          const AdminUsersScreen(),
+        ],
+      );
+
+  PreferredSizeWidget _buildPhoneAppBar(BuildContext context) {
+    return AppBar(
+      leading: const _BrandMark(compact: true),
+      title: Text(
+        context.t(_titles[_index]),
+        style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 17),
       ),
+      actions: [
+        const _LanguageToggle(),
+        IconButton(
+          tooltip: context.t('profile.log_out'),
+          onPressed: _confirmLogout,
+          icon: const Icon(Icons.logout_rounded, size: 20),
+        ),
+        const SizedBox(width: 4),
+      ],
     );
   }
 }
@@ -196,6 +247,7 @@ class _Sidebar extends StatelessWidget {
   final VoidCallback onLogout;
 
   const _Sidebar({
+    super.key,
     required this.index,
     required this.compact,
     required this.onSelect,
@@ -525,6 +577,10 @@ class _LanguageToggle extends StatelessWidget {
   Widget build(BuildContext context) {
     final locale = context.watch<LocaleState>();
     final isArabic = locale.isArabic;
+    // Resolved in build: itemBuilder and onSelected run outside the build
+    // phase (tap handler), where context.watch is illegal.
+    final enLabel = context.t('admin.language_english');
+    final arLabel = context.t('admin.language_arabic');
     return PopupMenuButton<String>(
       tooltip: context.t('admin.language_title'),
       initialValue: isArabic ? 'ar' : 'en',
@@ -533,16 +589,19 @@ class _LanguageToggle extends StatelessWidget {
         final target = value == 'ar' ? const Locale('ar') : const Locale('en');
         if (state.locale == target) return;
         state.setLocale(target);
+        // Read-based so it resolves in the freshly-selected locale without
+        // an illegal context.watch inside the gesture handler.
+        final msg = AppStrings.ofLocaleState(state, 'admin.language_updated');
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             behavior: SnackBarBehavior.floating,
             shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(AppRadius.md)),
-            content: Text(context.t('admin.language_updated')),
+            content: Text(msg),
           ),
         );
       },
-      itemBuilder: (ctx) => [
+      itemBuilder: (_) => [
         PopupMenuItem(
           value: 'en',
           child: Row(
@@ -551,7 +610,7 @@ class _LanguageToggle extends StatelessWidget {
               if (!isArabic)
                 const Icon(Icons.check, size: 16, color: AppColors.safety),
               const SizedBox(width: 8),
-              Text(ctx.t('admin.language_english')),
+              Text(enLabel),
             ],
           ),
         ),
@@ -563,7 +622,7 @@ class _LanguageToggle extends StatelessWidget {
               if (isArabic)
                 const Icon(Icons.check, size: 16, color: AppColors.safety),
               const SizedBox(width: 8),
-              Text(ctx.t('admin.language_arabic')),
+              Text(arLabel),
             ],
           ),
         ),
@@ -589,6 +648,122 @@ class _LanguageToggle extends StatelessWidget {
                   fontSize: 12,
                   fontWeight: FontWeight.w700,
                   color: AppColors.ink),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Phone navigation bar: the sidebar collapses to a bottom tab bar below the
+// phone breakpoint, mirroring the citizen app's road-marking treatment so
+// the dashboard and the app feel like one product.
+// ---------------------------------------------------------------------------
+
+class _MobileNavBar extends StatelessWidget {
+  final int index;
+  final ValueChanged<int> onTap;
+  const _MobileNavBar({
+    required this.index,
+    required this.onTap,
+  });
+
+  static const _items = <(IconData, IconData, String)>[
+    (
+      Icons.space_dashboard_outlined,
+      Icons.space_dashboard,
+      'admin.nav_overview'
+    ),
+    (Icons.assignment_outlined, Icons.assignment, 'admin.nav_reports'),
+    (Icons.campaign_outlined, Icons.campaign, 'admin.nav_announcements'),
+    (Icons.people_outline, Icons.people_outlined, 'admin.nav_users'),
+  ];
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      key: const Key('admin_bottom_nav'),
+      color: Colors.white,
+      child: SafeArea(
+        top: false,
+        child: SizedBox(
+          height: 66,
+          child: Directionality(
+            // Fixed LTR positions even in the Arabic locale, like the app's
+            // bottom bar; labels still translate.
+            textDirection: TextDirection.ltr,
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceAround,
+              children: [
+                for (var i = 0; i < _items.length; i++)
+                  _MobileNavItem(
+                    icon: _items[i].$1,
+                    selectedIcon: _items[i].$2,
+                    label: context.t(_items[i].$3),
+                    active: index == i,
+                    onTap: () => onTap(i),
+                  ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _MobileNavItem extends StatelessWidget {
+  final IconData icon;
+  final IconData selectedIcon;
+  final String label;
+  final bool active;
+  final VoidCallback onTap;
+  const _MobileNavItem({
+    required this.icon,
+    required this.selectedIcon,
+    required this.label,
+    required this.active,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return PressableScale(
+      onTap: onTap,
+      child: SizedBox(
+        width: 72,
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(active ? selectedIcon : icon,
+                color: active ? AppColors.ink : AppColors.textMuted, size: 24),
+            const SizedBox(height: 4),
+            MediaQuery.withClampedTextScaling(
+              maxScaleFactor: 1.3,
+              child: Text(
+                label,
+                textAlign: TextAlign.center,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: TextStyle(
+                  fontSize: 10,
+                  fontWeight: active ? FontWeight.w800 : FontWeight.w600,
+                  color: active ? AppColors.ink : AppColors.textMuted,
+                ),
+              ),
+            ),
+            const SizedBox(height: 4),
+            AnimatedContainer(
+              duration: const Duration(milliseconds: 220),
+              curve: Curves.easeOutCubic,
+              width: active ? 22 : 0,
+              height: 3,
+              decoration: BoxDecoration(
+                color: AppColors.safety,
+                borderRadius: BorderRadius.circular(2),
+              ),
             ),
           ],
         ),
