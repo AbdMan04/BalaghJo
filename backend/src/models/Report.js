@@ -5,17 +5,7 @@
   the report detail screen.
  */
 const mongoose = require('mongoose');
-
-const STATUSES = ['pending', 'in_progress', 'resolved'];
-const CATEGORIES = ['pothole', 'waste', 'lighting', 'other'];
-
-// F4 / FR-16 controlled workflow: a report can only move forward
-// through the lifecycle (Pending -> In Progress -> Resolved).
-const STATUS_TRANSITIONS = {
-  pending: ['in_progress'],
-  in_progress: ['resolved'],
-  resolved: [],
-};
+const { STATUSES, CATEGORIES, STATUS_TRANSITIONS } = require('../config/constants');
 
 const reportSchema = new mongoose.Schema(
   {

@@ -8,7 +8,7 @@
 const mongoose = require('mongoose');
 const User = require('../models/User');
 const Report = require('../models/Report');
-const { CATEGORIES } = require('../models/Report');
+const { CATEGORIES } = require('../config/constants');
 
 async function resolveAudience(audience) {
   const type = audience && audience.type ? audience.type : 'all';

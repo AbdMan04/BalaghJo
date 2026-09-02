@@ -1,5 +1,6 @@
 const mongoose = require('mongoose');
 const { uploader } = require('./cloudinary');
+const { publicIdFromUrl } = require('../utils/cloudinary');
 
 async function migrateUsers() {
   const Users = mongoose.connection.collection('users');
@@ -67,8 +68,7 @@ async function cleanupOrphanReports() {
 
   for (const o of orphans) {
     if (uploader && o.photoUrl && o.photoUrl.startsWith('http')) {
-      const m = String(o.photoUrl).match(/\/image\/upload\/(?:v\d+\/)?(.+)$/);
-      const publicId = m ? m[1].replace(/\.[a-z0-9]+$/i, '') : null;
+      const publicId = publicIdFromUrl(o.photoUrl);
       if (publicId) {
         uploader.destroy(publicId).catch((err) =>
           console.error('[cloudinary] destroy failed for orphan photo:', err.message)

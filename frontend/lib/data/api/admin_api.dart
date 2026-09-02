@@ -36,9 +36,7 @@ class AdminApi {
       if (before != null) 'before': before,
     };
     final res = await _api.get('/api/admin/reports', query: q);
-    final reports = ((res['reports'] as List?) ?? [])
-        .map((e) => Report.fromJson(e as Map<String, dynamic>))
-        .toList();
+    final reports = ApiClient.parseList(res, 'reports', Report.fromJson);
     return AdminReportPage(
       reports: reports,
       nextCursor: res['nextCursor'] as String?,
@@ -61,9 +59,7 @@ class AdminApi {
     final q = <String, String>{};
     if (query != null && query.isNotEmpty) q['q'] = query;
     final res = await _api.get('/api/admin/users', query: q);
-    return ((res['users'] as List?) ?? [])
-        .map((e) => AdminUser.fromJson(e as Map<String, dynamic>))
-        .toList();
+    return ApiClient.parseList(res, 'users', AdminUser.fromJson);
   }
 
   Future<void> setRole(String id, String role) async {
@@ -72,9 +68,7 @@ class AdminApi {
 
   Future<List<AdminAnnouncement>> listAnnouncements() async {
     final res = await _api.get('/api/admin/announcements');
-    return ((res['announcements'] as List?) ?? [])
-        .map((e) => AdminAnnouncement.fromJson(e as Map<String, dynamic>))
-        .toList();
+    return ApiClient.parseList(res, 'announcements', AdminAnnouncement.fromJson);
   }
 
   Future<AdminAnnouncement> sendAnnouncement({
@@ -100,15 +94,11 @@ class AdminApi {
 
   Future<List<AdminAnnouncement>> deleteAnnouncement(String id) async {
     final res = await _api.delete('/api/admin/announcements/$id');
-    return ((res['announcements'] as List?) ?? [])
-        .map((e) => AdminAnnouncement.fromJson(e as Map<String, dynamic>))
-        .toList();
+    return ApiClient.parseList(res, 'announcements', AdminAnnouncement.fromJson);
   }
 
   Future<List<AdminAnnouncement>> deleteAllAnnouncements() async {
     final res = await _api.delete('/api/admin/announcements');
-    return ((res['announcements'] as List?) ?? [])
-        .map((e) => AdminAnnouncement.fromJson(e as Map<String, dynamic>))
-        .toList();
+    return ApiClient.parseList(res, 'announcements', AdminAnnouncement.fromJson);
   }
 }

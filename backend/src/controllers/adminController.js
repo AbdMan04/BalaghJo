@@ -11,14 +11,9 @@ const User = require('../models/User');
 const Report = require('../models/Report');
 const wrap = require('../utils/asyncHandler');
 const { escapeRegExp } = require('../utils/regex');
+const { parsePageSize } = require('../utils/pagination');
 
 const MAX_PAGE_SIZE = 100;
-
-function parsePageSize(raw) {
-  const n = Number(raw);
-  if (!Number.isFinite(n)) return 50;
-  return Math.min(Math.max(1, Math.trunc(n)), MAX_PAGE_SIZE);
-}
 
 exports.stats = wrap(async (_req, res) => {
   const since = new Date(Date.now() - 13 * 24 * 60 * 60 * 1000);
@@ -83,7 +78,7 @@ exports.listUsers = wrap(async (req, res) => {
       ];
     }
   }
-  const limit = parsePageSize(req.query.limit);
+  const limit = parsePageSize(req.query.limit, { defaultSize: 50, maxSize: MAX_PAGE_SIZE });
   const users = await User.find(filter)
     .select('firstName lastName phone role sentReports solvedReports isVerified createdAt')
     .sort({ createdAt: -1, _id: -1 })

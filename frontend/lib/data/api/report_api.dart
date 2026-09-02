@@ -19,9 +19,7 @@ class ReportApi {
   Future<ReportSummary> summary() async {
     final res = await _api.get('/api/reports/summary');
     final s = res['summary'] as Map<String, dynamic>;
-    final recent = ((res['recent'] as List?) ?? [])
-        .map((e) => Report.fromJson(e as Map<String, dynamic>))
-        .toList();
+    final recent = ApiClient.parseList(res, 'recent', Report.fromJson);
     return ReportSummary(
       total: s['total'] ?? 0,
       resolved: s['resolved'] ?? 0,
@@ -33,9 +31,7 @@ class ReportApi {
   Future<List<Report>> list({String? status}) async {
     final res = await _api.get('/api/reports',
         query: status != null ? {'status': status} : null);
-    return ((res['reports'] as List?) ?? [])
-        .map((e) => Report.fromJson(e as Map<String, dynamic>))
-        .toList();
+    return ApiClient.parseList(res, 'reports', Report.fromJson);
   }
 
   Future<List<Report>> publicList({
@@ -54,9 +50,7 @@ class ReportApi {
     }
     final res = await _api.get('/api/reports/public',
         query: query.isEmpty ? null : query);
-    return ((res['reports'] as List?) ?? [])
-        .map((e) => Report.fromJson(e as Map<String, dynamic>))
-        .toList();
+    return ApiClient.parseList(res, 'reports', Report.fromJson);
   }
 
   Future<Report> get(String id) async {
@@ -74,9 +68,7 @@ class ReportApi {
       'lng': lng,
       if (category != null) 'category': category,
     });
-    return ((res['reports'] as List?) ?? [])
-        .map((e) => Report.fromJson(e as Map<String, dynamic>))
-        .toList();
+    return ApiClient.parseList(res, 'reports', Report.fromJson);
   }
 
   Future<void> delete(String id) async {

@@ -1,7 +1,6 @@
 const request = require('supertest');
 const app = require('../src/app');
-const User = require('../src/models/User');
-const { startDb, stopDb, cleanDb, registerUser } = require('./helpers');
+const { startDb, stopDb, cleanDb, registerUser, createReport, adminTokenFor } = require('./helpers');
 
 describe('reports', () => {
   let agent;
@@ -18,29 +17,6 @@ describe('reports', () => {
   beforeEach(async () => {
     await cleanDb();
   });
-
-  async function createReport(token, overrides = {}) {
-    const res = await agent
-      .post('/api/reports/')
-      .set('Authorization', `Bearer ${token}`)
-      .send({
-        category: 'pothole',
-        description: 'A large pothole on the main street',
-        lat: 32.55,
-        lng: 35.85,
-        ...overrides,
-      });
-    return res;
-  }
-
-  async function adminTokenFor(phone) {
-    const { token, user } = await registerUser(agent, phone);
-    await User.findByIdAndUpdate(user.id, { role: 'admin' });
-    const login = await agent
-      .post('/api/auth/login')
-      .send({ identifier: phone, password: 'secret123' });
-    return login.body.token;
-  }
 
   async function nearby(token, body) {
     return agent.post('/api/reports/nearby').set('Authorization', `Bearer ${token}`).send(body);
@@ -62,7 +38,7 @@ describe('reports', () => {
       .set('Authorization', `Bearer ${token}`);
     expect(before.body.summary.total).toBe(0);
 
-    const res = await createReport(token);
+    const res = await createReport(agent, token);
     expect(res.status).toBe(201);
     expect(res.body.report.reportId).toMatch(/^RPT-\d{4}$/);
     expect(res.body.report.status).toBe('pending');
@@ -76,15 +52,15 @@ describe('reports', () => {
 
   test('rejects invalid category / short description', async () => {
     const { token } = await registerUser(agent, '0774005006');
-    const res = await createReport(token, { category: 'aliens' });
+    const res = await createReport(agent, token, { category: 'aliens' });
     expect(res.status).toBe(400);
-    const short = await createReport(token, { description: 'bad' });
+    const short = await createReport(agent, token, { description: 'bad' });
     expect(short.status).toBe(400);
   });
 
   test('submitting stores a priority score and exposes it in the response', async () => {
     const { token } = await registerUser(agent, '0774005006');
-    const res = await createReport(token, {
+    const res = await createReport(agent, token, {
       category: 'waste',
       description: 'FIRE risk from a broken electric wire near a school',
     });
@@ -96,7 +72,7 @@ describe('reports', () => {
 
   test('nearby dedupe is semantic: matches across categories on strong text', async () => {
     const { token } = await registerUser(agent, '0774005007');
-    const first = await createReport(token, {
+    const first = await createReport(agent, token, {
       category: 'pothole',
       title: 'Deep pothole',
       description: 'Large hole in the asphalt near the university gate',
@@ -121,7 +97,7 @@ describe('reports', () => {
 
   test('nearby dedupe ignores far/unrelated reports', async () => {
     const { token } = await registerUser(agent, '0774005008');
-    await createReport(token, {
+    await createReport(agent, token, {
       category: 'waste',
       description: 'Trash bins overflowing in the old market',
     });
@@ -146,7 +122,7 @@ describe('reports', () => {
   test('lists my reports with cursor pagination', async () => {
     const { token } = await registerUser(agent, '0775006007');
     for (let i = 0; i < 5; i += 1) {
-      await createReport(token, { description: `Issue number ${i + 1} on the road` });
+      await createReport(agent, token, { description: `Issue number ${i + 1} on the road` });
     }
 
     const page1 = await agent
@@ -175,12 +151,12 @@ describe('reports', () => {
 
   test('public map list respects the viewport and updates on writes', async () => {
     const { token } = await registerUser(agent, '0776007008');
-    const inBox = await createReport(token, {
+    const inBox = await createReport(agent, token, {
       description: 'Inside the box near the city center',
       lat: 32.55,
       lng: 35.85,
     });
-    await createReport(token, {
+    await createReport(agent, token, {
       description: 'Far outside the box in the south',
       lat: 31.0,
       lng: 36.0,
@@ -213,7 +189,7 @@ describe('reports', () => {
       .set('Authorization', `Bearer ${token}`);
     expect(miss.body.reports).toHaveLength(0);
 
-    await createReport(token, {
+    await createReport(agent, token, {
       description: 'Another marker in the same box',
       lat: 32.6,
       lng: 35.7,
@@ -227,7 +203,7 @@ describe('reports', () => {
 
   test('status transitions are atomic and admin-only', async () => {
     const { token } = await registerUser(agent, '0777008009');
-    const created = await createReport(token);
+    const created = await createReport(agent, token);
     const reportId = created.body.report.id;
 
     const nonAdmin = await agent
@@ -236,7 +212,7 @@ describe('reports', () => {
       .send({ status: 'in_progress' });
     expect(nonAdmin.status).toBe(403);
 
-    const admin = await adminTokenFor('0778009010');
+    const admin = await adminTokenFor(agent, '0778009010');
     const toProgress = await agent
       .patch(`/api/reports/${reportId}/status`)
       .set('Authorization', `Bearer ${admin}`)
@@ -245,7 +221,7 @@ describe('reports', () => {
     expect(toProgress.body.report.status).toBe('in_progress');
 
     // Illegal jump: pending -> resolved is not allowed (must come from in_progress).
-    const created2 = await createReport(token);
+    const created2 = await createReport(agent, token);
     const skip = await agent
       .patch(`/api/reports/${created2.body.report.id}/status`)
       .set('Authorization', `Bearer ${admin}`)
@@ -255,9 +231,9 @@ describe('reports', () => {
 
   test('resolving increments solvedReports exactly once', async () => {
     const { token, user } = await registerUser(agent, '0779010011');
-    const created = await createReport(token);
+    const created = await createReport(agent, token);
     const reportId = created.body.report.id;
-    const admin = await adminTokenFor('0780011012');
+    const admin = await adminTokenFor(agent, '0780011012');
 
     await agent
       .patch(`/api/reports/${reportId}/status`)
@@ -283,7 +259,7 @@ describe('reports', () => {
 
   test('deleting a report updates summary and public list', async () => {
     const { token, user } = await registerUser(agent, '0781012013');
-    const created = await createReport(token);
+    const created = await createReport(agent, token);
     const reportId = created.body.report.id;
 
     const del = await agent
@@ -303,7 +279,7 @@ describe('reports', () => {
 
   test('GET detail resolves by ticket number (RPT-xxxx) as well as Mongo id', async () => {
     const { token } = await registerUser(agent, '0785016017');
-    const created = await createReport(token);
+    const created = await createReport(agent, token);
     const ticket = created.body.report.reportId;
 
     const byId = await agent
@@ -334,16 +310,16 @@ describe('reports', () => {
   test('admin report feed paginates at 50 and filters by status/category', async () => {
     const { token, user } = await registerUser(agent, '0783014015');
     for (let i = 0; i < 3; i += 1) {
-      await createReport(token, {
+      await createReport(agent, token, {
         description: `Road issue number ${i + 1} in Irbid city center`,
       });
     }
-    await createReport(token, {
+    await createReport(agent, token, {
       category: 'lighting',
       description: 'Broken streetlight near the university',
     });
 
-    const admin = await adminTokenFor('0784015016');
+    const admin = await adminTokenFor(agent, '0784015016');
     const all = await agent
       .get('/api/admin/reports')
       .set('Authorization', `Bearer ${admin}`);
@@ -367,17 +343,17 @@ describe('reports', () => {
 
   test('admin report feed searches by text and keeps the term across pages', async () => {
     const token = (await registerUser(agent, '0783015017')).token;
-    await createReport(token, {
+    await createReport(agent, token, {
       description: 'Deep pothole blocking the university gate',
     });
-    await createReport(token, {
+    await createReport(agent, token, {
       description: 'Streetlight out near the university roundabout',
     });
-    await createReport(token, {
+    await createReport(agent, token, {
       description: 'Unrelated litter in the old market',
     });
 
-    const admin = await adminTokenFor('0784015018');
+    const admin = await adminTokenFor(agent, '0784015018');
     const search = await agent
       .get('/api/admin/reports')
       .query({ q: 'university' })
@@ -414,17 +390,17 @@ describe('reports', () => {
   test('admin feed sorts by priority and paginates without overlap', async () => {
     const token = (await registerUser(agent, '0783015017')).token;
     // Two urgent, one low-priority report.
-    await createReport(token, {
+    await createReport(agent, token, {
       category: 'waste',
       description: 'electric wires down, fire risk, danger to children',
     });
-    await createReport(token, { category: 'pothole', description: 'plain bump on the road' });
-    await createReport(token, {
+    await createReport(agent, token, { category: 'pothole', description: 'plain bump on the road' });
+    await createReport(agent, token, {
       category: 'lighting',
       description: 'emergency — streetlight collapse near the hospital',
     });
 
-    const admin = await adminTokenFor('0784015018');
+    const admin = await adminTokenFor(agent, '0784015018');
     const page1 = await agent
       .get('/api/admin/reports')
       .query({ sortBy: 'priority', limit: 2 })
@@ -448,3 +424,5 @@ describe('reports', () => {
     expect(ids1.some((id) => ids2.includes(id))).toBe(false);
   });
 });
+
+

@@ -3,7 +3,7 @@ const app = require('../src/app');
 const User = require('../src/models/User');
 const Notification = require('../src/models/Notification');
 const Announcement = require('../src/models/Announcement');
-const { startDb, stopDb, cleanDb, registerUser } = require('./helpers');
+const { startDb, stopDb, cleanDb, registerUser, createReport, adminTokenFor } = require('./helpers');
 
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 
@@ -23,31 +23,9 @@ describe('admin dashboard (stats, users, announcements)', () => {
     await cleanDb();
   });
 
-  async function adminTokenFor(phone) {
-    const { user } = await registerUser(agent, phone);
-    await User.findByIdAndUpdate(user.id, { role: 'admin' });
-    const login = await agent
-      .post('/api/auth/login')
-      .send({ identifier: phone, password: 'secret123' });
-    expect(login.status).toBe(200);
-    return login.body.token;
-  }
-
   async function userTokenFor(phone) {
     const { token } = await registerUser(agent, phone);
     return token;
-  }
-
-  async function createReport(token, category = 'pothole') {
-    return agent
-      .post('/api/reports/')
-      .set('Authorization', `Bearer ${token}`)
-      .send({
-        category,
-        description: 'A large pothole on the main street',
-        lat: 32.55,
-        lng: 35.85,
-      });
   }
 
   test('admin endpoints reject non-admin tokens', async () => {
@@ -67,12 +45,12 @@ describe('admin dashboard (stats, users, announcements)', () => {
   });
 
   test('stats aggregate reports across all users', async () => {
-    const admin = await adminTokenFor('0791001001');
+    const admin = await adminTokenFor(agent, '0791001001');
     const u1 = await userTokenFor('0771002001');
     const u2 = await userTokenFor('0771003001');
-    await createReport(u1);
-    await createReport(u1, 'waste');
-    await createReport(u2);
+    await createReport(agent, u1);
+    await createReport(agent, u1, { category: 'waste' });
+    await createReport(agent, u2);
 
     const res = await agent
       .get('/api/admin/stats')
@@ -91,7 +69,7 @@ describe('admin dashboard (stats, users, announcements)', () => {
   });
 
   test('users list and role promotion/demotion', async () => {
-    const admin = await adminTokenFor('0791001001');
+    const admin = await adminTokenFor(agent, '0791001001');
     const { user } = await registerUser(agent, '0771004001');
 
     const list = await agent
@@ -115,7 +93,7 @@ describe('admin dashboard (stats, users, announcements)', () => {
   });
 
   test('user search matches partial phone and treats regex metacharacters as literals', async () => {
-    const admin = await adminTokenFor('0791001001');
+    const admin = await adminTokenFor(agent, '0791001001');
     await registerUser(agent, '0771004002');
 
     const partial = await agent
@@ -135,7 +113,7 @@ describe('admin dashboard (stats, users, announcements)', () => {
   });
 
   test('an admin cannot change their own role', async () => {
-    const admin = await adminTokenFor('0791001001');
+    const admin = await adminTokenFor(agent, '0791001001');
     const me = await User.findOne({ phone: '0791001001' });
     const res = await agent
       .patch(`/api/admin/users/${me.id}/role`)
@@ -145,7 +123,7 @@ describe('admin dashboard (stats, users, announcements)', () => {
   });
 
   test('an admin can demote another admin while at least one remains', async () => {
-    const adminA = await adminTokenFor('0791001001');
+    const adminA = await adminTokenFor(agent, '0791001001');
     const { user } = await registerUser(agent, '0791009001');
     await User.findByIdAndUpdate(user.id, { role: 'admin' });
 
@@ -158,7 +136,7 @@ describe('admin dashboard (stats, users, announcements)', () => {
   });
 
   test('broadcast to all users fans out notifications and records history', async () => {
-    const admin = await adminTokenFor('0791001001');
+    const admin = await adminTokenFor(agent, '0791001001');
     await userTokenFor('0771005001');
     await userTokenFor('0771006001');
 
@@ -187,10 +165,10 @@ describe('admin dashboard (stats, users, announcements)', () => {
   });
 
   test('broadcast to a category audience only targets those reporters', async () => {
-    const admin = await adminTokenFor('0791001001');
+    const admin = await adminTokenFor(agent, '0791001001');
     const u1 = await userTokenFor('0771007001');
     await userTokenFor('0771008001');
-    await createReport(u1, 'pothole');
+    await createReport(agent, u1, { category: 'pothole' });
 
     const res = await agent
       .post('/api/admin/announcements')
@@ -212,7 +190,7 @@ describe('admin dashboard (stats, users, announcements)', () => {
   });
 
   test('an admin can delete a single announcement', async () => {
-    const admin = await adminTokenFor('0791001001');
+    const admin = await adminTokenFor(agent, '0791001001');
     await userTokenFor('0771005001');
 
     const created = await agent
@@ -240,7 +218,7 @@ describe('admin dashboard (stats, users, announcements)', () => {
   });
 
   test('an admin can delete all announcements', async () => {
-    const admin = await adminTokenFor('0791001001');
+    const admin = await adminTokenFor(agent, '0791001001');
     await userTokenFor('0771005001');
 
     for (const i of [1, 2]) {
@@ -269,3 +247,4 @@ describe('admin dashboard (stats, users, announcements)', () => {
     expect(history.body.announcements).toHaveLength(0);
   });
 });
+

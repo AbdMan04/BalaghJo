@@ -72,6 +72,19 @@ class ApiClient {
     _refreshToken = refreshToken;
   }
 
+  // Deserializes a `key` list from a decoded JSON response into a typed
+  // list. Callers never repeat the `(res['x'] as List?) ?? [] ... map`
+  // boilerplate — they pass the fromJson constructor of their model.
+  static List<T> parseList<T>(
+    dynamic json,
+    String key,
+    T Function(Map<String, dynamic>) fromJson,
+  ) {
+    return ((json is Map ? json[key] : null) as List? ?? const [])
+        .map((e) => fromJson(e as Map<String, dynamic>))
+        .toList();
+  }
+
   Uri _uri(String path, [Map<String, dynamic>? query]) {
     final base = Uri.parse(AppConfig.apiBaseUrl);
     return base.replace(

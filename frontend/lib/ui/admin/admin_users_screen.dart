@@ -183,7 +183,7 @@ class _UserCard extends StatelessWidget {
                 ),
                 const SizedBox(height: 2),
                 Text(
-                  user.phone.isEmpty ? '-' : user.phone,
+                  user.phone == null || user.phone!.isEmpty ? '-' : user.phone!,
                   style: const TextStyle(fontSize: 12, color: AppColors.textMuted),
                 ),
                 const SizedBox(height: 2),

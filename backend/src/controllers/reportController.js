@@ -12,10 +12,12 @@ const Report = require('../models/Report');
 const User = require('../models/User');
 const { uploader } = require('../config/cloudinary');
 const wrap = require('../utils/asyncHandler');
+const { publicIdFromUrl } = require('../utils/cloudinary');
 const { notifyUsers } = require('../services/notifyService');
 const { scorePriority, rankDuplicates } = require('../services/reportIntelligence');
 const { TtlCache } = require('../utils/ttlCache');
-const { STATUSES, CATEGORIES, STATUS_TRANSITIONS } = require('../models/Report');
+const { parsePageSize } = require('../utils/pagination');
+const { STATUSES, CATEGORIES, STATUS_TRANSITIONS } = require('../config/constants');
 
 // Per-user summary is safe to cache for 15s because every write that can
 // change it (create/delete/status update) invalidates the owner's entry.
@@ -32,15 +34,13 @@ const PUBLIC_TTL_MS = 5_000;
 const myListCache = new TtlCache({ maxEntries: 500 });
 const MY_LIST_TTL_MS = 5_000;
 
-function invalidateUserSummary(userId) {
+// Any write that changes a report (create/delete/status update) makes all
+// three read caches stale for that owner and globally. Collapsing the three
+// calls into one helper means adding a new cache type (or a write path) is
+// a single edit instead of three.
+function invalidateReadCaches(userId) {
   summaryCache.delete(`summary:${userId.toString()}`);
-}
-
-function invalidatePublicLists() {
   publicCache.clear();
-}
-
-function invalidateMyLists() {
   myListCache.clear();
 }
 
@@ -52,14 +52,7 @@ function isOwnerOrAdmin(reportUserId, user) {
 // Pagination (item 2): cursor-based paging for the report list endpoints.
 // A cursor encodes `createdAtISO_id`; paging uses a (createdAt, _id) tuple
 // comparison so identical timestamps can't skip or duplicate rows.
-const DEFAULT_PAGE_SIZE = 500;
-const MAX_PAGE_SIZE = 500;
-
-function parsePageSize(raw) {
-  const n = Number(raw);
-  if (!Number.isFinite(n)) return DEFAULT_PAGE_SIZE;
-  return Math.min(Math.max(1, Math.trunc(n)), MAX_PAGE_SIZE);
-}
+const pageSize = (raw) => parsePageSize(raw, { defaultSize: 500, maxSize: 500 });
 
 function applyCursor(filter, before) {
   if (!before || typeof before !== 'string') return;
@@ -144,11 +137,6 @@ async function storePhoto(file) {
   return `/uploads/${file.filename}`;
 }
 
-function publicIdFromUrl(url) {
-  const m = String(url).match(/\/image\/upload\/(?:v\d+\/)?(.+)$/);
-  return m ? m[1].replace(/\.[a-z0-9]+$/i, '') : null;
-}
-
 exports.createReport = wrap(async (req, res) => {
   const errors = validationResult(req);
   if (!errors.isEmpty()) {
@@ -200,9 +188,7 @@ exports.createReport = wrap(async (req, res) => {
   }
 
   await User.findByIdAndUpdate(req.user.id, { $inc: { sentReports: 1 } });
-  invalidateUserSummary(req.user.id);
-  invalidatePublicLists();
-  invalidateMyLists();
+  invalidateReadCaches(req.user.id);
 
   // New-report notification: in-app row + FCM push to every admin's
   // registered devices (covers the web-dashboard push path). Fire-and-
@@ -238,7 +224,7 @@ exports.listMyReports = wrap(async (req, res) => {
   const filter = { userId: req.user.id };
   if (status && STATUSES.includes(status)) filter.status = status;
   applyCursor(filter, req.query.before);
-  const limit = parsePageSize(req.query.limit);
+  const limit = pageSize(req.query.limit);
   const key = `my:${req.user.id}:${status || ''}:${limit}:${req.query.before || ''}`;
   const hit = myListCache.get(key, MY_LIST_TTL_MS);
   if (hit !== null) return res.json(hit);
@@ -275,7 +261,7 @@ exports.listPublicReports = wrap(async (req, res) => {
     };
   }
   applyCursor(filter, req.query.before);
-  const limit = parsePageSize(req.query.limit);
+  const limit = pageSize(req.query.limit);
   const key = [
     'public',
     status || '',
@@ -387,7 +373,7 @@ exports.listAdminReports = wrap(async (req, res) => {
   } else {
     applyCursor(filter, req.query.before);
   }
-  const limit = parsePageSize(req.query.limit || 50);
+  const limit = parsePageSize(req.query.limit, { defaultSize: 50, maxSize: 500 });
   const reports = await Report.find(filter)
     .populate('userId', 'firstName lastName phone')
     .sort(byPriority ? { priority: -1, createdAt: -1, _id: -1 } : { createdAt: -1, _id: -1 })
@@ -461,9 +447,7 @@ exports.deleteReport = wrap(async (req, res) => {
   const inc = { sentReports: -1 };
   if (wasResolved) inc.solvedReports = -1;
   await User.findByIdAndUpdate(ownerId, { $inc: inc });
-  invalidateUserSummary(ownerId);
-  invalidatePublicLists();
-  invalidateMyLists();
+  invalidateReadCaches(ownerId);
   res.json({ ok: true });
 });
 
@@ -570,9 +554,7 @@ exports.updateStatus = wrap(async (req, res) => {
   if (status === 'resolved') {
     await User.findByIdAndUpdate(report.userId, { $inc: { solvedReports: 1 } });
   }
-  invalidateUserSummary(report.userId);
-  invalidatePublicLists();
-  invalidateMyLists();
+  invalidateReadCaches(report.userId);
 
   // FR-7: persist an in-app notification and fire an FCM push to the
   // reporter's registered devices. C6: fire-and-forget so the status
@@ -610,3 +592,4 @@ exports.updateStatus = wrap(async (req, res) => {
 
   res.json({ report: report.toPublicJSON() });
 });
+

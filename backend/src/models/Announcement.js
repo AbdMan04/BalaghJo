@@ -6,7 +6,7 @@
   push pipeline stay the single fan-out path.
  */
 const mongoose = require('mongoose');
-const { CATEGORIES } = require('./Report');
+const { CATEGORIES } = require('../config/constants');
 
 const announcementSchema = new mongoose.Schema(
   {

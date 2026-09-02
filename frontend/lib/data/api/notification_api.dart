@@ -6,9 +6,7 @@ class NotificationApi {
 
   Future<List<AppNotification>> list() async {
     final res = await _api.get('/api/notifications');
-    return ((res['notifications'] as List?) ?? const [])
-        .map((e) => AppNotification.fromJson(e as Map<String, dynamic>))
-        .toList();
+    return ApiClient.parseList(res, 'notifications', AppNotification.fromJson);
   }
 
   Future<int> unreadCount() async {

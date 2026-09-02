@@ -41,4 +41,31 @@ async function registerUser(agent, phone, password = 'secret123') {
   return res.body;
 }
 
-module.exports = { startDb, stopDb, cleanDb, registerUser };
+// Creates a report in the citizen feed with a default pothole payload.
+// `overrides` lets a caller change any field (category, description, etc.).
+async function createReport(agent, token, overrides = {}) {
+  return agent
+    .post('/api/reports/')
+    .set('Authorization', `Bearer ${token}`)
+    .send({
+      category: 'pothole',
+      description: 'A large pothole on the main street',
+      lat: 32.55,
+      lng: 35.85,
+      ...overrides,
+    });
+}
+
+// Registers a user, promotes them to admin, and returns a fresh admin JWT.
+async function adminTokenFor(agent, phone) {
+  const { user } = await registerUser(agent, phone);
+  const User = require('../src/models/User');
+  await User.findByIdAndUpdate(user.id, { role: 'admin' });
+  const login = await agent
+    .post('/api/auth/login')
+    .send({ identifier: phone, password: 'secret123' });
+  expect(login.status).toBe(200);
+  return login.body.token;
+}
+
+module.exports = { startDb, stopDb, cleanDb, registerUser, createReport, adminTokenFor };

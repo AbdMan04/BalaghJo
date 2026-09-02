@@ -69,18 +69,7 @@ exports.create = wrap(async (req, res) => {
 
 exports.list = wrap(async (req, res) => {
   const limit = Math.min(Number(req.query.limit) || 50, 200);
-  const announcements = await Announcement.find()
-    .sort({ createdAt: -1, _id: -1 })
-    .limit(limit)
-    .populate('sentBy', 'firstName lastName');
-  res.json({
-    announcements: announcements.map((a) => ({
-      ...a.toJSON(),
-      sentBy: a.sentBy
-        ? `${a.sentBy.firstName ?? ''} ${a.sentBy.lastName ?? ''}`.trim()
-        : 'Unknown',
-    })),
-  });
+  res.json({ announcements: await listAnnouncements({ limit }) });
 });
 
 exports.removeOne = wrap(async (req, res) => {
@@ -103,10 +92,10 @@ exports.removeAll = wrap(async (req, res) => {
   res.json({ deleted: true, announcements: [] });
 });
 
-async function listAnnouncements() {
+async function listAnnouncements({ limit = 50 } = {}) {
   const announcements = await Announcement.find()
     .sort({ createdAt: -1, _id: -1 })
-    .limit(50)
+    .limit(limit)
     .populate('sentBy', 'firstName lastName');
   return announcements.map((a) => ({
     ...a.toJSON(),

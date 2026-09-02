@@ -3,7 +3,7 @@ const { body } = require('express-validator');
 const rateLimit = require('express-rate-limit');
 const ctrl = require('../controllers/reportController');
 const { authRequired, adminOnly } = require('../middleware/auth');
-const { CATEGORIES } = require('../models/Report');
+const { CATEGORIES } = require('../config/constants');
 const upload = require('../middleware/upload');
 
 router.use(authRequired);
