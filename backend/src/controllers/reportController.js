@@ -14,7 +14,6 @@ const { uploader } = require('../config/cloudinary');
 const wrap = require('../utils/asyncHandler');
 const { publicIdFromUrl } = require('../utils/cloudinary');
 const { notifyUsers } = require('../services/notifyService');
-const { scorePriority, rankDuplicates } = require('../services/reportIntelligence');
 const { TtlCache } = require('../utils/ttlCache');
 const { parsePageSize } = require('../utils/pagination');
 const { STATUSES, CATEGORIES, STATUS_TRANSITIONS } = require('../config/constants');
@@ -72,46 +71,6 @@ function cursorFor(last) {
   return `${last.createdAt.toISOString()}_${last._id}`;
 }
 
-// Priority-sorted paging (sortBy=priority): a cursor encodes
-// `priority:createdAtISO_id`, paged over the {priority, createdAt, _id}
-// compound index, so the most urgent reports come first and pages stay
-// stable even when several share the same score. The priority part of the
-// cursor is delimited with '_' (never present in a float score or an ISO
-// timestamp or an ObjectId), so it stays unambiguous — a ':' delimiter
-// would collide with the colons inside the ISO timestamp.
-function parsePriorityCursor(before) {
-  if (!before || typeof before !== 'string') return null;
-  const parts = before.split('_');
-  if (parts.length !== 3) return null;
-  const [priorityRaw, tsRaw, id] = parts;
-  const priority = Number(priorityRaw);
-  const ts = new Date(tsRaw);
-  if (
-    !Number.isFinite(priority) ||
-    Number.isNaN(ts.getTime()) ||
-    !mongoose.isValidObjectId(id)
-  ) {
-    return null;
-  }
-  return { priority, ts, id };
-}
-
-function applyPriorityCursor(filter, before) {
-  const c = parsePriorityCursor(before);
-  if (!c) return false;
-  const oid = new mongoose.Types.ObjectId(c.id);
-  filter.$or = [
-    { priority: { $lt: c.priority } },
-    { priority: c.priority, createdAt: { $lt: c.ts } },
-    { priority: c.priority, createdAt: c.ts, _id: { $lt: oid } },
-  ];
-  return true;
-}
-
-function priorityCursorFor(last) {
-  return `${last.priority}_${last.createdAt.toISOString()}_${last._id}`;
-}
-
 // FR-5: store the uploaded photo on Cloudinary when configured; otherwise
 // keep the local uploads/ path. The local file is a temp copy either way.
 // In production the local fallback is disabled: Render's filesystem is
@@ -155,15 +114,6 @@ exports.createReport = wrap(async (req, res) => {
     throw err;
   }
 
-  // AI triage: score severity at submit time from category + text so the
-  // admin feed can surface urgent issues first (generic classifier, no
-  // external service — deterministic and offline).
-  const { priority } = scorePriority({
-    category,
-    title: title || '',
-    description,
-  });
-
   const payload = {
     userId: req.user.id,
     category,
@@ -175,7 +125,6 @@ exports.createReport = wrap(async (req, res) => {
       coordinates: [Number(lng) || 0, Number(lat) || 0],
     },
     photoUrl,
-    priority,
   };
 
   let report;
@@ -291,53 +240,30 @@ async function cachedPublic(key, limit, filter) {
   return payload;
 }
 
-// Duplicate-submission guard (semantic): returns the nearby reports most
-// likely to be the same issue as the submission in progress, ranked by a
-// fused text + location + category score (reportIntelligence) instead of
-// the old same-category-within-500m test. `category` in the body is now a
-// soft scoring hint, not a hard filter — two reporters who label the same
-// pothole differently still get matched. Cross-category matches are the
-// point of the upgrade, so no category filter is applied server-side.
-const NEARBY_RADIUS_M = 2000;
-const NEARBY_MAX_CANDIDATES = 30;
+// Duplicate-submission guard: returns same-category reports within
+// ~500m of the given point (no reporter PII). Used by the submit
+// screen to warn the user that the issue may already be reported.
 exports.nearbyReports = wrap(async (req, res) => {
-  const { lat, lng } = req.body;
+  const { lat, lng, category } = req.body;
   const latN = Number(lat);
   const lngN = Number(lng);
   if (Number.isNaN(latN) || Number.isNaN(lngN)) {
     return res.status(400).json({ error: 'lat and lng are required' });
   }
-  const candidates = await Report.find({
+  const filter = {
     location: {
       $nearSphere: {
         $geometry: { type: 'Point', coordinates: [lngN, latN] },
-        $maxDistance: NEARBY_RADIUS_M,
+        $maxDistance: 500,
       },
     },
-  })
-    .select('reportId category title description status address location photoUrl createdAt')
-    .limit(NEARBY_MAX_CANDIDATES);
-
-  const matches = rankDuplicates(candidates, {
-    category: req.body.category,
-    title: req.body.title || '',
-    description: req.body.description || '',
-    location: { type: 'Point', coordinates: [lngN, latN] },
-  });
-
-  const round3 = (n) => Math.round(n * 1000) / 1000;
-  res.json({
-    reports: matches.map(({ report, similarity, distanceMeters, signals }) => ({
-      ...report.toPublicSummary(),
-      similarity: round3(similarity),
-      distanceMeters,
-      signals: {
-        text: round3(signals.text),
-        location: round3(signals.location),
-        category: signals.category,
-      },
-    })),
-  });
+  };
+  if (category && CATEGORIES.includes(category)) filter.category = category;
+  const reports = await Report.find(filter)
+    .select('reportId category title status address location photoUrl createdAt')
+    .sort({ createdAt: -1 })
+    .limit(20);
+  res.json({ reports: reports.map((r) => r.toPublicSummary()) });
 });
 
 // F5 / FR-13..15: admin report listing — paginated (50/page), filterable by
@@ -346,7 +272,6 @@ exports.nearbyReports = wrap(async (req, res) => {
 // counterpart of listMyReports; citizen endpoints stay unchanged.
 exports.listAdminReports = wrap(async (req, res) => {
   const { status, category, q, neLat, neLng, swLat, swLng } = req.query;
-  const byPriority = req.query.sortBy === 'priority';
   const filter = {};
   if (status && STATUSES.includes(status)) filter.status = status;
   if (category && CATEGORIES.includes(category)) filter.category = category;
@@ -368,15 +293,11 @@ exports.listAdminReports = wrap(async (req, res) => {
       filter.$text = { $search: term };
     }
   }
-  if (byPriority) {
-    applyPriorityCursor(filter, req.query.before);
-  } else {
-    applyCursor(filter, req.query.before);
-  }
+  applyCursor(filter, req.query.before);
   const limit = parsePageSize(req.query.limit, { defaultSize: 50, maxSize: 500 });
   const reports = await Report.find(filter)
     .populate('userId', 'firstName lastName phone')
-    .sort(byPriority ? { priority: -1, createdAt: -1, _id: -1 } : { createdAt: -1, _id: -1 })
+    .sort({ createdAt: -1, _id: -1 })
     .limit(limit + 1);
   const hasMore = reports.length > limit;
   const page = hasMore ? reports.slice(0, limit) : reports;
@@ -392,11 +313,7 @@ exports.listAdminReports = wrap(async (req, res) => {
         : { fullName: 'Unknown', phone: '' };
       return json;
     }),
-    nextCursor: hasMore
-      ? byPriority
-        ? priorityCursorFor(page[page.length - 1])
-        : cursorFor(page[page.length - 1])
-      : null,
+    nextCursor: hasMore ? cursorFor(page[page.length - 1]) : null,
   };
   res.json(payload);
 });
@@ -488,7 +405,6 @@ exports.summary = wrap(async (req, res) => {
     address: d.address,
     status: d.status,
     statusChangedAt: d.statusChangedAt,
-    priority: d.priority,
     statusHistory: (d.statusHistory || []).map((h) => ({
       status: h.status,
       changedAt: h.changedAt,
