@@ -32,6 +32,10 @@ const reportSchema = new mongoose.Schema(
     address: { type: String, default: '' },
     status: { type: String, enum: STATUSES, default: 'pending' },
     statusChangedAt: { type: Date, default: null },
+    // Severity score 0..1 from reportIntelligence.scorePriority at submit
+    // time, so admins can triage urgent civic issues (safety keywords +
+    // category baseline) without reading every description.
+    priority: { type: Number, min: 0, max: 1, default: 0 },
     assignedTo: { type: mongoose.Schema.Types.ObjectId, ref: 'User', default: null },
     estimatedFix: { type: Date },
     statusHistory: [
@@ -51,6 +55,9 @@ reportSchema.index({ userId: 1, createdAt: -1 });
 reportSchema.index({ userId: 1, status: 1, createdAt: -1 });
 reportSchema.index({ status: 1, createdAt: -1 });
 reportSchema.index({ category: 1, createdAt: -1 });
+// Priority-sorted admin feed (sortBy=priority) is backed by this compound
+// index; the cursor paginates on (priority, createdAt, _id).
+reportSchema.index({ priority: -1, createdAt: -1, _id: -1 });
 // Text index backing the admin report search (q=): word-based, index-backed
 // instead of a collection-scanning case-insensitive $regex. Word/token
 // matching (not arbitrary substring), which is fine for report titles,
@@ -99,6 +106,7 @@ reportSchema.methods.toPublicJSON = function () {
     address: this.address,
     status: this.status,
     statusChangedAt: this.statusChangedAt,
+    priority: this.priority,
     statusHistory: (this.statusHistory || []).map((h) => ({
       status: h.status,
       changedAt: h.changedAt,
@@ -121,6 +129,7 @@ reportSchema.methods.toPublicSummary = function () {
     title: this.title,
     status: this.status,
     address: this.address,
+    priority: this.priority,
     photoUrl: this.photoUrl,
     location: this.location,
     createdAt: this.createdAt,

@@ -42,6 +42,10 @@ describe('reports', () => {
     return login.body.token;
   }
 
+  async function nearby(token, body) {
+    return agent.post('/api/reports/nearby').set('Authorization', `Bearer ${token}`).send(body);
+  }
+
   test('creating a report requires authentication', async () => {
     const res = await agent.post('/api/reports/').send({
       category: 'pothole',
@@ -76,6 +80,67 @@ describe('reports', () => {
     expect(res.status).toBe(400);
     const short = await createReport(token, { description: 'bad' });
     expect(short.status).toBe(400);
+  });
+
+  test('submitting stores a priority score and exposes it in the response', async () => {
+    const { token } = await registerUser(agent, '0774005006');
+    const res = await createReport(token, {
+      category: 'waste',
+      description: 'FIRE risk from a broken electric wire near a school',
+    });
+    expect(res.status).toBe(201);
+    // priority is a number in [0, 1], surfaced in the public JSON.
+    expect(res.body.report.priority).toBeGreaterThan(0.5);
+    expect(res.body.report).toHaveProperty('priority');
+  });
+
+  test('nearby dedupe is semantic: matches across categories on strong text', async () => {
+    const { token } = await registerUser(agent, '0774005007');
+    const first = await createReport(token, {
+      category: 'pothole',
+      title: 'Deep pothole',
+      description: 'Large hole in the asphalt near the university gate',
+    });
+    expect(first.status).toBe(201);
+
+    // Same issue, filed under a different category — must still rank as a
+    // duplicate now that the guard scores text, not just same-category.
+    const matches = await nearby(token, {
+      category: 'other',
+      title: 'Deep pothole',
+      description: 'Large hole in the asphalt near the university gate',
+      lat: 32.55,
+      lng: 35.85,
+    });
+    expect(matches.status).toBe(200);
+    expect(matches.body.reports.length).toBeGreaterThan(0);
+    const top = matches.body.reports[0];
+    expect(top.id).toBe(first.body.report.id);
+    expect(top.similarity).toBeGreaterThan(0.5);
+  });
+
+  test('nearby dedupe ignores far/unrelated reports', async () => {
+    const { token } = await registerUser(agent, '0774005008');
+    await createReport(token, {
+      category: 'waste',
+      description: 'Trash bins overflowing in the old market',
+    });
+
+    const matches = await nearby(token, {
+      category: 'pothole',
+      description: 'Completely different issue about traffic lights',
+      lat: 32.52,
+      lng: 35.87,
+    });
+    expect(matches.status).toBe(200);
+    // Distinct text and no overlapping meaning -> below the threshold.
+    expect(matches.body.reports).toHaveLength(0);
+  });
+
+  test('nearby dedupe requires coordinates', async () => {
+    const { token } = await registerUser(agent, '0774005009');
+    const res = await nearby(token, { category: 'pothole', description: 'hole' });
+    expect(res.status).toBe(400);
   });
 
   test('lists my reports with cursor pagination', async () => {
@@ -344,5 +409,42 @@ describe('reports', () => {
     expect(page2.body.reports).toHaveLength(1);
     expect(page2.body.reports[0].description).toContain('university');
     expect(page2.body.reports[0].id).not.toBe(page1.body.reports[0].id);
+  });
+
+  test('admin feed sorts by priority and paginates without overlap', async () => {
+    const token = (await registerUser(agent, '0783015017')).token;
+    // Two urgent, one low-priority report.
+    await createReport(token, {
+      category: 'waste',
+      description: 'electric wires down, fire risk, danger to children',
+    });
+    await createReport(token, { category: 'pothole', description: 'plain bump on the road' });
+    await createReport(token, {
+      category: 'lighting',
+      description: 'emergency — streetlight collapse near the hospital',
+    });
+
+    const admin = await adminTokenFor('0784015018');
+    const page1 = await agent
+      .get('/api/admin/reports')
+      .query({ sortBy: 'priority', limit: 2 })
+      .set('Authorization', `Bearer ${admin}`);
+    expect(page1.status).toBe(200);
+    expect(page1.body.reports).toHaveLength(2);
+    // Most urgent report leads the page and its cursor pages on.
+    expect(page1.body.reports[0].description).toContain('emergency');
+    expect(page1.body.nextCursor).not.toBeNull();
+    expect(page1.body.reports[0].priority).toBeGreaterThanOrEqual(page1.body.reports[1].priority);
+
+    const page2 = await agent
+      .get('/api/admin/reports')
+      .query({ sortBy: 'priority', limit: 2, before: page1.body.nextCursor })
+      .set('Authorization', `Bearer ${admin}`);
+    expect(page2.status).toBe(200);
+    expect(page2.body.reports).toHaveLength(1);
+    // No overlap between priority pages (tuple cursor guarantees it).
+    const ids1 = page1.body.reports.map((r) => r.id);
+    const ids2 = page2.body.reports.map((r) => r.id);
+    expect(ids1.some((id) => ids2.includes(id))).toBe(false);
   });
 });
