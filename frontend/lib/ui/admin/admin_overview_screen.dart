@@ -5,6 +5,8 @@
 // chart and the category breakdown. Trend gaps are filled with zeroes so
 // the axis is stable.
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+import '../../core/locale_state.dart';
 import '../../core/strings.dart';
 import '../../core/theme.dart';
 import '../../data/api/admin_api.dart';
@@ -51,8 +53,7 @@ class _AdminOverviewScreenState extends State<AdminOverviewScreen>
     if (widget.active && !old.active) poll();
   }
 
-  Future<AdminStats> _load() =>
-      widget.loadStats?.call() ?? _api.stats();
+  Future<AdminStats> _load() => widget.loadStats?.call() ?? _api.stats();
 
   @override
   Widget build(BuildContext context) {
@@ -277,8 +278,8 @@ class _StatusSplit extends StatelessWidget {
                 Container(
                   width: 8,
                   height: 8,
-                  decoration: BoxDecoration(
-                      color: color, shape: BoxShape.circle),
+                  decoration:
+                      BoxDecoration(color: color, shape: BoxShape.circle),
                 ),
                 const SizedBox(width: 8),
                 Text(
@@ -343,9 +344,7 @@ class _SecondaryStats extends StatelessWidget {
   Widget build(BuildContext context) {
     final today = stats.daily.isEmpty
         ? 0
-        : stats.daily
-            .reduce((a, b) => a.date.isAfter(b.date) ? a : b)
-            .count;
+        : stats.daily.reduce((a, b) => a.date.isAfter(b.date) ? a : b).count;
     final resolution =
         stats.total == 0 ? 0 : (stats.resolved * 100 / stats.total).round();
 
@@ -460,8 +459,7 @@ class _StatCard extends StatelessWidget {
                     textBaseline: TextBaseline.alphabetic,
                     children: [
                       AnimatedCounter(value: value, style: valueStyle),
-                      if (suffix != null)
-                        Text(suffix!, style: valueStyle),
+                      if (suffix != null) Text(suffix!, style: valueStyle),
                     ],
                   ),
                   const SizedBox(height: 1),
@@ -657,10 +655,12 @@ class _TrendChart extends StatelessWidget {
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
                 _LegendDot(
-                    color: AppColors.ink, label: context.t('admin.legend_daily')),
+                    color: AppColors.ink,
+                    label: context.t('admin.legend_daily')),
                 const SizedBox(width: 18),
                 _LegendDot(
-                    color: AppColors.safety, label: context.t('admin.legend_today')),
+                    color: AppColors.safety,
+                    label: context.t('admin.legend_today')),
               ],
             ),
           ],
@@ -868,7 +868,8 @@ class _CategoryRow extends StatelessWidget {
               color: reportCategory.tileBg,
               borderRadius: BorderRadius.circular(12),
             ),
-            child: Icon(reportCategory.icon, color: reportCategory.tint, size: 19),
+            child:
+                Icon(reportCategory.icon, color: reportCategory.tint, size: 19),
           ),
           const SizedBox(width: 13),
           Expanded(
@@ -879,7 +880,8 @@ class _CategoryRow extends StatelessWidget {
                   children: [
                     Expanded(
                       child: Text(
-                        reportCategory.label,
+                        reportCategory.localizedLabel(
+                            context.watch<LocaleState>().isArabic),
                         overflow: TextOverflow.ellipsis,
                         style: const TextStyle(
                             fontWeight: FontWeight.w700, fontSize: 13),

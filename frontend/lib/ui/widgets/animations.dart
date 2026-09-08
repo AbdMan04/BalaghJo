@@ -125,8 +125,8 @@ class ShakeWidget extends StatefulWidget {
 
 class _ShakeWidgetState extends State<ShakeWidget>
     with SingleTickerProviderStateMixin {
-  late final AnimationController _c =
-      AnimationController(vsync: this, duration: const Duration(milliseconds: 420));
+  late final AnimationController _c = AnimationController(
+      vsync: this, duration: const Duration(milliseconds: 420));
 
   @override
   void initState() {
@@ -288,7 +288,10 @@ class _GradientBlobState extends State<GradientBlob>
             decoration: BoxDecoration(
               shape: BoxShape.circle,
               gradient: RadialGradient(
-                colors: [widget.color.withValues(alpha: 0.55), widget.color.withValues(alpha: 0)],
+                colors: [
+                  widget.color.withValues(alpha: 0.55),
+                  widget.color.withValues(alpha: 0)
+                ],
               ),
             ),
           ),

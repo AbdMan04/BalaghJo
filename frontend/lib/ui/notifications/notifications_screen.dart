@@ -88,7 +88,8 @@ class _NotificationsScreenState extends State<NotificationsScreen>
       });
     }
     if (n.reportId.isNotEmpty && mounted) {
-      Navigator.of(context).push(instantRoute(ReportDetailScreen(reportId: n.reportId)));
+      Navigator.of(context)
+          .push(instantRoute(ReportDetailScreen(reportId: n.reportId)));
     }
   }
 
@@ -171,8 +172,7 @@ class _NotificationsScreenState extends State<NotificationsScreen>
         title: Text(ctx.t('notif.delete_confirm_title'),
             style: const TextStyle(fontWeight: FontWeight.w800)),
         content: Text(
-          ctx.t('notif.delete_confirm_body')
-              .replaceAll('{n}', '${ids.length}'),
+          ctx.t('notif.delete_confirm_body').replaceAll('{n}', '${ids.length}'),
           style: const TextStyle(color: AppColors.textMuted, height: 1.4),
         ),
         actions: [
@@ -244,7 +244,8 @@ class _NotificationsScreenState extends State<NotificationsScreen>
             : null,
         title: Text(
           _selecting
-              ? context.t('notif.selected_count')
+              ? context
+                  .t('notif.selected_count')
                   .replaceAll('{n}', '${_selected.length}')
               : context.t('notif.title'),
           style: const TextStyle(fontWeight: FontWeight.w800),
@@ -284,7 +285,8 @@ class _NotificationsScreenState extends State<NotificationsScreen>
   Widget _buildBody() {
     if (_loading) {
       return const Center(
-          child: CircularProgressIndicator(strokeWidth: 2, color: AppColors.blue));
+          child:
+              CircularProgressIndicator(strokeWidth: 2, color: AppColors.blue));
     }
     if (_error) {
       return _CenteredMessage(
@@ -362,7 +364,9 @@ class _NotificationsScreenState extends State<NotificationsScreen>
                 borderRadius: BorderRadius.circular(AppRadius.sm),
               ),
               child: Icon(
-                n.read ? Icons.check_circle_outline : Icons.notifications_active_outlined,
+                n.read
+                    ? Icons.check_circle_outline
+                    : Icons.notifications_active_outlined,
                 color: n.read ? AppColors.textMuted : AppColors.navy,
                 size: 18,
               ),
@@ -429,16 +433,19 @@ class _CenteredMessage extends StatelessWidget {
             const SizedBox(height: 14),
             Text(title,
                 textAlign: TextAlign.center,
-                style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 16)),
+                style:
+                    const TextStyle(fontWeight: FontWeight.w700, fontSize: 16)),
             if (subtitle != null) ...[
               const SizedBox(height: 6),
               Text(subtitle!,
                   textAlign: TextAlign.center,
-                  style: const TextStyle(color: AppColors.textMuted, fontSize: 13)),
+                  style: const TextStyle(
+                      color: AppColors.textMuted, fontSize: 13)),
             ],
             if (onRetry != null) ...[
               const SizedBox(height: 16),
-              OutlinedButton(onPressed: onRetry, child: Text(context.t('common.retry'))),
+              OutlinedButton(
+                  onPressed: onRetry, child: Text(context.t('common.retry'))),
             ],
           ],
         ),

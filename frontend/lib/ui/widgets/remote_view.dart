@@ -76,7 +76,8 @@ class RemoteViewState<T> extends State<RemoteView<T>> {
   @override
   Widget build(BuildContext context) {
     if (_loading && _data == null) {
-      return const Center(child: CircularProgressIndicator(color: AppColors.blue));
+      return const Center(
+          child: CircularProgressIndicator(color: AppColors.blue));
     }
     if (_error != null && _data == null) {
       return Center(
@@ -85,11 +86,13 @@ class RemoteViewState<T> extends State<RemoteView<T>> {
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              const Icon(Icons.error_outline, color: AppColors.danger, size: 40),
+              const Icon(Icons.error_outline,
+                  color: AppColors.danger, size: 40),
               const SizedBox(height: 12),
               Text(_error!, textAlign: TextAlign.center),
               const SizedBox(height: 16),
-              ElevatedButton(onPressed: reload, child: Text(context.t('common.retry'))),
+              ElevatedButton(
+                  onPressed: reload, child: Text(context.t('common.retry'))),
             ],
           ),
         ),

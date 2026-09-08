@@ -8,7 +8,6 @@ import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import '../../core/api_errors.dart';
 import '../../core/identifier_validator.dart';
-import '../../core/locale_state.dart';
 import '../../core/strings.dart';
 import '../../core/theme.dart';
 import '../../data/models/user.dart';
@@ -16,6 +15,7 @@ import '../../state/auth_state.dart';
 import '../auth/onboarding_screen.dart';
 import '../widgets/animations.dart';
 import '../widgets/password_visibility_toggle.dart';
+import '../widgets/language_picker.dart';
 
 class ProfileScreen extends StatelessWidget {
   const ProfileScreen({super.key});
@@ -57,8 +57,7 @@ class ProfileScreen extends StatelessWidget {
                         await context.read<AuthState>().logout();
                         if (!context.mounted) return;
                         Navigator.of(context).pushAndRemoveUntil(
-                            pageRoute(const OnboardingScreen()),
-                            (_) => false);
+                            pageRoute(const OnboardingScreen()), (_) => false);
                       },
                       color: AppColors.danger,
                     ),
@@ -95,53 +94,11 @@ class ProfileScreen extends StatelessWidget {
   }
 
   void _showLanguage(BuildContext context) {
-    showModalBottomSheet<void>(
-      context: context,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-      ),
-      builder: (sheetCtx) => SafeArea(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Padding(
-              padding: const EdgeInsets.fromLTRB(20, 16, 20, 8),
-              child: Align(
-                alignment: AlignmentDirectional.centerStart,
-                child: Text(context.t('profile.language_title'),
-                    style: const TextStyle(
-                        fontWeight: FontWeight.w800, fontSize: 18)),
-              ),
-            ),
-            ListTile(
-              leading: const Icon(Icons.translate, color: AppColors.blue),
-              title: Text(context.t('profile.language_en')),
-              trailing: context.watch<LocaleState>().isArabic
-                  ? null
-                  : const Icon(Icons.check_circle,
-                      color: AppColors.success, size: 20),
-              onTap: () {
-                context.read<LocaleState>().setLocale(const Locale('en'));
-                Navigator.pop(sheetCtx);
-              },
-            ),
-            ListTile(
-              leading: const Icon(Icons.translate, color: AppColors.blue),
-              title: Text(context.t('profile.language_ar'),
-                  style: const TextStyle(color: AppColors.navy)),
-              trailing: context.watch<LocaleState>().isArabic
-                  ? const Icon(Icons.check_circle,
-                      color: AppColors.success, size: 20)
-                  : null,
-              onTap: () {
-                context.read<LocaleState>().setLocale(const Locale('ar'));
-                Navigator.pop(sheetCtx);
-              },
-            ),
-            const SizedBox(height: 8),
-          ],
-        ),
-      ),
+    showLanguagePicker(
+      context,
+      title: context.t('profile.language_title'),
+      enLabel: context.t('profile.language_en'),
+      arLabel: context.t('profile.language_ar'),
     );
   }
 

@@ -34,7 +34,8 @@ class ReportThumbnail extends StatelessWidget {
           : CachedNetworkImage(
               imageUrl: AppConfig.imageUrl(report.photoUrl),
               fit: BoxFit.cover,
-              memCacheWidth: (size * MediaQuery.devicePixelRatioOf(context)).round(),
+              memCacheWidth:
+                  (size * MediaQuery.devicePixelRatioOf(context)).round(),
               placeholder: (_, __) => _fallback(),
               errorWidget: (_, __, ___) => _fallback(),
             ),

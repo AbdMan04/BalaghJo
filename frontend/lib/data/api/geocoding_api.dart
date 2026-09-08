@@ -26,10 +26,17 @@ class GeocodingApi {
       }).timeout(const Duration(seconds: 8));
       if (res.statusCode != 200 || res.body.isEmpty) return null;
       final data = jsonDecode(res.body) as Map<String, dynamic>;
-      final addr = (data['address'] as Map?)?.cast<String, dynamic>() ?? const {};
+      final addr =
+          (data['address'] as Map?)?.cast<String, dynamic>() ?? const {};
 
       String? street;
-      for (final key in ['road', 'pedestrian', 'footway', 'living_street', 'service']) {
+      for (final key in [
+        'road',
+        'pedestrian',
+        'footway',
+        'living_street',
+        'service'
+      ]) {
         final v = addr[key];
         if (v is String && v.isNotEmpty) {
           street = v;

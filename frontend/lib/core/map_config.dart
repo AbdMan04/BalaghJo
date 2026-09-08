@@ -30,8 +30,7 @@ abstract final class MapConfig {
   static const String osmStreetUrl =
       'https://tile.openstreetmap.org/{z}/{x}/{y}.png';
 
-  static const String attribution =
-      '© Google · © OpenStreetMap contributors';
+  static const String attribution = '© Google · © OpenStreetMap contributors';
 
   /// A [TileLayer] rendering Google street tiles with an OSM fallback.
   static TileLayer tileLayer() => TileLayer(

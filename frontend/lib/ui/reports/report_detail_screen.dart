@@ -91,7 +91,8 @@ class _ReportDetailScreenState extends State<ReportDetailScreen>
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         behavior: SnackBarBehavior.floating,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(AppRadius.md)),
+        shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(AppRadius.md)),
         content: Text(_following
             ? 'Following — you\'ll be notified of updates'
             : 'Stopped following this report'),
@@ -103,13 +104,16 @@ class _ReportDetailScreenState extends State<ReportDetailScreen>
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text(context.t('detail.title'), style: const TextStyle(fontWeight: FontWeight.w800)),
+        title: Text(context.t('detail.title'),
+            style: const TextStyle(fontWeight: FontWeight.w800)),
       ),
       body: FutureBuilder<Report>(
         future: _future,
         builder: (_, snap) {
-          if (snap.connectionState == ConnectionState.waiting && !snap.hasData) {
-            return const Center(child: CircularProgressIndicator(color: AppColors.blue));
+          if (snap.connectionState == ConnectionState.waiting &&
+              !snap.hasData) {
+            return const Center(
+                child: CircularProgressIndicator(color: AppColors.blue));
           }
           if (snap.hasError) {
             // A 404 means the report was deleted; show a clear message
@@ -143,17 +147,21 @@ class _ReportDetailScreenState extends State<ReportDetailScreen>
                               decoration: BoxDecoration(
                                 gradient: LinearGradient(
                                   colors: [
-                                    colorForCategory(r.category).withValues(alpha: 0.18),
-                                    colorForCategory(r.category).withValues(alpha: 0.05),
+                                    colorForCategory(r.category)
+                                        .withValues(alpha: 0.18),
+                                    colorForCategory(r.category)
+                                        .withValues(alpha: 0.05),
                                   ],
                                   begin: Alignment.topLeft,
                                   end: Alignment.bottomRight,
                                 ),
-                                borderRadius: BorderRadius.circular(AppRadius.lg),
+                                borderRadius:
+                                    BorderRadius.circular(AppRadius.lg),
                               ),
                               child: Center(
                                 child: Icon(iconForCategory(r.category),
-                                    size: 72, color: colorForCategory(r.category)),
+                                    size: 72,
+                                    color: colorForCategory(r.category)),
                               ),
                             )
                           : ClipRRect(
@@ -163,7 +171,8 @@ class _ReportDetailScreenState extends State<ReportDetailScreen>
                                 fit: BoxFit.cover,
                                 width: double.infinity,
                                 errorBuilder: (_, __, ___) => const Center(
-                                    child: Icon(Icons.broken_image_outlined, color: AppColors.textMuted)),
+                                    child: Icon(Icons.broken_image_outlined,
+                                        color: AppColors.textMuted)),
                               ),
                             ),
                     ),
@@ -176,7 +185,8 @@ class _ReportDetailScreenState extends State<ReportDetailScreen>
                     children: [
                       Expanded(
                         child: Text(reportDisplayTitle(r, context),
-                            style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 20)),
+                            style: const TextStyle(
+                                fontWeight: FontWeight.w800, fontSize: 20)),
                       ),
                       StatusBadge(r.status),
                     ],
@@ -214,7 +224,8 @@ class _ReportDetailScreenState extends State<ReportDetailScreen>
                     ),
                     child: Row(
                       children: [
-                        const Icon(Icons.location_on, size: 16, color: AppColors.ink),
+                        const Icon(Icons.location_on,
+                            size: 16, color: AppColors.ink),
                         const SizedBox(width: 6),
                         Expanded(child: _LocationText(report: r)),
                       ],
@@ -232,25 +243,50 @@ class _ReportDetailScreenState extends State<ReportDetailScreen>
                   ),
                 ),
                 const SizedBox(height: 22),
-                FadeSlideIn(delay: const Duration(milliseconds: 260), child: _section(context.t('detail.report_info'))),
-                FadeSlideIn(delay: const Duration(milliseconds: 300), child: _kv(context.t('detail.category'), context.t('cat.${r.category}'))),
-                FadeSlideIn(delay: const Duration(milliseconds: 340), child: _kv(context.t('detail.submitted_on'), formatDate(r.createdAt))),
+                FadeSlideIn(
+                    delay: const Duration(milliseconds: 260),
+                    child: _section(context.t('detail.report_info'))),
+                FadeSlideIn(
+                    delay: const Duration(milliseconds: 300),
+                    child: _kv(context.t('detail.category'),
+                        context.t('cat.${r.category}'))),
+                FadeSlideIn(
+                    delay: const Duration(milliseconds: 340),
+                    child: _kv(context.t('detail.submitted_on'),
+                        formatDate(r.createdAt))),
                 if (r.statusChangedAt != null)
-                  FadeSlideIn(delay: const Duration(milliseconds: 360), child: _kv(context.t('detail.last_updated'), DateFormat.MMMd().add_Hm().format(r.statusChangedAt!))),
+                  FadeSlideIn(
+                      delay: const Duration(milliseconds: 360),
+                      child: _kv(
+                          context.t('detail.last_updated'),
+                          DateFormat.MMMd()
+                              .add_Hm()
+                              .format(r.statusChangedAt!))),
                 if (r.assignedTo.isNotEmpty)
-                  FadeSlideIn(delay: const Duration(milliseconds: 380), child: _kv(context.t('detail.assigned_to'), r.assignedTo)),
+                  FadeSlideIn(
+                      delay: const Duration(milliseconds: 380),
+                      child:
+                          _kv(context.t('detail.assigned_to'), r.assignedTo)),
                 if (r.estimatedFix != null)
-                  FadeSlideIn(delay: const Duration(milliseconds: 420), child: _kv(context.t('detail.est_fix'), formatDate(r.estimatedFix!))),
+                  FadeSlideIn(
+                      delay: const Duration(milliseconds: 420),
+                      child: _kv(context.t('detail.est_fix'),
+                          formatDate(r.estimatedFix!))),
                 const SizedBox(height: 18),
-                if (r.reporterPhone.isNotEmpty || r.reporterName.isNotEmpty) ...[
-                  FadeSlideIn(delay: const Duration(milliseconds: 440), child: _section(context.t('detail.reporter_contact'))),
+                if (r.reporterPhone.isNotEmpty ||
+                    r.reporterName.isNotEmpty) ...[
+                  FadeSlideIn(
+                      delay: const Duration(milliseconds: 440),
+                      child: _section(context.t('detail.reporter_contact'))),
                   FadeSlideIn(
                     delay: const Duration(milliseconds: 470),
                     child: _ReporterCard(report: r),
                   ),
                   const SizedBox(height: 18),
                 ],
-                FadeSlideIn(delay: const Duration(milliseconds: 460), child: _section(context.t('detail.user_description'))),
+                FadeSlideIn(
+                    delay: const Duration(milliseconds: 460),
+                    child: _section(context.t('detail.user_description'))),
                 FadeSlideIn(
                   delay: const Duration(milliseconds: 500),
                   child: Container(
@@ -260,7 +296,8 @@ class _ReportDetailScreenState extends State<ReportDetailScreen>
                       borderRadius: BorderRadius.circular(AppRadius.md),
                       border: Border.all(color: AppColors.border),
                     ),
-                    child: Text(r.description, style: const TextStyle(height: 1.5)),
+                    child: Text(r.description,
+                        style: const TextStyle(height: 1.5)),
                   ),
                 ),
                 const SizedBox(height: 24),
@@ -281,9 +318,12 @@ class _ReportDetailScreenState extends State<ReportDetailScreen>
                             child: Row(
                               mainAxisAlignment: MainAxisAlignment.center,
                               children: [
-                                const Icon(Icons.share_outlined, size: 18, color: AppColors.navy),
+                                const Icon(Icons.share_outlined,
+                                    size: 18, color: AppColors.navy),
                                 const SizedBox(width: 6),
-                                Text(context.t('common.share'), style: const TextStyle(fontWeight: FontWeight.w700)),
+                                Text(context.t('common.share'),
+                                    style: const TextStyle(
+                                        fontWeight: FontWeight.w700)),
                               ],
                             ),
                           ),
@@ -306,15 +346,22 @@ class _ReportDetailScreenState extends State<ReportDetailScreen>
                               mainAxisAlignment: MainAxisAlignment.center,
                               children: [
                                 Icon(
-                                  _following ? Icons.notifications_active : Icons.notifications_outlined,
+                                  _following
+                                      ? Icons.notifications_active
+                                      : Icons.notifications_outlined,
                                   size: 18,
-                                  color: _following ? Colors.white : AppColors.ink,
+                                  color:
+                                      _following ? Colors.white : AppColors.ink,
                                 ),
                                 const SizedBox(width: 6),
                                 Text(
-                                  _following ? context.t('detail.following') : context.t('detail.follow'),
+                                  _following
+                                      ? context.t('detail.following')
+                                      : context.t('detail.follow'),
                                   style: TextStyle(
-                                    color: _following ? Colors.white : AppColors.ink,
+                                    color: _following
+                                        ? Colors.white
+                                        : AppColors.ink,
                                     fontWeight: FontWeight.w700,
                                   ),
                                 ),
@@ -338,7 +385,10 @@ class _ReportDetailScreenState extends State<ReportDetailScreen>
         padding: const EdgeInsets.only(bottom: 10),
         child: Text(t,
             style: const TextStyle(
-                fontSize: 11, fontWeight: FontWeight.w700, color: AppColors.textMuted, letterSpacing: 0.6)),
+                fontSize: 11,
+                fontWeight: FontWeight.w700,
+                color: AppColors.textMuted,
+                letterSpacing: 0.6)),
       );
 
   Widget _kv(String k, String v) => Padding(
@@ -348,8 +398,13 @@ class _ReportDetailScreenState extends State<ReportDetailScreen>
           children: [
             SizedBox(
                 width: 110,
-                child: Text(k, style: const TextStyle(color: AppColors.textMuted, fontSize: 12))),
-            Expanded(child: Text(v, style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 13))),
+                child: Text(k,
+                    style: const TextStyle(
+                        color: AppColors.textMuted, fontSize: 12))),
+            Expanded(
+                child: Text(v,
+                    style: const TextStyle(
+                        fontWeight: FontWeight.w700, fontSize: 13))),
           ],
         ),
       );
@@ -375,7 +430,8 @@ class _ReporterCard extends StatelessWidget {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         behavior: SnackBarBehavior.floating,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(AppRadius.md)),
+        shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(AppRadius.md)),
         content: const Text('Phone number copied'),
       ),
     );
@@ -402,7 +458,8 @@ class _ReporterCard extends StatelessWidget {
                   color: AppColors.blue.withValues(alpha: 0.1),
                   borderRadius: BorderRadius.circular(AppRadius.sm),
                 ),
-                child: const Icon(Icons.person, color: AppColors.blue, size: 20),
+                child:
+                    const Icon(Icons.person, color: AppColors.blue, size: 20),
               ),
               const SizedBox(width: 10),
               Expanded(
@@ -410,8 +467,11 @@ class _ReporterCard extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      report.reporterName.isNotEmpty ? report.reporterName : 'Reporter',
-                      style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 14),
+                      report.reporterName.isNotEmpty
+                          ? report.reporterName
+                          : 'Reporter',
+                      style: const TextStyle(
+                          fontWeight: FontWeight.w800, fontSize: 14),
                     ),
                   ],
                 ),
@@ -428,7 +488,8 @@ class _ReporterCard extends StatelessWidget {
                 const SizedBox(width: 8),
                 Expanded(
                   child: Text(report.reporterPhone,
-                      style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 14)),
+                      style: const TextStyle(
+                          fontWeight: FontWeight.w700, fontSize: 14)),
                 ),
                 PressableScale(
                   onTap: () => _copyPhone(context),
@@ -438,14 +499,16 @@ class _ReporterCard extends StatelessWidget {
                       color: AppColors.surface,
                       borderRadius: BorderRadius.circular(AppRadius.sm),
                     ),
-                    child: const Icon(Icons.copy, size: 16, color: AppColors.navy),
+                    child:
+                        const Icon(Icons.copy, size: 16, color: AppColors.navy),
                   ),
                 ),
                 const SizedBox(width: 8),
                 PressableScale(
                   onTap: () => _call(context),
                   child: Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 14, vertical: 10),
                     decoration: BoxDecoration(
                       color: AppColors.success,
                       borderRadius: BorderRadius.circular(AppRadius.sm),
@@ -455,7 +518,9 @@ class _ReporterCard extends StatelessWidget {
                         Icon(Icons.phone, color: Colors.white, size: 16),
                         SizedBox(width: 6),
                         Text('Call',
-                            style: TextStyle(color: Colors.white, fontWeight: FontWeight.w800)),
+                            style: TextStyle(
+                                color: Colors.white,
+                                fontWeight: FontWeight.w800)),
                       ],
                     ),
                   ),
@@ -530,13 +595,15 @@ class _LocationTextState extends State<_LocationText> {
           children: [
             Expanded(
               child: Text(primary,
-                  style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w700)),
+                  style: const TextStyle(
+                      fontSize: 13, fontWeight: FontWeight.w700)),
             ),
             if (_loading)
               const SizedBox(
                 width: 12,
                 height: 12,
-                child: CircularProgressIndicator(strokeWidth: 1.5, color: AppColors.blue),
+                child: CircularProgressIndicator(
+                    strokeWidth: 1.5, color: AppColors.blue),
               ),
           ],
         ),
@@ -573,7 +640,8 @@ class _ShareSheet extends StatelessWidget {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         behavior: SnackBarBehavior.floating,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(AppRadius.md)),
+        shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(AppRadius.md)),
         content: const Row(children: [
           Icon(Icons.check_circle, color: Colors.white, size: 18),
           SizedBox(width: 8),
@@ -606,7 +674,9 @@ class _ShareSheet extends StatelessWidget {
             const Text('Share Report',
                 style: TextStyle(fontWeight: FontWeight.w800, fontSize: 18)),
             const SizedBox(height: 4),
-            Text(report.reportId, style: const TextStyle(color: AppColors.textMuted, fontSize: 12)),
+            Text(report.reportId,
+                style:
+                    const TextStyle(color: AppColors.textMuted, fontSize: 12)),
             const SizedBox(height: 20),
             Row(
               children: [
@@ -626,7 +696,9 @@ class _ShareSheet extends StatelessWidget {
                           SizedBox(height: 6),
                           Text('WhatsApp',
                               style: TextStyle(
-                                  color: Colors.white, fontWeight: FontWeight.w700, fontSize: 12)),
+                                  color: Colors.white,
+                                  fontWeight: FontWeight.w700,
+                                  fontSize: 12)),
                         ],
                       ),
                     ),
@@ -645,11 +717,14 @@ class _ShareSheet extends StatelessWidget {
                       ),
                       child: const Column(
                         children: [
-                          Icon(Icons.ios_share, color: AppColors.blue, size: 22),
+                          Icon(Icons.ios_share,
+                              color: AppColors.blue, size: 22),
                           SizedBox(height: 6),
                           Text('More apps',
                               style: TextStyle(
-                                  color: AppColors.blue, fontWeight: FontWeight.w700, fontSize: 12)),
+                                  color: AppColors.blue,
+                                  fontWeight: FontWeight.w700,
+                                  fontSize: 12)),
                         ],
                       ),
                     ),
@@ -730,7 +805,9 @@ class _StatusTimeline extends StatelessWidget {
         icon: Icons.check_circle_rounded,
         sub: resolvedAt != null
             ? DateFormat.MMMd().add_Hm().format(resolvedAt)
-            : (status == ReportStatus.resolved ? context.t('detail.done') : context.t('detail.pending')),
+            : (status == ReportStatus.resolved
+                ? context.t('detail.done')
+                : context.t('detail.pending')),
       ),
     ];
     final active = _activeIndex;
@@ -792,7 +869,8 @@ class _StatusTimeline extends StatelessWidget {
                 style: TextStyle(
                   fontSize: 11,
                   fontWeight: FontWeight.w800,
-                  color: isActive || isDone ? AppColors.navy : AppColors.textMuted,
+                  color:
+                      isActive || isDone ? AppColors.navy : AppColors.textMuted,
                 ),
               ),
               const SizedBox(height: 2),
@@ -822,7 +900,8 @@ class _ReportGoneView extends StatelessWidget {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            const Icon(Icons.delete_outline, size: 52, color: AppColors.textMuted),
+            const Icon(Icons.delete_outline,
+                size: 52, color: AppColors.textMuted),
             const SizedBox(height: 14),
             Text(
               context.t('detail.report_deleted'),

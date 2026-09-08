@@ -50,7 +50,8 @@ Future<void> _initLocalNotifications() async {
   // Transparent brand pin (drawable/ic_notification.xml) instead of the
   // full-color launcher icon, so the status bar shows a clean silhouette.
   const android = AndroidInitializationSettings('ic_notification');
-  await _localNotifications.initialize(const InitializationSettings(android: android));
+  await _localNotifications
+      .initialize(const InitializationSettings(android: android));
 }
 
 Future<void> _showLocalNotification(RemoteMessage message) async {

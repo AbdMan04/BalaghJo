@@ -112,13 +112,15 @@ class _ReportsMapScreenState extends State<ReportsMapScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text(context.t('map.title'), style: const TextStyle(fontWeight: FontWeight.w800)),
+        title: Text(context.t('map.title'),
+            style: const TextStyle(fontWeight: FontWeight.w800)),
       ),
       body: FutureBuilder<List<Report>>(
         future: _future,
         builder: (_, snap) {
           final loading = snap.connectionState == ConnectionState.waiting;
-          final reports = (snap.data ?? const <Report>[]).where(_hasCoords).toList();
+          final reports =
+              (snap.data ?? const <Report>[]).where(_hasCoords).toList();
           return Stack(
             children: [
               FlutterMap(
@@ -222,15 +224,19 @@ class _ReportsMapScreenState extends State<ReportsMapScreen> {
                         color: Colors.white,
                         shape: BoxShape.circle,
                         boxShadow: [
-                          BoxShadow(color: Colors.black.withValues(alpha: 0.15), blurRadius: 10),
+                          BoxShadow(
+                              color: Colors.black.withValues(alpha: 0.15),
+                              blurRadius: 10),
                         ],
                       ),
                       child: _locating
                           ? const Padding(
                               padding: EdgeInsets.all(14),
-                              child: CircularProgressIndicator(strokeWidth: 2, color: AppColors.blue),
+                              child: CircularProgressIndicator(
+                                  strokeWidth: 2, color: AppColors.blue),
                             )
-                          : const Icon(Icons.my_location, color: AppColors.blue),
+                          : const Icon(Icons.my_location,
+                              color: AppColors.blue),
                     ),
                   ),
                 ),
@@ -254,7 +260,8 @@ class _YouAreHereDot extends StatelessWidget {
         color: AppColors.blue,
         border: Border.all(color: Colors.white, width: 3),
         boxShadow: [
-          BoxShadow(color: AppColors.blue.withValues(alpha: 0.5), blurRadius: 12),
+          BoxShadow(
+              color: AppColors.blue.withValues(alpha: 0.5), blurRadius: 12),
         ],
       ),
     );
@@ -311,12 +318,14 @@ class _FilterBar extends StatelessWidget {
         children: [
           Builder(builder: (ctx) {
             return _scrollRow([
-              _chip(ctx.t('status.all_status'), status == null, () => onStatus(null), AppColors.navy),
-              _chip(ctx.t('status.sent'), status == 'pending', () => onStatus('pending'), AppColors.blue),
-              _chip(ctx.t('status.processing'), status == 'in_progress', () => onStatus('in_progress'),
-                  AppColors.warning),
-              _chip(ctx.t('status.resolved'), status == 'resolved', () => onStatus('resolved'),
-                  AppColors.success),
+              _chip(ctx.t('status.all_status'), status == null,
+                  () => onStatus(null), AppColors.navy),
+              _chip(ctx.t('status.sent'), status == 'pending',
+                  () => onStatus('pending'), AppColors.blue),
+              _chip(ctx.t('status.processing'), status == 'in_progress',
+                  () => onStatus('in_progress'), AppColors.warning),
+              _chip(ctx.t('status.resolved'), status == 'resolved',
+                  () => onStatus('resolved'), AppColors.success),
             ]);
           }),
           const SizedBox(height: 6),
@@ -391,7 +400,8 @@ class _FilterBar extends StatelessWidget {
             mainAxisSize: MainAxisSize.min,
             children: [
               if (value != null) ...[
-                Icon(iconForCategory(value), size: 13, color: active ? tint : AppColors.textMuted),
+                Icon(iconForCategory(value),
+                    size: 13, color: active ? tint : AppColors.textMuted),
                 const SizedBox(width: 5),
               ],
               Text(
@@ -419,7 +429,9 @@ class _LoadingChip extends StatelessWidget {
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(20),
-        boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.1), blurRadius: 12)],
+        boxShadow: [
+          BoxShadow(color: Colors.black.withValues(alpha: 0.1), blurRadius: 12)
+        ],
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
@@ -427,11 +439,13 @@ class _LoadingChip extends StatelessWidget {
           const SizedBox(
             width: 14,
             height: 14,
-            child: CircularProgressIndicator(strokeWidth: 2, color: AppColors.blue),
+            child: CircularProgressIndicator(
+                strokeWidth: 2, color: AppColors.blue),
           ),
           const SizedBox(width: 8),
           Text(context.t('map.loading'),
-              style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w700)),
+              style:
+                  const TextStyle(fontSize: 12, fontWeight: FontWeight.w700)),
         ],
       ),
     );
@@ -447,15 +461,19 @@ class _EmptyChip extends StatelessWidget {
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(20),
-        boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.1), blurRadius: 12)],
+        boxShadow: [
+          BoxShadow(color: Colors.black.withValues(alpha: 0.1), blurRadius: 12)
+        ],
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          const Icon(Icons.location_off_outlined, color: AppColors.textMuted, size: 16),
+          const Icon(Icons.location_off_outlined,
+              color: AppColors.textMuted, size: 16),
           const SizedBox(width: 6),
           Text(context.t('map.no_match'),
-              style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w700)),
+              style:
+                  const TextStyle(fontSize: 12, fontWeight: FontWeight.w700)),
         ],
       ),
     );
@@ -476,7 +494,8 @@ class _MarkerCard extends StatelessWidget {
       curve: Curves.easeOutCubic,
       builder: (_, t, child) => Opacity(
         opacity: t,
-        child: Transform.translate(offset: Offset(0, (1 - t) * 12), child: child),
+        child:
+            Transform.translate(offset: Offset(0, (1 - t) * 12), child: child),
       ),
       child: Container(
         padding: const EdgeInsets.all(14),
@@ -484,7 +503,10 @@ class _MarkerCard extends StatelessWidget {
           color: Colors.white,
           borderRadius: BorderRadius.circular(AppRadius.md),
           boxShadow: [
-            BoxShadow(color: Colors.black.withValues(alpha: 0.18), blurRadius: 22, offset: const Offset(0, 8)),
+            BoxShadow(
+                color: Colors.black.withValues(alpha: 0.18),
+                blurRadius: 22,
+                offset: const Offset(0, 8)),
           ],
         ),
         child: Column(
@@ -506,8 +528,9 @@ class _MarkerCard extends StatelessWidget {
                       ? Image.network(
                           AppConfig.imageUrl(report.photoUrl),
                           fit: BoxFit.cover,
-                          errorBuilder: (_, __, ___) =>
-                              Icon(iconForCategory(report.category), color: tint),
+                          errorBuilder: (_, __, ___) => Icon(
+                              iconForCategory(report.category),
+                              color: tint),
                         )
                       : Icon(iconForCategory(report.category), color: tint),
                 ),
@@ -520,7 +543,8 @@ class _MarkerCard extends StatelessWidget {
                         report.title.isNotEmpty
                             ? report.title
                             : labelForCategory(report.category, context),
-                        style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 14),
+                        style: const TextStyle(
+                            fontWeight: FontWeight.w800, fontSize: 14),
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                       ),
@@ -529,7 +553,8 @@ class _MarkerCard extends StatelessWidget {
                         report.address.isNotEmpty
                             ? report.address
                             : context.t('map.unnamed_location'),
-                        style: const TextStyle(color: AppColors.textMuted, fontSize: 11),
+                        style: const TextStyle(
+                            color: AppColors.textMuted, fontSize: 11),
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                       ),
@@ -539,14 +564,16 @@ class _MarkerCard extends StatelessWidget {
                           StatusBadge(report.status),
                           const SizedBox(width: 8),
                           Text(formatDate(report.createdAt),
-                              style: const TextStyle(color: AppColors.textMuted, fontSize: 11)),
+                              style: const TextStyle(
+                                  color: AppColors.textMuted, fontSize: 11)),
                         ],
                       ),
                     ],
                   ),
                 ),
                 IconButton(
-                  icon: const Icon(Icons.close, size: 18, color: AppColors.textMuted),
+                  icon: const Icon(Icons.close,
+                      size: 18, color: AppColors.textMuted),
                   onPressed: onClose,
                 ),
               ],
@@ -566,10 +593,14 @@ class _MarkerCard extends StatelessWidget {
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    const Icon(Icons.open_in_new, color: Colors.white, size: 16),
+                    const Icon(Icons.open_in_new,
+                        color: Colors.white, size: 16),
                     const SizedBox(width: 6),
                     Text(context.t('map.open_details'),
-                        style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w800, fontSize: 13)),
+                        style: const TextStyle(
+                            color: Colors.white,
+                            fontWeight: FontWeight.w800,
+                            fontSize: 13)),
                   ],
                 ),
               ),

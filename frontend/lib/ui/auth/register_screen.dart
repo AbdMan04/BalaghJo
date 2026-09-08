@@ -8,6 +8,7 @@ import '../../core/theme.dart';
 import '../../state/auth_state.dart';
 import '../home/main_shell.dart';
 import '../widgets/animations.dart';
+import '../widgets/language_picker.dart';
 import '../widgets/password_visibility_toggle.dart';
 import 'login_screen.dart';
 
@@ -68,6 +69,16 @@ class _RegisterScreenState extends State<RegisterScreen> {
         backgroundColor: Colors.transparent,
         surfaceTintColor: Colors.transparent,
         scrolledUnderElevation: 0,
+        actions: [
+          Padding(
+            padding: const EdgeInsets.only(right: 4),
+            child: LanguagePickerButton(
+              title: context.t('login.choose_language'),
+              enLabel: context.t('login.language_english'),
+              arLabel: context.t('login.language_arabic'),
+            ),
+          ),
+        ],
       ),
       body: SafeArea(
         child: ShakeWidget(
@@ -96,8 +107,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        _label(context.t('register.phone_label'),
-                            context.t('ar.phone_number')),
+                        _label('register.phone_label'),
                         // A3: cap text scaling on the small hint.
                         MediaQuery.withClampedTextScaling(
                           maxScaleFactor: 1.3,
@@ -114,9 +124,10 @@ class _RegisterScreenState extends State<RegisterScreen> {
                               FilteringTextInputFormatter.digitsOnly,
                               LengthLimitingTextInputFormatter(10),
                             ],
-                            validator: (v) => (v == null || !joPhoneRegex.hasMatch(v.trim()))
-                                ? context.t('login.invalid_phone')
-                                : null,
+                            validator: (v) =>
+                                (v == null || !joPhoneRegex.hasMatch(v.trim()))
+                                    ? context.t('login.invalid_phone')
+                                    : null,
                           ),
                         ),
                       ],
@@ -130,8 +141,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              _label(context.t('register.first_name'),
-                                  context.t('ar.first_name')),
+                              _label('register.first_name'),
                               TextFormField(
                                 controller: _first,
                                 decoration: InputDecoration(
@@ -149,8 +159,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              _label(context.t('register.last_name'),
-                                  context.t('ar.last_name')),
+                              _label('register.last_name'),
                               TextFormField(
                                 controller: _last,
                                 decoration: InputDecoration(
@@ -171,8 +180,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        _label(context.t('register.password'),
-                            context.t('ar.password')),
+                        _label('register.password'),
                         TextFormField(
                           controller: _pass,
                           decoration: InputDecoration(
@@ -285,23 +293,15 @@ class _RegisterScreenState extends State<RegisterScreen> {
     );
   }
 
-  Widget _label(String en, String ar) => Padding(
+  Widget _label(String key) => Padding(
         padding: const EdgeInsets.only(top: 14, bottom: 6),
-        child: Row(
-          children: [
-            Text(en,
-                style: const TextStyle(
-                    fontSize: 11,
-                    fontWeight: FontWeight.w700,
-                    color: AppColors.textMuted,
-                    letterSpacing: 0.6)),
-            const SizedBox(width: 8),
-            Text(ar,
-                style: const TextStyle(
-                    fontSize: 11,
-                    fontWeight: FontWeight.w700,
-                    color: AppColors.textMuted)),
-          ],
+        child: Text(
+          context.t(key),
+          style: const TextStyle(
+              fontSize: 11,
+              fontWeight: FontWeight.w700,
+              color: AppColors.textMuted,
+              letterSpacing: 0.6),
         ),
       );
 }

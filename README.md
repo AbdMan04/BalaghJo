@@ -11,7 +11,7 @@ A civic reporting app for the city of Irbid, Jordan. Citizens can report problem
 
 ```bash
 cd backend
-cp .env.example .env   # fill in MONGO_URI, JWT_SECRET
+cp .env.example .env 
 npm install
 npm run dev
 ```
@@ -39,11 +39,4 @@ For Android: connect a device or start an emulator, same command without `-d chr
 **Backend:** Express, Mongoose, JWT auth, Cloudinary (photos), Firebase (push notifications)
 
 **Frontend:** Flutter, Provider (state), custom i18n (EN/AR)
-
-## Notes
-
-- Phone numbers must start with `077`, `078`, or `079`
-- The map is locked to the Irbid area
-- Cloudinary and Firebase are optional — the app runs without them, you just won't get photo hosting or push notifications
-- On Render: Cloudinary is required in production (Render disk is ephemeral, photos would get lost)
 

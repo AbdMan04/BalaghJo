@@ -31,7 +31,8 @@ class StatusFilterChip extends StatelessWidget {
           decoration: BoxDecoration(
             color: active ? AppColors.navy : Colors.white,
             borderRadius: BorderRadius.circular(20),
-            border: Border.all(color: active ? AppColors.navy : AppColors.border),
+            border:
+                Border.all(color: active ? AppColors.navy : AppColors.border),
           ),
           child: AnimatedDefaultTextStyle(
             duration: const Duration(milliseconds: 240),
@@ -83,7 +84,8 @@ class CategoryFilterChip extends StatelessWidget {
             mainAxisSize: MainAxisSize.min,
             children: [
               if (value != null) ...[
-                Icon(iconForCategory(value!), size: 13, color: active ? tint : AppColors.textMuted),
+                Icon(iconForCategory(value!),
+                    size: 13, color: active ? tint : AppColors.textMuted),
                 const SizedBox(width: 5),
               ],
               Text(

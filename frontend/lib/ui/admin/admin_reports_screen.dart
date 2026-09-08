@@ -121,7 +121,8 @@ class _AdminReportsScreenState extends State<AdminReportsScreen>
                       report: page.reports[i],
                       onTap: () async {
                         await Navigator.of(context).push(
-                          instantRoute(AdminReportDetailScreen(report: page.reports[i])),
+                          instantRoute(
+                              AdminReportDetailScreen(report: page.reports[i])),
                         );
                         // Status may have changed on the detail screen; refresh.
                         if (mounted) _listKey.currentState?.reload();
@@ -194,11 +195,14 @@ class _FilterBar extends StatelessWidget {
             child: ListView(
               scrollDirection: Axis.horizontal,
               children: [
-                _filterChip(context, context.t('status.all'), null, statusFilter, onStatus),
+                _filterChip(context, context.t('status.all'), null,
+                    statusFilter, onStatus),
                 for (final s in ReportStatus.values)
-                  _filterChip(context, s.label, s.apiValue, statusFilter, onStatus),
+                  _filterChip(
+                      context, s.label, s.apiValue, statusFilter, onStatus),
                 const SizedBox(width: 8),
-                _filterChip(context, context.t('cat.all'), null, categoryFilter, onCategory),
+                _filterChip(context, context.t('cat.all'), null, categoryFilter,
+                    onCategory),
                 for (final c in ReportCategory.values)
                   _filterChip(
                       context, c.label, c.apiValue, categoryFilter, onCategory),
@@ -212,8 +216,8 @@ class _FilterBar extends StatelessWidget {
     );
   }
 
-  Widget _filterChip(
-      BuildContext context, String label, String? value, String? current, ValueChanged<String?> onTap) {
+  Widget _filterChip(BuildContext context, String label, String? value,
+      String? current, ValueChanged<String?> onTap) {
     final selected = value == current;
     return Padding(
       padding: const EdgeInsets.only(right: 6),
@@ -272,7 +276,8 @@ class _AdminRow extends StatelessWidget {
                           width: 56,
                           height: 56,
                           fit: BoxFit.cover,
-                          errorBuilder: (_, __, ___) => _thumbFallback(cat.icon, cat.tileBg),
+                          errorBuilder: (_, __, ___) =>
+                              _thumbFallback(cat.icon, cat.tileBg),
                         )
                       : _thumbFallback(cat.icon, cat.tileBg),
                 ),
@@ -301,13 +306,15 @@ class _AdminRow extends StatelessWidget {
                         report.title.isNotEmpty ? report.title : cat.label,
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
-                        style: const TextStyle(fontSize: 12, color: AppColors.textMuted),
+                        style: const TextStyle(
+                            fontSize: 12, color: AppColors.textMuted),
                       ),
                       const SizedBox(height: 2),
                       Text(
                         '${report.reporterName.isEmpty ? '-' : report.reporterName}'
                         '${report.reporterPhone.isNotEmpty ? ' · ${report.reporterPhone}' : ''}',
-                        style: const TextStyle(fontSize: 11, color: AppColors.textMuted),
+                        style: const TextStyle(
+                            fontSize: 11, color: AppColors.textMuted),
                       ),
                     ],
                   ),
@@ -320,7 +327,8 @@ class _AdminRow extends StatelessWidget {
                     const SizedBox(height: 4),
                     Text(
                       formatDate(report.createdAt),
-                      style: const TextStyle(fontSize: 11, color: AppColors.textMuted),
+                      style: const TextStyle(
+                          fontSize: 11, color: AppColors.textMuted),
                     ),
                   ],
                 ),

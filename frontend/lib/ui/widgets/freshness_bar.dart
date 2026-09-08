@@ -9,7 +9,8 @@ import '../../core/theme.dart';
 class FreshnessBar extends StatelessWidget {
   final DateTime? lastUpdated;
   final VoidCallback onRefresh;
-  const FreshnessBar({super.key, required this.lastUpdated, required this.onRefresh});
+  const FreshnessBar(
+      {super.key, required this.lastUpdated, required this.onRefresh});
 
   @override
   Widget build(BuildContext context) {

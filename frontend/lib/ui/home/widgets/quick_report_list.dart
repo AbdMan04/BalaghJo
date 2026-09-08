@@ -1,14 +1,14 @@
-// QuickReportList — the three illustrated category cards shown on the
-// home screen below the "Report an Issue" hero. Laid out as a 2+1
-// grid: the first two categories share the top row, the third sits
-// centered below at the same card size. Tapping a card opens the
-// Submit Report screen with the category pre-filled. Illustrations
-// and pastel tile backgrounds come from [ReportCategory], which is
-// populated from the Claude Design handoff (Quick Report Icons v2 —
-// photo-faithful).
+// QuickReportList — the three category cards shown on the home screen
+// below the "Report an Issue" hero. Laid out as a 2+1 grid: the first
+// two categories share the top row, the third sits centered below at the
+// same card size. Tapping a card opens the Submit Report screen with the
+// category pre-filled. Real photos and pastel tile backgrounds come from
+// [ReportCategory], so the user sees exactly what a category looks like
+// before choosing it.
 import 'package:flutter/material.dart';
-import 'package:flutter_svg/flutter_svg.dart';
+import 'package:provider/provider.dart';
 import '../../../core/theme.dart';
+import '../../../core/locale_state.dart';
 import '../../reports/submit_report_screen.dart';
 import '../../widgets/animations.dart';
 import '../../widgets/category_icon.dart';
@@ -68,13 +68,16 @@ class _Card extends StatelessWidget {
               ClipRRect(
                 borderRadius: BorderRadius.circular(12),
                 child: Container(
-                  width: 48,
-                  height: 48,
+                  width: 64,
+                  height: 64,
                   color: category.tileBg,
-                  padding: const EdgeInsets.all(5),
-                  child: category.svgAsset != null
-                      ? SvgPicture.asset(category.svgAsset!, fit: BoxFit.contain)
-                      : Icon(category.icon, color: category.tint, size: 22),
+                  child: category.photoAsset != null
+                      ? Image.asset(category.photoAsset!,
+                          fit: BoxFit.cover)
+                      : Center(
+                          child: Icon(category.icon,
+                              color: category.tint, size: 22),
+                        ),
                 ),
               ),
               const SizedBox(width: 10),
@@ -83,34 +86,40 @@ class _Card extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    Text(
-                      category.label,
-                      style: const TextStyle(
-                        fontSize: 13,
-                        fontWeight: FontWeight.w800,
-                        color: AppColors.navy,
-                      ),
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                    const SizedBox(height: 2),
-                    Text(
-                      category.quickSubtitle ?? category.labelAr,
-                      textDirection: TextDirection.rtl,
-                      style: const TextStyle(
-                        fontSize: 11,
-                        color: AppColors.textMuted,
-                        height: 1.2,
-                      ),
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                    ),
+                    _CardLabel(category: category),
                   ],
                 ),
               ),
             ],
           ),
         ),
+      ),
+    );
+  }
+}
+
+// Renders the category label so it never gets cut off: two-word labels like
+// "Broken Light" or "تراكم نفايات" are split so each word sits on its own
+// smaller line, stacked on top of the other, instead of being ellipsized
+// mid-word. Single-word labels keep the normal one-line size.
+class _CardLabel extends StatelessWidget {
+  final ReportCategory category;
+  const _CardLabel({required this.category});
+
+  @override
+  Widget build(BuildContext context) {
+    final label =
+        category.localizedLabel(context.watch<LocaleState>().isArabic);
+    final words = label.split(' ');
+    final isStacked = words.length > 1;
+    return Text(
+      isStacked ? words.join('\n') : label,
+      textAlign: isStacked ? TextAlign.center : null,
+      style: TextStyle(
+        fontSize: isStacked ? 11 : 13,
+        height: isStacked ? 1.25 : null,
+        fontWeight: FontWeight.w800,
+        color: AppColors.navy,
       ),
     );
   }

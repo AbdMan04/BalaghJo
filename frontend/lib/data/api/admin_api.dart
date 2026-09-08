@@ -68,7 +68,8 @@ class AdminApi {
 
   Future<List<AdminAnnouncement>> listAnnouncements() async {
     final res = await _api.get('/api/admin/announcements');
-    return ApiClient.parseList(res, 'announcements', AdminAnnouncement.fromJson);
+    return ApiClient.parseList(
+        res, 'announcements', AdminAnnouncement.fromJson);
   }
 
   Future<AdminAnnouncement> sendAnnouncement({
@@ -94,11 +95,13 @@ class AdminApi {
 
   Future<List<AdminAnnouncement>> deleteAnnouncement(String id) async {
     final res = await _api.delete('/api/admin/announcements/$id');
-    return ApiClient.parseList(res, 'announcements', AdminAnnouncement.fromJson);
+    return ApiClient.parseList(
+        res, 'announcements', AdminAnnouncement.fromJson);
   }
 
   Future<List<AdminAnnouncement>> deleteAllAnnouncements() async {
     final res = await _api.delete('/api/admin/announcements');
-    return ApiClient.parseList(res, 'announcements', AdminAnnouncement.fromJson);
+    return ApiClient.parseList(
+        res, 'announcements', AdminAnnouncement.fromJson);
   }
 }

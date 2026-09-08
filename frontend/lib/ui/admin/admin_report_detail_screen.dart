@@ -117,6 +117,7 @@ class _AdminReportDetailScreenState extends State<AdminReportDetailScreen> {
   @override
   Widget build(BuildContext context) {
     final cat = ReportCategory.fromApi(_report.category);
+    final isArabic = context.watch<LocaleState>().isArabic;
     return Scaffold(
       appBar: AppBar(
         title: Text(_report.reportId,
@@ -250,7 +251,7 @@ class _AdminReportDetailScreenState extends State<AdminReportDetailScreen> {
                                 DropdownMenuItem(
                                   value: s,
                                   child: Text(
-                                    '${s.labelAr} · ${s.label}',
+                                    s.localizedLabel(isArabic),
                                     style: const TextStyle(fontSize: 13),
                                   ),
                                 ),

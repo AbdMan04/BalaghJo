@@ -20,17 +20,20 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
     _OnbData(
       icon: Icons.warning_amber_rounded,
       title: 'Your Voice Builds the City',
-      body: 'Report road issues, broken infrastructure, and public hazards in seconds.',
+      body:
+          'Report road issues, broken infrastructure, and public hazards in seconds.',
     ),
     _OnbData(
       icon: Icons.location_on_outlined,
       title: 'Pin the Exact Spot',
-      body: 'Attach a photo and your GPS location so crews know exactly where to look.',
+      body:
+          'Attach a photo and your GPS location so crews know exactly where to look.',
     ),
     _OnbData(
       icon: Icons.timeline_outlined,
       title: 'Track Every Update',
-      body: 'Follow your report from submission to resolution with real-time status.',
+      body:
+          'Follow your report from submission to resolution with real-time status.',
     ),
   ];
 
@@ -42,7 +45,9 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
 
   void _next() {
     if (_page < _pages.length - 1) {
-      _pc.nextPage(duration: const Duration(milliseconds: 380), curve: Curves.easeOutCubic);
+      _pc.nextPage(
+          duration: const Duration(milliseconds: 380),
+          curve: Curves.easeOutCubic);
     } else {
       Navigator.of(context).push(subtleRoute(const RegisterScreen()));
     }
@@ -76,7 +81,8 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                 controller: _pc,
                 onPageChanged: (i) => setState(() => _page = i),
                 itemCount: _pages.length,
-                itemBuilder: (_, i) => _OnbPage(data: _pages[i], isFirst: i == 0),
+                itemBuilder: (_, i) =>
+                    _OnbPage(data: _pages[i], isFirst: i == 0),
               ),
             ),
             _Dots(count: _pages.length, index: _page),
@@ -87,7 +93,8 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                 children: [
                   Expanded(
                     child: PressableScale(
-                      onTap: () => Navigator.of(context).push(subtleRoute(const LoginScreen())),
+                      onTap: () => Navigator.of(context)
+                          .push(subtleRoute(const LoginScreen())),
                       child: Container(
                         height: 52,
                         alignment: Alignment.center,
@@ -97,7 +104,8 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                         ),
                         child: const Text('Sign In',
                             style: TextStyle(
-                                color: AppColors.ink, fontWeight: FontWeight.w700)),
+                                color: AppColors.ink,
+                                fontWeight: FontWeight.w700)),
                       ),
                     ),
                   ),
@@ -116,9 +124,13 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                         child: Row(
                           mainAxisAlignment: MainAxisAlignment.center,
                           children: [
-                            Text(_page == _pages.length - 1 ? 'Get Started' : 'Next',
+                            Text(
+                                _page == _pages.length - 1
+                                    ? 'Get Started'
+                                    : 'Next',
                                 style: const TextStyle(
-                                    color: Colors.white, fontWeight: FontWeight.w800)),
+                                    color: Colors.white,
+                                    fontWeight: FontWeight.w800)),
                             const SizedBox(width: 6),
                             const Icon(Icons.arrow_forward,
                                 color: AppColors.safety, size: 18),
@@ -176,11 +188,15 @@ class _OnbPage extends StatelessWidget {
           Text(data.title,
               textAlign: TextAlign.center,
               style: const TextStyle(
-                  color: AppColors.ink, fontSize: 24, fontWeight: FontWeight.w800, height: 1.3)),
+                  color: AppColors.ink,
+                  fontSize: 24,
+                  fontWeight: FontWeight.w800,
+                  height: 1.3)),
           const SizedBox(height: 16),
           Text(data.body,
               textAlign: TextAlign.center,
-              style: const TextStyle(color: AppColors.muted, fontSize: 15, height: 1.6)),
+              style: const TextStyle(
+                  color: AppColors.muted, fontSize: 15, height: 1.6)),
         ],
       ),
     );

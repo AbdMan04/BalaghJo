@@ -46,13 +46,21 @@ class _AdminUsersScreenState extends State<AdminUsersScreen> {
         title: Text(context.t('admin.role_confirm_title')),
         content: Text(
           makeAdmin
-              ? context.t('admin.role_confirm_admin').replaceAll('{n}', user.fullName)
-              : context.t('admin.role_confirm_user').replaceAll('{n}', user.fullName),
+              ? context
+                  .t('admin.role_confirm_admin')
+                  .replaceAll('{n}', user.fullName)
+              : context
+                  .t('admin.role_confirm_user')
+                  .replaceAll('{n}', user.fullName),
         ),
         actions: [
-          TextButton(onPressed: () => Navigator.of(ctx).pop(false), child: Text(context.t('common.cancel'))),
+          TextButton(
+              onPressed: () => Navigator.of(ctx).pop(false),
+              child: Text(context.t('common.cancel'))),
           FilledButton(
-            style: FilledButton.styleFrom(backgroundColor: makeAdmin ? AppColors.success : AppColors.danger),
+            style: FilledButton.styleFrom(
+                backgroundColor:
+                    makeAdmin ? AppColors.success : AppColors.danger),
             onPressed: () => Navigator.of(ctx).pop(true),
             child: Text(context.t('common.confirm')),
           ),
@@ -66,7 +74,10 @@ class _AdminUsersScreenState extends State<AdminUsersScreen> {
       await _api.setRole(user.id, makeAdmin ? 'admin' : 'user');
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(makeAdmin ? context.t('admin.role_promoted') : context.t('admin.role_demoted'))),
+        SnackBar(
+            content: Text(makeAdmin
+                ? context.t('admin.role_promoted')
+                : context.t('admin.role_demoted'))),
       );
       _listKey.currentState?.reload();
     } catch (e) {
@@ -96,7 +107,8 @@ class _AdminUsersScreenState extends State<AdminUsersScreen> {
         Expanded(
           child: RemoteView<List<AdminUser>>(
             key: _listKey,
-            load: () => _api.listUsers(query: _search.query.isEmpty ? null : _search.query),
+            load: () => _api.listUsers(
+                query: _search.query.isEmpty ? null : _search.query),
             isEmpty: (l) => l.isEmpty,
             emptyMessage: context.t('admin.users_empty'),
             emptyIcon: Icons.person_search_outlined,
@@ -145,7 +157,9 @@ class _UserCard extends StatelessWidget {
             backgroundColor: user.isAdmin ? AppColors.navy : AppColors.surface,
             foregroundColor: user.isAdmin ? Colors.white : AppColors.textMuted,
             child: Text(
-              user.fullName.isNotEmpty ? user.fullName.substring(0, 1).toUpperCase() : '?',
+              user.fullName.isNotEmpty
+                  ? user.fullName.substring(0, 1).toUpperCase()
+                  : '?',
             ),
           ),
           const SizedBox(width: 12),
@@ -159,37 +173,45 @@ class _UserCard extends StatelessWidget {
                       child: Text(
                         user.fullName,
                         overflow: TextOverflow.ellipsis,
-                        style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 13),
+                        style: const TextStyle(
+                            fontWeight: FontWeight.w800, fontSize: 13),
                       ),
                     ),
                     if (user.isAdmin) ...[
                       const SizedBox(width: 6),
                       Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 6, vertical: 2),
                         decoration: BoxDecoration(
                           color: AppColors.blue,
                           borderRadius: BorderRadius.circular(4),
                         ),
                         child: const Text('ADMIN',
-                            style: TextStyle(color: Colors.white, fontSize: 9, fontWeight: FontWeight.w800)),
+                            style: TextStyle(
+                                color: Colors.white,
+                                fontSize: 9,
+                                fontWeight: FontWeight.w800)),
                       ),
                     ],
                     if (isSelf) ...[
                       const SizedBox(width: 6),
                       Text('(${context.t('admin.you')})',
-                          style: const TextStyle(fontSize: 11, color: AppColors.textMuted)),
+                          style: const TextStyle(
+                              fontSize: 11, color: AppColors.textMuted)),
                     ],
                   ],
                 ),
                 const SizedBox(height: 2),
                 Text(
                   user.phone == null || user.phone!.isEmpty ? '-' : user.phone!,
-                  style: const TextStyle(fontSize: 12, color: AppColors.textMuted),
+                  style:
+                      const TextStyle(fontSize: 12, color: AppColors.textMuted),
                 ),
                 const SizedBox(height: 2),
                 Text(
                   '${context.t('admin.sent')} ${user.sentReports} · ${context.t('admin.solved')} ${user.solvedReports}',
-                  style: const TextStyle(fontSize: 11, color: AppColors.textMuted),
+                  style:
+                      const TextStyle(fontSize: 11, color: AppColors.textMuted),
                 ),
               ],
             ),
@@ -199,7 +221,8 @@ class _UserCard extends StatelessWidget {
             const SizedBox(
               width: 24,
               height: 24,
-              child: CircularProgressIndicator(strokeWidth: 2, color: AppColors.blue),
+              child: CircularProgressIndicator(
+                  strokeWidth: 2, color: AppColors.blue),
             )
           else if (isSelf)
             const Icon(Icons.lock_outline, color: AppColors.border)
@@ -208,12 +231,17 @@ class _UserCard extends StatelessWidget {
               onPressed: onToggleAdmin,
               style: OutlinedButton.styleFrom(
                 minimumSize: const Size(0, 36),
-                side: BorderSide(color: user.isAdmin ? AppColors.danger : AppColors.success),
-                foregroundColor: user.isAdmin ? AppColors.danger : AppColors.success,
+                side: BorderSide(
+                    color: user.isAdmin ? AppColors.danger : AppColors.success),
+                foregroundColor:
+                    user.isAdmin ? AppColors.danger : AppColors.success,
               ),
               child: Text(
-                user.isAdmin ? context.t('admin.demote') : context.t('admin.promote'),
-                style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w700),
+                user.isAdmin
+                    ? context.t('admin.demote')
+                    : context.t('admin.promote'),
+                style:
+                    const TextStyle(fontSize: 12, fontWeight: FontWeight.w700),
               ),
             ),
         ],

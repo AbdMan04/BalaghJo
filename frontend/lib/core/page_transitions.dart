@@ -34,7 +34,8 @@ class HorizontalSlideTransitionsBuilder extends PageTransitionsBuilder {
       opacity: _underDim.animate(secondaryAnimation),
       child: SlideTransition(
         position: _outgoing.animate(
-          CurvedAnimation(parent: secondaryAnimation, curve: Curves.easeOutCubic),
+          CurvedAnimation(
+              parent: secondaryAnimation, curve: Curves.easeOutCubic),
         ),
         child: incoming,
       ),

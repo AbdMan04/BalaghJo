@@ -77,7 +77,8 @@ ThemeData buildAppTheme() {
     scaffoldBackgroundColor: AppColors.paper,
   );
   return base.copyWith(
-    textTheme: base.textTheme.apply(fontFamily: fontFamily, bodyColor: AppColors.ink),
+    textTheme:
+        base.textTheme.apply(fontFamily: fontFamily, bodyColor: AppColors.ink),
     appBarTheme: const AppBarTheme(
       backgroundColor: Colors.white,
       foregroundColor: AppColors.ink,
@@ -110,11 +111,12 @@ ThemeData buildAppTheme() {
         backgroundColor: AppColors.ink,
         foregroundColor: Colors.white,
         minimumSize: const Size.fromHeight(52),
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(AppRadius.md)),
+        shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(AppRadius.md)),
         textStyle: const TextStyle(fontWeight: FontWeight.w700, fontSize: 15),
       )
-      // Flat, no shadow: solid fills and hairlines carry the structure.
-      .copyWith(
+          // Flat, no shadow: solid fills and hairlines carry the structure.
+          .copyWith(
         elevation: WidgetStateProperty.all(0),
         overlayColor: WidgetStateProperty.resolveWith(
           (states) => states.contains(WidgetState.pressed)

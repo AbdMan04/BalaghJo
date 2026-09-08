@@ -17,7 +17,8 @@ class AppNotification {
     required this.createdAt,
   });
 
-  factory AppNotification.fromJson(Map<String, dynamic> json) => AppNotification(
+  factory AppNotification.fromJson(Map<String, dynamic> json) =>
+      AppNotification(
         id: json['id'] ?? '',
         type: json['type'] ?? 'report_status',
         reportId: json['reportId'] ?? '',

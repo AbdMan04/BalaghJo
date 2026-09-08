@@ -8,6 +8,8 @@ row opens ReportDetailScreen (FR-9).
 */
 import 'dart:async';
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+import '../../core/locale_state.dart';
 import '../../core/strings.dart';
 import '../../core/theme.dart';
 import '../../data/api/report_api.dart';
@@ -105,7 +107,9 @@ class _MyReportsScreenState extends State<MyReportsScreen>
     return source.where((r) {
       if (_pendingDeletes.contains(r.id)) return false;
       if (_filter != null && r.status.apiValue != _filter) return false;
-      if (_categoryFilter != null && r.category != _categoryFilter) return false;
+      if (_categoryFilter != null && r.category != _categoryFilter) {
+        return false;
+      }
       if (query.isEmpty) return true;
       return r.title.toLowerCase().contains(query) ||
           r.description.toLowerCase().contains(query) ||
@@ -128,10 +132,9 @@ class _MyReportsScreenState extends State<MyReportsScreen>
       _newestFirst = newestFirst;
       final base = _cached;
       if (base != null) {
-        final sorted = [...base]
-          ..sort((a, b) => newestFirst
-              ? b.createdAt.compareTo(a.createdAt)
-              : a.createdAt.compareTo(b.createdAt));
+        final sorted = [...base]..sort((a, b) => newestFirst
+            ? b.createdAt.compareTo(a.createdAt)
+            : a.createdAt.compareTo(b.createdAt));
         _future = Future.value(sorted);
       } else {
         _future = _load();
@@ -163,18 +166,23 @@ class _MyReportsScreenState extends State<MyReportsScreen>
                 ),
               ),
               Text(context.t('my.sort_title'),
-                  style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 16)),
+                  style: const TextStyle(
+                      fontWeight: FontWeight.w800, fontSize: 16)),
               const SizedBox(height: 8),
               ListTile(
                 contentPadding: EdgeInsets.zero,
                 title: Text(context.t('my.sort_newest')),
-                trailing: _newestFirst ? const Icon(Icons.check, color: AppColors.blue) : null,
+                trailing: _newestFirst
+                    ? const Icon(Icons.check, color: AppColors.blue)
+                    : null,
                 onTap: () => _selectSort(true),
               ),
               ListTile(
                 contentPadding: EdgeInsets.zero,
                 title: Text(context.t('my.sort_oldest')),
-                trailing: !_newestFirst ? const Icon(Icons.check, color: AppColors.blue) : null,
+                trailing: !_newestFirst
+                    ? const Icon(Icons.check, color: AppColors.blue)
+                    : null,
                 onTap: () => _selectSort(false),
               ),
             ],
@@ -188,11 +196,14 @@ class _MyReportsScreenState extends State<MyReportsScreen>
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text(context.t('my.title'), style: const TextStyle(fontWeight: FontWeight.w800)),
+        title: Text(context.t('my.title'),
+            style: const TextStyle(fontWeight: FontWeight.w800)),
         actions: [
           PressableScale(
             onTap: _openSortSheet,
-            child: const Padding(padding: EdgeInsetsDirectional.only(end: 16), child: Icon(Icons.tune)),
+            child: const Padding(
+                padding: EdgeInsetsDirectional.only(end: 16),
+                child: Icon(Icons.tune)),
           ),
         ],
       ),
@@ -205,14 +216,17 @@ class _MyReportsScreenState extends State<MyReportsScreen>
               textInputAction: TextInputAction.search,
               decoration: InputDecoration(
                 hintText: context.t('my.search_hint'),
-                prefixIcon: const Icon(Icons.search, color: AppColors.textMuted),
+                prefixIcon:
+                    const Icon(Icons.search, color: AppColors.textMuted),
                 suffixIcon: _search.text.isEmpty
                     ? null
                     : IconButton(
-                        icon: const Icon(Icons.close, size: 18, color: AppColors.textMuted),
+                        icon: const Icon(Icons.close,
+                            size: 18, color: AppColors.textMuted),
                         onPressed: () => _search.clear(),
                       ),
-                contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                contentPadding:
+                    const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
               ),
             ),
           ),
@@ -221,10 +235,22 @@ class _MyReportsScreenState extends State<MyReportsScreen>
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
             child: Row(
               children: [
-                StatusFilterChip(label: context.t('status.all'), active: _filter == null, onTap: () => _setFilter(null)),
-                StatusFilterChip(label: context.t('status.sent'), active: _filter == 'pending', onTap: () => _setFilter('pending')),
-                StatusFilterChip(label: context.t('status.processing'), active: _filter == 'in_progress', onTap: () => _setFilter('in_progress')),
-                StatusFilterChip(label: context.t('status.resolved'), active: _filter == 'resolved', onTap: () => _setFilter('resolved')),
+                StatusFilterChip(
+                    label: context.t('status.all'),
+                    active: _filter == null,
+                    onTap: () => _setFilter(null)),
+                StatusFilterChip(
+                    label: context.t('status.sent'),
+                    active: _filter == 'pending',
+                    onTap: () => _setFilter('pending')),
+                StatusFilterChip(
+                    label: context.t('status.processing'),
+                    active: _filter == 'in_progress',
+                    onTap: () => _setFilter('in_progress')),
+                StatusFilterChip(
+                    label: context.t('status.resolved'),
+                    active: _filter == 'resolved',
+                    onTap: () => _setFilter('resolved')),
               ],
             ),
           ),
@@ -233,10 +259,15 @@ class _MyReportsScreenState extends State<MyReportsScreen>
             padding: const EdgeInsets.fromLTRB(16, 0, 16, 6),
             child: Row(
               children: [
-                CategoryFilterChip(label: context.t('cat.all'), value: null, active: _categoryFilter == null, onTap: () => _setCategory(null)),
+                CategoryFilterChip(
+                    label: context.t('cat.all'),
+                    value: null,
+                    active: _categoryFilter == null,
+                    onTap: () => _setCategory(null)),
                 ...ReportCategory.userSelectable.map(
                   (c) => CategoryFilterChip(
-                    label: c.label,
+                    label:
+                        c.localizedLabel(context.watch<LocaleState>().isArabic),
                     value: c.apiValue,
                     active: _categoryFilter == c.apiValue,
                     onTap: () => _setCategory(c.apiValue),
@@ -250,7 +281,8 @@ class _MyReportsScreenState extends State<MyReportsScreen>
               future: _future,
               builder: (_, snap) {
                 if (snap.connectionState == ConnectionState.waiting) {
-                  return const Center(child: CircularProgressIndicator(color: AppColors.blue));
+                  return const Center(
+                      child: CircularProgressIndicator(color: AppColors.blue));
                 }
                 if (snap.hasError) {
                   return Center(child: Text('Error: ${snap.error}'));
@@ -271,21 +303,28 @@ class _MyReportsScreenState extends State<MyReportsScreen>
                             mainAxisAlignment: MainAxisAlignment.center,
                             children: [
                               Icon(
-                                filtered ? Icons.filter_alt_off_outlined : Icons.inbox_outlined,
+                                filtered
+                                    ? Icons.filter_alt_off_outlined
+                                    : Icons.inbox_outlined,
                                 size: 64,
-                                color: AppColors.textMuted.withValues(alpha: 0.5),
+                                color:
+                                    AppColors.textMuted.withValues(alpha: 0.5),
                               ),
                               const SizedBox(height: 12),
                               Text(
-                                filtered ? context.t('my.no_matches') : context.t('home.no_reports_yet'),
+                                filtered
+                                    ? context.t('my.no_matches')
+                                    : context.t('home.no_reports_yet'),
                                 style: const TextStyle(
-                                    color: AppColors.textMuted, fontWeight: FontWeight.w700),
+                                    color: AppColors.textMuted,
+                                    fontWeight: FontWeight.w700),
                               ),
                               if (filtered) ...[
                                 const SizedBox(height: 6),
                                 Text(
                                   context.t('my.try_other'),
-                                  style: const TextStyle(color: AppColors.textMuted, fontSize: 12),
+                                  style: const TextStyle(
+                                      color: AppColors.textMuted, fontSize: 12),
                                 ),
                               ],
                             ],

@@ -1,7 +1,9 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import '../../core/strings.dart';
 import '../../core/theme.dart';
+import '../../core/locale_state.dart';
 import '../../data/api/report_api.dart';
 import '../../data/models/report.dart';
 import '../reports/reports_map_screen.dart';
@@ -68,8 +70,7 @@ class _HomeScreenState extends State<HomeScreen> with RouteAwarePolling {
     try {
       final s = await _api.summary();
       if (!mounted) return;
-      final changed =
-          _lastRecent == null ||
+      final changed = _lastRecent == null ||
           _summary == null ||
           !Report.sameStatusList(_lastRecent!, s.recent) ||
           _summary!.total != s.total ||
@@ -105,261 +106,282 @@ class _HomeScreenState extends State<HomeScreen> with RouteAwarePolling {
             onRefresh: _refresh,
             color: AppColors.blue,
             child: SingleChildScrollView(
-          physics: const AlwaysScrollableScrollPhysics(),
-          child: Column(
-            children: [
-              HomeStatsHeader(future: _future),
-              const SizedBox(height: 20),
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 20),
-                child: FadeSlideIn(
-                  delay: const Duration(milliseconds: 280),
-                  child: PressableScale(
-                    onTap: () => MainShellScope.of(context)?.goTo(1),
-                    child: Container(
-                      padding: const EdgeInsets.all(16),
-                      decoration: BoxDecoration(
-                        color: AppColors.navy,
-                        borderRadius: BorderRadius.circular(AppRadius.md),
-                      ),
-                      child: Row(
-                        children: [
-                          Container(
-                            padding: const EdgeInsets.all(10),
-                            decoration: BoxDecoration(
-                              color: AppColors.safety,
-                              borderRadius: BorderRadius.circular(AppRadius.sm),
-                            ),
-                            child: const Icon(Icons.add,
-                                color: AppColors.ink, size: 20),
+              physics: const AlwaysScrollableScrollPhysics(),
+              child: Column(
+                children: [
+                  HomeStatsHeader(future: _future),
+                  const SizedBox(height: 20),
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 20),
+                    child: FadeSlideIn(
+                      delay: const Duration(milliseconds: 280),
+                      child: PressableScale(
+                        onTap: () => MainShellScope.of(context)?.goTo(1),
+                        child: Container(
+                          padding: const EdgeInsets.all(16),
+                          decoration: BoxDecoration(
+                            color: AppColors.navy,
+                            borderRadius: BorderRadius.circular(AppRadius.md),
                           ),
-                          const SizedBox(width: 14),
-                          Expanded(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(
-                                  context.t('home.report_issue'),
-                                  textDirection: TextDirection.rtl,
-                                  style: const TextStyle(
-                                      color: Colors.white70, fontSize: 11),
-                                ),
-                                const SizedBox(height: 2),
-                                Text(
-                                  context.t('home.report_issue_en'),
-                                  style: const TextStyle(
-                                      color: Colors.white,
-                                      fontWeight: FontWeight.w800,
-                                      fontSize: 15),
-                                ),
-                              ],
-                            ),
-                          ),
-                          const Icon(Icons.chevron_right,
-                              color: Colors.white70),
-                        ],
-                      ),
-                    ),
-                  ),
-                ),
-              ),
-              const SizedBox(height: 28),
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 20),
-                child: FadeSlideIn(
-                  delay: const Duration(milliseconds: 320),
-                  child: Align(
-                    alignment: AlignmentDirectional.centerStart,
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(context.t('home.quick_report'),
-                            style: const TextStyle(
-                                fontWeight: FontWeight.w800, fontSize: 16)),
-                        const SizedBox(height: 2),
-                        Text(context.t('home.quick_report_sub'),
-                            textDirection: TextDirection.rtl,
-                            style: const TextStyle(
-                                color: AppColors.textMuted, fontSize: 12)),
-                      ],
-                    ),
-                  ),
-                ),
-              ),
-              const SizedBox(height: 12),
-              const QuickReportList(),
-              const SizedBox(height: 20),
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 20),
-                child: FadeSlideIn(
-                  delay: const Duration(milliseconds: 600),
-                  child: PressableScale(
-                    onTap: () => Navigator.of(context).push(
-                      instantRoute(const ReportsMapScreen()),
-                    ),
-                    child: Container(
-                      padding: const EdgeInsets.all(14),
-                      clipBehavior: Clip.antiAlias,
-                      decoration: BoxDecoration(
-                        color: Colors.white,
-                        borderRadius: BorderRadius.circular(AppRadius.md),
-                        border: Border.all(color: AppColors.border),
-                      ),
-                      child: Stack(
-                        children: [
-                          Positioned.fill(
-                            child: IgnorePointer(
-                              child:
-                                  CustomPaint(painter: _MapGridPainter()),
-                            ),
-                          ),
-                          Row(
+                          child: Row(
                             children: [
                               Container(
                                 padding: const EdgeInsets.all(10),
                                 decoration: BoxDecoration(
-                                  color: AppColors.navy,
-                                  borderRadius: BorderRadius.circular(AppRadius.sm),
+                                  color: AppColors.safety,
+                                  borderRadius:
+                                      BorderRadius.circular(AppRadius.sm),
                                 ),
-                                child: const Icon(Icons.map_outlined,
-                                    color: Colors.white, size: 20),
+                                child: const Icon(Icons.add,
+                                    color: AppColors.ink, size: 20),
                               ),
-                              const SizedBox(width: 12),
+                              const SizedBox(width: 14),
                               Expanded(
                                 child: Column(
                                   crossAxisAlignment: CrossAxisAlignment.start,
                                   children: [
-                                    Text(context.t('home.explore_map'),
+                                    Text(
+                                      context.t('home.report_issue'),
+                                      textDirection:
+                                          context.watch<LocaleState>().isArabic
+                                              ? TextDirection.rtl
+                                              : TextDirection.ltr,
+                                      style: const TextStyle(
+                                          color: Colors.white,
+                                          fontWeight: FontWeight.w800,
+                                          fontSize: 15),
+                                    ),
+                                    if (context
+                                        .t('home.report_issue_sub')
+                                        .isNotEmpty) ...[
+                                      const SizedBox(height: 2),
+                                      Text(
+                                        context.t('home.report_issue_sub'),
+                                        textDirection: context
+                                                .watch<LocaleState>()
+                                                .isArabic
+                                            ? TextDirection.rtl
+                                            : TextDirection.ltr,
                                         style: const TextStyle(
-                                            fontWeight: FontWeight.w800,
-                                            fontSize: 14)),
-                                    const SizedBox(height: 2),
-                                    Text(context.t('home.explore_map_sub'),
-                                        style: const TextStyle(
-                                            color: AppColors.textMuted,
-                                            fontSize: 12)),
+                                            color: Colors.white70,
+                                            fontSize: 11),
+                                      ),
+                                    ],
                                   ],
                                 ),
                               ),
-                              const SizedBox(width: 6),
                               const Icon(Icons.chevron_right,
-                                  color: AppColors.textMuted),
+                                  color: Colors.white70),
                             ],
                           ),
-                        ],
+                        ),
                       ),
                     ),
                   ),
-                ),
-              ),
-              const SizedBox(height: 24),
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 20),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Text(context.t('home.recent_reports'),
-                        style: const TextStyle(
-                            fontWeight: FontWeight.w800, fontSize: 16)),
-                    GestureDetector(
-                      onTap: () => MainShellScope.of(context)?.goTo(2),
-                      child: Text(context.t('home.view_all'),
-                          style: const TextStyle(
-                              color: AppColors.blue,
-                              fontWeight: FontWeight.w700,
-                              fontSize: 12)),
-                    ),
-                  ],
-                ),
-              ),
-              const SizedBox(height: 8),
-              FutureBuilder<ReportSummary>(
-                future: _future,
-                builder: (_, snap) {
-                  if (snap.connectionState == ConnectionState.waiting) {
-                    return Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 20),
-                      child: Column(
-                        children: List.generate(3, (i) => const SkeletonTile()),
-                      ),
-                    );
-                  }
-                  if (snap.hasError) {
-                    return Padding(
-                      padding: const EdgeInsets.all(20),
-                      child: Text('Failed to load: ${snap.error}',
-                          style: const TextStyle(color: AppColors.danger)),
-                    );
-                  }
-                  final reports = (snap.data?.recent ?? [])
-                      .where((r) => !_pendingDeletes.contains(r.id))
-                      .toList();
-                  if (reports.isEmpty) {
-                    return Padding(
-                      padding: const EdgeInsets.fromLTRB(20, 8, 20, 8),
-                      child: Container(
-                        width: double.infinity,
-                        padding: const EdgeInsets.all(24),
-                        decoration: BoxDecoration(
-                          color: Colors.white,
-                          borderRadius: BorderRadius.circular(AppRadius.md),
-                          border: Border.all(color: AppColors.border),
-                        ),
+                  const SizedBox(height: 28),
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 20),
+                    child: FadeSlideIn(
+                      delay: const Duration(milliseconds: 320),
+                      child: Align(
+                        alignment: AlignmentDirectional.centerStart,
                         child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            Icon(Icons.inbox_outlined,
-                                size: 48,
-                                color: AppColors.textMuted
-                                    .withValues(alpha: 0.5)),
-                            const SizedBox(height: 12),
-                            Text(context.t('home.no_reports_yet'),
+                            Text(context.t('home.quick_report'),
                                 style: const TextStyle(
-                                    fontWeight: FontWeight.w800,
-                                    fontSize: 15)),
-                            const SizedBox(height: 4),
-                            Text(context.t('home.submit_first'),
+                                    fontWeight: FontWeight.w800, fontSize: 16)),
+                            const SizedBox(height: 2),
+                            Text(context.t('home.quick_report_sub'),
+                                textDirection:
+                                    context.watch<LocaleState>().isArabic
+                                        ? TextDirection.rtl
+                                        : TextDirection.ltr,
                                 style: const TextStyle(
-                                    color: AppColors.textMuted,
-                                    fontSize: 12)),
-                            const SizedBox(height: 16),
-                            FilledButton(
-                              onPressed: () =>
-                                  MainShellScope.of(context)?.goTo(1),
-                              style: FilledButton.styleFrom(
-                                backgroundColor: AppColors.navy,
-                                foregroundColor: Colors.white,
-                                padding: const EdgeInsets.symmetric(
-                                    horizontal: 20, vertical: 10),
-                                shape: RoundedRectangleBorder(
-                                  borderRadius:
-                                      BorderRadius.circular(AppRadius.md),
-                                ),
-                              ),
-                              child: Text(context.t('home.submit_first_btn')),
-                            ),
+                                    color: AppColors.textMuted, fontSize: 12)),
                           ],
                         ),
                       ),
-                    );
-                  }
-                  return Column(
-                    children: List.generate(reports.length, (i) {
-                      return FadeSlideIn(
-                        delay: Duration(milliseconds: 80 * i),
-                        child: RecentReportTile(
-                          report: reports[i],
-                          onDelete: () => _deleteReport(reports[i]),
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                  const QuickReportList(),
+                  const SizedBox(height: 20),
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 20),
+                    child: FadeSlideIn(
+                      delay: const Duration(milliseconds: 600),
+                      child: PressableScale(
+                        onTap: () => Navigator.of(context).push(
+                          instantRoute(const ReportsMapScreen()),
                         ),
+                        child: Container(
+                          padding: const EdgeInsets.all(14),
+                          clipBehavior: Clip.antiAlias,
+                          decoration: BoxDecoration(
+                            color: Colors.white,
+                            borderRadius: BorderRadius.circular(AppRadius.md),
+                            border: Border.all(color: AppColors.border),
+                          ),
+                          child: Stack(
+                            children: [
+                              Positioned.fill(
+                                child: IgnorePointer(
+                                  child:
+                                      CustomPaint(painter: _MapGridPainter()),
+                                ),
+                              ),
+                              Row(
+                                children: [
+                                  Container(
+                                    padding: const EdgeInsets.all(10),
+                                    decoration: BoxDecoration(
+                                      color: AppColors.navy,
+                                      borderRadius:
+                                          BorderRadius.circular(AppRadius.sm),
+                                    ),
+                                    child: const Icon(Icons.map_outlined,
+                                        color: Colors.white, size: 20),
+                                  ),
+                                  const SizedBox(width: 12),
+                                  Expanded(
+                                    child: Column(
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.start,
+                                      children: [
+                                        Text(context.t('home.explore_map'),
+                                            style: const TextStyle(
+                                                fontWeight: FontWeight.w800,
+                                                fontSize: 14)),
+                                        const SizedBox(height: 2),
+                                        Text(context.t('home.explore_map_sub'),
+                                            style: const TextStyle(
+                                                color: AppColors.textMuted,
+                                                fontSize: 12)),
+                                      ],
+                                    ),
+                                  ),
+                                  const SizedBox(width: 6),
+                                  const Icon(Icons.chevron_right,
+                                      color: AppColors.textMuted),
+                                ],
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 24),
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 20),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Text(context.t('home.recent_reports'),
+                            style: const TextStyle(
+                                fontWeight: FontWeight.w800, fontSize: 16)),
+                        GestureDetector(
+                          onTap: () => MainShellScope.of(context)?.goTo(2),
+                          child: Text(context.t('home.view_all'),
+                              style: const TextStyle(
+                                  color: AppColors.blue,
+                                  fontWeight: FontWeight.w700,
+                                  fontSize: 12)),
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  FutureBuilder<ReportSummary>(
+                    future: _future,
+                    builder: (_, snap) {
+                      if (snap.connectionState == ConnectionState.waiting) {
+                        return Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 20),
+                          child: Column(
+                            children:
+                                List.generate(3, (i) => const SkeletonTile()),
+                          ),
+                        );
+                      }
+                      if (snap.hasError) {
+                        return Padding(
+                          padding: const EdgeInsets.all(20),
+                          child: Text('Failed to load: ${snap.error}',
+                              style: const TextStyle(color: AppColors.danger)),
+                        );
+                      }
+                      final reports = (snap.data?.recent ?? [])
+                          .where((r) => !_pendingDeletes.contains(r.id))
+                          .toList();
+                      if (reports.isEmpty) {
+                        return Padding(
+                          padding: const EdgeInsets.fromLTRB(20, 8, 20, 8),
+                          child: Container(
+                            width: double.infinity,
+                            padding: const EdgeInsets.all(24),
+                            decoration: BoxDecoration(
+                              color: Colors.white,
+                              borderRadius: BorderRadius.circular(AppRadius.md),
+                              border: Border.all(color: AppColors.border),
+                            ),
+                            child: Column(
+                              children: [
+                                Icon(Icons.inbox_outlined,
+                                    size: 48,
+                                    color: AppColors.textMuted
+                                        .withValues(alpha: 0.5)),
+                                const SizedBox(height: 12),
+                                Text(context.t('home.no_reports_yet'),
+                                    style: const TextStyle(
+                                        fontWeight: FontWeight.w800,
+                                        fontSize: 15)),
+                                const SizedBox(height: 4),
+                                Text(context.t('home.submit_first'),
+                                    style: const TextStyle(
+                                        color: AppColors.textMuted,
+                                        fontSize: 12)),
+                                const SizedBox(height: 16),
+                                FilledButton(
+                                  onPressed: () =>
+                                      MainShellScope.of(context)?.goTo(1),
+                                  style: FilledButton.styleFrom(
+                                    backgroundColor: AppColors.navy,
+                                    foregroundColor: Colors.white,
+                                    padding: const EdgeInsets.symmetric(
+                                        horizontal: 20, vertical: 10),
+                                    shape: RoundedRectangleBorder(
+                                      borderRadius:
+                                          BorderRadius.circular(AppRadius.md),
+                                    ),
+                                  ),
+                                  child:
+                                      Text(context.t('home.submit_first_btn')),
+                                ),
+                              ],
+                            ),
+                          ),
+                        );
+                      }
+                      return Column(
+                        children: List.generate(reports.length, (i) {
+                          return FadeSlideIn(
+                            delay: Duration(milliseconds: 80 * i),
+                            child: RecentReportTile(
+                              report: reports[i],
+                              onDelete: () => _deleteReport(reports[i]),
+                            ),
+                          );
+                        }),
                       );
-                    }),
-                  );
-                },
+                    },
+                  ),
+                  const SizedBox(height: 24),
+                ],
               ),
-              const SizedBox(height: 24),
-            ],
+            ),
           ),
-        ),
-      ),
         ],
       ),
     );

@@ -107,7 +107,8 @@ class _MapPickerScreenState extends State<MapPickerScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Pick Location', style: TextStyle(fontWeight: FontWeight.w800)),
+        title: const Text('Pick Location',
+            style: TextStyle(fontWeight: FontWeight.w800)),
       ),
       body: Stack(
         children: [
@@ -130,7 +131,8 @@ class _MapPickerScreenState extends State<MapPickerScreen> {
                     width: 48,
                     height: 48,
                     alignment: Alignment.topCenter,
-                    child: const Icon(Icons.location_on, color: AppColors.danger, size: 44),
+                    child: const Icon(Icons.location_on,
+                        color: AppColors.danger, size: 44),
                   ),
                 ],
               ),
@@ -146,7 +148,9 @@ class _MapPickerScreenState extends State<MapPickerScreen> {
                 color: Colors.white,
                 borderRadius: BorderRadius.circular(AppRadius.md),
                 boxShadow: [
-                  BoxShadow(color: Colors.black.withValues(alpha: 0.1), blurRadius: 12),
+                  BoxShadow(
+                      color: Colors.black.withValues(alpha: 0.1),
+                      blurRadius: 12),
                 ],
               ),
               child: const Row(
@@ -156,7 +160,8 @@ class _MapPickerScreenState extends State<MapPickerScreen> {
                   Expanded(
                     child: Text(
                       'Tap the map to drop a pin, or use your GPS',
-                      style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600),
+                      style:
+                          TextStyle(fontSize: 12, fontWeight: FontWeight.w600),
                     ),
                   ),
                 ],
@@ -177,13 +182,16 @@ class _MapPickerScreenState extends State<MapPickerScreen> {
                     color: Colors.white,
                     shape: BoxShape.circle,
                     boxShadow: [
-                      BoxShadow(color: Colors.black.withValues(alpha: 0.15), blurRadius: 10),
+                      BoxShadow(
+                          color: Colors.black.withValues(alpha: 0.15),
+                          blurRadius: 10),
                     ],
                   ),
                   child: _locating
                       ? const Padding(
                           padding: EdgeInsets.all(14),
-                          child: CircularProgressIndicator(strokeWidth: 2, color: AppColors.blue),
+                          child: CircularProgressIndicator(
+                              strokeWidth: 2, color: AppColors.blue),
                         )
                       : const Icon(Icons.my_location, color: AppColors.blue),
                 ),
@@ -200,14 +208,21 @@ class _MapPickerScreenState extends State<MapPickerScreen> {
                 color: Colors.white,
                 borderRadius: BorderRadius.circular(AppRadius.md),
                 boxShadow: [
-                  BoxShadow(color: Colors.black.withValues(alpha: 0.12), blurRadius: 16, offset: const Offset(0, 4)),
+                  BoxShadow(
+                      color: Colors.black.withValues(alpha: 0.12),
+                      blurRadius: 16,
+                      offset: const Offset(0, 4)),
                 ],
               ),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   const Text('Selected location',
-                      style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: AppColors.textMuted, letterSpacing: 0.5)),
+                      style: TextStyle(
+                          fontSize: 11,
+                          fontWeight: FontWeight.w700,
+                          color: AppColors.textMuted,
+                          letterSpacing: 0.5)),
                   const SizedBox(height: 4),
                   Row(
                     children: [
@@ -216,7 +231,8 @@ class _MapPickerScreenState extends State<MapPickerScreen> {
                           _resolving
                               ? 'Looking up address…'
                               : (_address ?? context.t('map.unnamed_location')),
-                          style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 14),
+                          style: const TextStyle(
+                              fontWeight: FontWeight.w800, fontSize: 14),
                           maxLines: 2,
                           overflow: TextOverflow.ellipsis,
                         ),
@@ -225,7 +241,8 @@ class _MapPickerScreenState extends State<MapPickerScreen> {
                         const SizedBox(
                           width: 14,
                           height: 14,
-                          child: CircularProgressIndicator(strokeWidth: 2, color: AppColors.blue),
+                          child: CircularProgressIndicator(
+                              strokeWidth: 2, color: AppColors.blue),
                         ),
                     ],
                   ),
@@ -239,7 +256,10 @@ class _MapPickerScreenState extends State<MapPickerScreen> {
                         color: AppColors.blue,
                         borderRadius: BorderRadius.circular(AppRadius.md),
                         boxShadow: [
-                          BoxShadow(color: AppColors.blue.withValues(alpha: 0.3), blurRadius: 12, offset: const Offset(0, 4)),
+                          BoxShadow(
+                              color: AppColors.blue.withValues(alpha: 0.3),
+                              blurRadius: 12,
+                              offset: const Offset(0, 4)),
                         ],
                       ),
                       child: const Row(
@@ -248,7 +268,9 @@ class _MapPickerScreenState extends State<MapPickerScreen> {
                           Icon(Icons.check, color: Colors.white, size: 18),
                           SizedBox(width: 6),
                           Text('Confirm Location',
-                              style: TextStyle(color: Colors.white, fontWeight: FontWeight.w800)),
+                              style: TextStyle(
+                                  color: Colors.white,
+                                  fontWeight: FontWeight.w800)),
                         ],
                       ),
                     ),

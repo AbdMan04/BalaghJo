@@ -10,8 +10,9 @@ enum ReportStatus {
   final String labelAr;
   const ReportStatus(this.apiValue, this.label, this.labelAr);
 
-  // FR-10: statuses labelled in Arabic and English.
-  String get bilingualLabel => '$labelAr · $label';
+  // FR-10: localized label for the active language. Takes a plain bool so
+  // the data model stays free of Flutter/Provider dependencies.
+  String localizedLabel(bool isArabic) => isArabic ? labelAr : label;
 
   static ReportStatus fromApi(String? v) => switch (v) {
         'in_progress' => ReportStatus.inProgress,
@@ -24,7 +25,8 @@ class StatusEvent {
   final ReportStatus status;
   final DateTime changedAt;
   final String changedBy;
-  StatusEvent({required this.status, required this.changedAt, this.changedBy = ''});
+  StatusEvent(
+      {required this.status, required this.changedAt, this.changedBy = ''});
 
   factory StatusEvent.fromJson(Map<String, dynamic> j) => StatusEvent(
         status: ReportStatus.fromApi(j['status']),
@@ -77,7 +79,8 @@ class Report {
   factory Report.fromJson(Map<String, dynamic> j) {
     final loc = (j['location'] as Map?)?.cast<String, dynamic>();
     final coords = (loc?['coordinates'] as List?)?.cast<num>() ?? const [0, 0];
-    final reporter = (j['reporter'] as Map?)?.cast<String, dynamic>() ?? const {};
+    final reporter =
+        (j['reporter'] as Map?)?.cast<String, dynamic>() ?? const {};
     return Report(
       id: j['id'] ?? j['_id'] ?? '',
       reportId: j['reportId'] ?? '',
@@ -97,9 +100,12 @@ class Report {
           .map((e) => StatusEvent.fromJson(e.cast<String, dynamic>()))
           .toList(),
       assignedTo: j['assignedTo'] ?? '',
-      estimatedFix: j['estimatedFix'] != null ? DateTime.tryParse(j['estimatedFix']) : null,
+      estimatedFix: j['estimatedFix'] != null
+          ? DateTime.tryParse(j['estimatedFix'])
+          : null,
       createdAt: DateTime.tryParse(j['createdAt'] ?? '') ?? DateTime.now(),
-      updatedAt: j['updatedAt'] != null ? DateTime.tryParse(j['updatedAt']) : null,
+      updatedAt:
+          j['updatedAt'] != null ? DateTime.tryParse(j['updatedAt']) : null,
       reporterName: reporter['fullName'] ?? '',
       reporterPhone: reporter['phone'] ?? '',
     );

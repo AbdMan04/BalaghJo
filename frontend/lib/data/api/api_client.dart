@@ -101,11 +101,13 @@ class ApiClient {
   }
 
   Future<dynamic> get(String path, {Map<String, dynamic>? query}) {
-    return _send(() => http.get(_uri(path, query), headers: _headers(json: false)));
+    return _send(
+        () => http.get(_uri(path, query), headers: _headers(json: false)));
   }
 
   Future<dynamic> post(String path, Map<String, dynamic> body) {
-    return _send(() => http.post(_uri(path), headers: _headers(), body: jsonEncode(body)));
+    return _send(() =>
+        http.post(_uri(path), headers: _headers(), body: jsonEncode(body)));
   }
 
   Future<dynamic> delete(String path, {Map<String, dynamic>? body}) {
@@ -117,7 +119,8 @@ class ApiClient {
   }
 
   Future<dynamic> patch(String path, Map<String, dynamic> body) {
-    return _send(() => http.patch(_uri(path), headers: _headers(), body: jsonEncode(body)));
+    return _send(() =>
+        http.patch(_uri(path), headers: _headers(), body: jsonEncode(body)));
   }
 
   Future<dynamic> multipart(
@@ -142,14 +145,17 @@ class ApiClient {
     });
   }
 
-  Future<dynamic> _send(Future<http.Response> Function() run, {bool allowRefresh = true}) async {
+  Future<dynamic> _send(Future<http.Response> Function() run,
+      {bool allowRefresh = true}) async {
     http.Response res;
     try {
       res = await run().timeout(_timeout);
     } on TimeoutException {
-      throw ApiException(0, 'Request timed out. Check your connection and try again.');
+      throw ApiException(
+          0, 'Request timed out. Check your connection and try again.');
     } on SocketException {
-      throw ApiException(0, 'Cannot reach the server. Check your internet connection.');
+      throw ApiException(
+          0, 'Cannot reach the server. Check your internet connection.');
     } on HttpException {
       throw ApiException(0, 'Network error. Please try again.');
     } catch (_) {

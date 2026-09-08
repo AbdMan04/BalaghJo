@@ -9,6 +9,7 @@ import '../../state/auth_state.dart';
 import '../home/main_shell.dart';
 import '../widgets/animations.dart';
 import '../widgets/app_logo.dart';
+import '../widgets/language_picker.dart';
 import '../widgets/password_visibility_toggle.dart';
 import 'register_screen.dart';
 
@@ -42,10 +43,11 @@ class _LoginScreenState extends State<LoginScreen> {
     } catch (e) {
       final msg = cleanErrorMessage(e);
       setState(() => _error = switch (msg) {
-        'Incorrect Phone Number!' => context.t('login.phone_not_registered'),
-        'Incorrect password' => context.t('login.wrong_password'),
-        _ => msg,
-      });
+            'Incorrect Phone Number!' =>
+              context.t('login.phone_not_registered'),
+            'Incorrect password' => context.t('login.wrong_password'),
+            _ => msg,
+          });
       _shake.value++;
     }
   }
@@ -66,6 +68,16 @@ class _LoginScreenState extends State<LoginScreen> {
         backgroundColor: Colors.transparent,
         surfaceTintColor: Colors.transparent,
         scrolledUnderElevation: 0,
+        actions: [
+          Padding(
+            padding: const EdgeInsets.only(right: 4),
+            child: LanguagePickerButton(
+              title: context.t('login.choose_language'),
+              enLabel: context.t('login.language_english'),
+              arLabel: context.t('login.language_arabic'),
+            ),
+          ),
+        ],
       ),
       body: SafeArea(
         child: ShakeWidget(
@@ -88,10 +100,14 @@ class _LoginScreenState extends State<LoginScreen> {
                         Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            Text('BALAGHJO',
-                                style: TextStyle(fontSize: 14, fontWeight: FontWeight.w900, letterSpacing: 2)),
+                            Text('Balagh Jo',
+                                style: TextStyle(
+                                    fontSize: 14,
+                                    fontWeight: FontWeight.w900,
+                                    letterSpacing: 2)),
                             Text('Civic Reporting Platform',
-                                style: TextStyle(fontSize: 11, color: AppColors.textMuted)),
+                                style: TextStyle(
+                                    fontSize: 11, color: AppColors.textMuted)),
                           ],
                         ),
                       ],
@@ -101,7 +117,8 @@ class _LoginScreenState extends State<LoginScreen> {
                   FadeSlideIn(
                     delay: const Duration(milliseconds: 80),
                     child: Text(context.t('login.welcome_back'),
-                        style: const TextStyle(fontSize: 28, fontWeight: FontWeight.w800)),
+                        style: const TextStyle(
+                            fontSize: 28, fontWeight: FontWeight.w800)),
                   ),
                   const SizedBox(height: 4),
                   FadeSlideIn(
@@ -115,7 +132,7 @@ class _LoginScreenState extends State<LoginScreen> {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        _label(context.t('login.identifier_label'), context.t('ar.phone_number')),
+                        _label('login.identifier_label'),
                         // A3: the hint is intentionally small; cap system
                         // text scaling so it doesn't balloon the field.
                         MediaQuery.withClampedTextScaling(
@@ -125,7 +142,8 @@ class _LoginScreenState extends State<LoginScreen> {
                             decoration: InputDecoration(
                               hintText: context.t('login.identifier_hint'),
                               hintStyle: const TextStyle(fontSize: 13),
-                              prefixIcon: const Icon(Icons.phone_android, color: AppColors.textMuted),
+                              prefixIcon: const Icon(Icons.phone_android,
+                                  color: AppColors.textMuted),
                             ),
                             keyboardType: TextInputType.number,
                             inputFormatters: [
@@ -143,12 +161,13 @@ class _LoginScreenState extends State<LoginScreen> {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        _label(context.t('login.password_label'), context.t('ar.password')),
+                        _label('login.password_label'),
                         TextFormField(
                           controller: _pass,
                           decoration: InputDecoration(
                             hintText: context.t('login.password_hint'),
-                            prefixIcon: const Icon(Icons.lock_outline, color: AppColors.textMuted),
+                            prefixIcon: const Icon(Icons.lock_outline,
+                                color: AppColors.textMuted),
                             suffixIcon: PasswordVisibilityToggle(
                               obscure: _obscure,
                               onPressed: () =>
@@ -156,7 +175,9 @@ class _LoginScreenState extends State<LoginScreen> {
                             ),
                           ),
                           obscureText: _obscure,
-                          validator: (v) => (v == null || v.isEmpty) ? context.t('common.required') : null,
+                          validator: (v) => (v == null || v.isEmpty)
+                              ? context.t('common.required')
+                              : null,
                         ),
                       ],
                     ),
@@ -171,16 +192,22 @@ class _LoginScreenState extends State<LoginScreen> {
                               padding: const EdgeInsets.all(12),
                               decoration: BoxDecoration(
                                 color: AppColors.danger.withValues(alpha: 0.08),
-                                borderRadius: BorderRadius.circular(AppRadius.sm),
-                                border: Border.all(color: AppColors.danger.withValues(alpha: 0.3)),
+                                borderRadius:
+                                    BorderRadius.circular(AppRadius.sm),
+                                border: Border.all(
+                                    color: AppColors.danger
+                                        .withValues(alpha: 0.3)),
                               ),
                               child: Row(
                                 children: [
-                                  const Icon(Icons.error_outline, color: AppColors.danger, size: 18),
+                                  const Icon(Icons.error_outline,
+                                      color: AppColors.danger, size: 18),
                                   const SizedBox(width: 8),
                                   Expanded(
                                       child: Text(_error!,
-                                          style: const TextStyle(color: AppColors.danger, fontSize: 12))),
+                                          style: const TextStyle(
+                                              color: AppColors.danger,
+                                              fontSize: 12))),
                                 ],
                               ),
                             ),
@@ -206,12 +233,16 @@ class _LoginScreenState extends State<LoginScreen> {
                                   key: ValueKey('l'),
                                   height: 20,
                                   width: 20,
-                                  child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+                                  child: CircularProgressIndicator(
+                                      strokeWidth: 2, color: Colors.white),
                                 )
                               : Text(
                                   context.t('login.sign_in'),
                                   key: const ValueKey('t'),
-                                  style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w800, fontSize: 15),
+                                  style: const TextStyle(
+                                      color: Colors.white,
+                                      fontWeight: FontWeight.w800,
+                                      fontSize: 15),
                                 ),
                         ),
                       ),
@@ -220,11 +251,17 @@ class _LoginScreenState extends State<LoginScreen> {
                   const SizedBox(height: 14),
                   Center(
                     child: GestureDetector(
-                      onTap: () => Navigator.of(context).pushReplacement(
-                          subtleRoute(const RegisterScreen())),
+                      onTap: () => Navigator.of(context)
+                          .pushReplacement(subtleRoute(const RegisterScreen())),
                       child: Text.rich(TextSpan(children: [
-                        TextSpan(text: context.t('login.no_account'), style: const TextStyle(color: AppColors.textMuted)),
-                        TextSpan(text: context.t('login.sign_up_link'), style: const TextStyle(color: AppColors.blue, fontWeight: FontWeight.w700)),
+                        TextSpan(
+                            text: context.t('login.no_account'),
+                            style: const TextStyle(color: AppColors.textMuted)),
+                        TextSpan(
+                            text: context.t('login.sign_up_link'),
+                            style: const TextStyle(
+                                color: AppColors.blue,
+                                fontWeight: FontWeight.w700)),
                       ])),
                     ),
                   ),
@@ -237,16 +274,15 @@ class _LoginScreenState extends State<LoginScreen> {
     );
   }
 
-  Widget _label(String en, String ar) => Padding(
+  Widget _label(String key) => Padding(
         padding: const EdgeInsets.only(top: 14, bottom: 6),
-        child: Row(
-          children: [
-            Text(en,
-                style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: AppColors.textMuted, letterSpacing: 0.6)),
-            const SizedBox(width: 8),
-            Text(ar,
-                style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: AppColors.textMuted)),
-          ],
+        child: Text(
+          context.t(key),
+          style: const TextStyle(
+              fontSize: 11,
+              fontWeight: FontWeight.w700,
+              color: AppColors.textMuted,
+              letterSpacing: 0.6),
         ),
       );
 }

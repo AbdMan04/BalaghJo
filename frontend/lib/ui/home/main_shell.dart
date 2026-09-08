@@ -4,6 +4,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter/foundation.dart';
 import 'package:provider/provider.dart';
 import '../../core/strings.dart';
+import '../../core/locale_state.dart';
 import '../../core/theme.dart';
 import '../../data/api/notification_api.dart';
 import '../../state/auth_state.dart';
@@ -59,8 +60,8 @@ class _MainShellState extends State<MainShell> {
   void initState() {
     super.initState();
     _loadUnread();
-    _unreadTimer = Timer.periodic(
-        const Duration(seconds: 5), (_) => _loadUnread());
+    _unreadTimer =
+        Timer.periodic(const Duration(seconds: 5), (_) => _loadUnread());
   }
 
   @override
@@ -142,8 +143,8 @@ class _MainShellState extends State<MainShell> {
                   child: Align(
                     alignment: AlignmentDirectional.bottomEnd,
                     child: Padding(
-                      padding: const EdgeInsetsDirectional.only(
-                          bottom: 16, end: 14),
+                      padding:
+                          const EdgeInsetsDirectional.only(bottom: 16, end: 14),
                       child: _NotificationButton(
                         count: _unread,
                         onTap: _openNotifications,
@@ -164,8 +165,10 @@ class _MainShellState extends State<MainShell> {
       context: context,
       builder: (ctx) => AlertDialog(
         backgroundColor: Colors.white.withValues(alpha: 0.96),
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(AppRadius.lg)),
-        title: Text(ctx.t('app.exit_title'), style: const TextStyle(fontWeight: FontWeight.w800)),
+        shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(AppRadius.lg)),
+        title: Text(ctx.t('app.exit_title'),
+            style: const TextStyle(fontWeight: FontWeight.w800)),
         content: Text(
           ctx.t('app.exit_message'),
           style: const TextStyle(color: AppColors.textMuted, height: 1.4),
@@ -179,7 +182,10 @@ class _MainShellState extends State<MainShell> {
                   height: 42,
                   child: TextButton(
                     onPressed: () => Navigator.of(ctx).pop(false),
-                    child: Text(ctx.t('app.no'), style: const TextStyle(color: AppColors.navy, fontWeight: FontWeight.w700)),
+                    child: Text(ctx.t('app.no'),
+                        style: const TextStyle(
+                            color: AppColors.navy,
+                            fontWeight: FontWeight.w700)),
                   ),
                 ),
               ),
@@ -194,10 +200,12 @@ class _MainShellState extends State<MainShell> {
                       foregroundColor: AppColors.ink,
                       elevation: 0,
                       minimumSize: const Size.fromHeight(42),
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(AppRadius.sm)),
+                      shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(AppRadius.sm)),
                       padding: const EdgeInsets.symmetric(horizontal: 24),
                     ),
-                    child: Text(ctx.t('app.yes'), style: const TextStyle(fontWeight: FontWeight.w800)),
+                    child: Text(ctx.t('app.yes'),
+                        style: const TextStyle(fontWeight: FontWeight.w800)),
                   ),
                 ),
               ),
@@ -351,6 +359,7 @@ class _NavItem extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isArabic = context.watch<LocaleState>().isArabic;
     return PressableScale(
       onTap: onTap,
       child: SizedBox(
@@ -366,15 +375,18 @@ class _NavItem extends StatelessWidget {
             const SizedBox(height: 4),
             // A3: the 10px label is intentionally tiny; cap how much system
             // text scaling can inflate it so it never overflows the 70px tab.
+            // Arabic labels may wrap onto a second line instead of being
+            // ellipsized mid-word (e.g. "الملف الشخصي").
             MediaQuery.withClampedTextScaling(
               maxScaleFactor: 1.3,
               child: Text(
                 label,
                 textAlign: TextAlign.center,
-                maxLines: 1,
+                maxLines: isArabic ? 2 : 1,
                 overflow: TextOverflow.ellipsis,
                 style: TextStyle(
-                  fontSize: 10,
+                  fontSize: isArabic ? 9 : 10,
+                  height: isArabic ? 1.2 : null,
                   fontWeight: active ? FontWeight.w800 : FontWeight.w600,
                   color: active ? AppColors.ink : AppColors.textMuted,
                 ),
@@ -435,7 +447,10 @@ class _ReportFab extends StatelessWidget {
             builder: (ctx) => MediaQuery.withClampedTextScaling(
               maxScaleFactor: 1.3,
               child: Text(ctx.t('nav.report'),
-                  style: const TextStyle(fontSize: 10, fontWeight: FontWeight.w700, color: AppColors.textMuted)),
+                  style: const TextStyle(
+                      fontSize: 10,
+                      fontWeight: FontWeight.w700,
+                      color: AppColors.textMuted)),
             ),
           ),
         ],

@@ -97,9 +97,11 @@ class _SplashScreenState extends State<SplashScreen>
                     ),
                   ),
                   SizedBox(height: 12),
-                  Text('بلِّغ · سجِّل · غيّر',
-                      style:
-                          TextStyle(color: Colors.white70, fontSize: 14, letterSpacing: 2)),
+                  Text('بلِّغ · سجِّل · غيِّر',
+                      style: TextStyle(
+                          color: Colors.white70,
+                          fontSize: 14,
+                          letterSpacing: 2)),
                 ],
               ),
             ),

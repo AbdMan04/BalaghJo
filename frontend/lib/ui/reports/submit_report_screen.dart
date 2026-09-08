@@ -163,9 +163,7 @@ class _SubmitReportScreenState extends State<SubmitReportScreen> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                FadeSlideIn(
-                    child: _label(
-                        context.t('submit.photo'), context.t('ar.photo'))),
+                FadeSlideIn(child: _label('submit.photo')),
                 FadeSlideIn(
                   delay: const Duration(milliseconds: 60),
                   child: PressableScale(
@@ -224,8 +222,7 @@ class _SubmitReportScreenState extends State<SubmitReportScreen> {
                 ),
                 FadeSlideIn(
                     delay: const Duration(milliseconds: 120),
-                    child: _label(context.t('submit.problem_type'),
-                        context.t('ar.problem_type'))),
+                    child: _label('submit.problem_type')),
                 FadeSlideIn(
                   delay: const Duration(milliseconds: 160),
                   child: Column(
@@ -252,8 +249,7 @@ class _SubmitReportScreenState extends State<SubmitReportScreen> {
                 ),
                 FadeSlideIn(
                     delay: const Duration(milliseconds: 200),
-                    child: _label(context.t('submit.description'),
-                        context.t('ar.description'))),
+                    child: _label('submit.description')),
                 FadeSlideIn(
                   delay: const Duration(milliseconds: 240),
                   child: TextField(
@@ -265,8 +261,7 @@ class _SubmitReportScreenState extends State<SubmitReportScreen> {
                 ),
                 FadeSlideIn(
                     delay: const Duration(milliseconds: 280),
-                    child: _label(context.t('submit.location'),
-                        context.t('ar.location'))),
+                    child: _label('submit.location')),
                 FadeSlideIn(
                   delay: const Duration(milliseconds: 320),
                   child: TextField(
@@ -323,7 +318,8 @@ class _SubmitReportScreenState extends State<SubmitReportScreen> {
                                       ? context.t('submit.pick_on_map_hint')
                                       : (_address.text.trim().isNotEmpty
                                           ? _address.text.trim()
-                                          : context.t('submit.pick_on_map_hint')),
+                                          : context
+                                              .t('submit.pick_on_map_hint')),
                                   style: const TextStyle(
                                       color: AppColors.textMuted, fontSize: 12),
                                   maxLines: 1,
@@ -553,30 +549,24 @@ class _SubmitReportScreenState extends State<SubmitReportScreen> {
         width: double.infinity,
         padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 10),
         decoration: BoxDecoration(
-          color: selected
-              ? AppColors.amber.withValues(alpha: 0.14)
-              : Colors.white,
+          // Minimal selection feedback: the body stays white and only the
+          // outline thickens and turns yellow, so a chosen category reads as
+          // "edges only" instead of a tinted/shiny highlight.
+          color: Colors.white,
           border: Border.all(
             color: selected ? AppColors.amber : AppColors.border,
-            width: selected ? 1.5 : 1,
+            width: selected ? 2 : 1,
           ),
           borderRadius: BorderRadius.circular(AppRadius.sm),
-          boxShadow: selected
-              ? [
-                  BoxShadow(
-                      color: AppColors.amber.withValues(alpha: 0.30),
-                      blurRadius: 10)
-                ]
-              : null,
         ),
         child: Center(
           child: Text(
-            c.labelAr,
+            c.localizedLabel(context.watch<LocaleState>().isArabic),
             textAlign: TextAlign.center,
-            style: TextStyle(
+            style: const TextStyle(
               fontSize: 13,
               fontWeight: FontWeight.w700,
-              color: selected ? AppColors.navy : AppColors.navy,
+              color: AppColors.navy,
             ),
           ),
         ),
@@ -584,34 +574,17 @@ class _SubmitReportScreenState extends State<SubmitReportScreen> {
     );
   }
 
-  Widget _label(String en, String ar) {
-    // In Arabic only the translation is shown (the English word is dropped);
-    // in English both appear, with the Arabic on the right.
-    final isArabic = context.watch<LocaleState>().isArabic;
+  Widget _label(String key) {
     return Padding(
       padding: const EdgeInsets.only(top: 18, bottom: 8),
-      child: isArabic
-          ? Text(ar,
-              style: const TextStyle(
-                  fontSize: 11,
-                  fontWeight: FontWeight.w700,
-                  color: AppColors.textMuted))
-          : Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Text(en,
-                    style: const TextStyle(
-                        fontSize: 11,
-                        fontWeight: FontWeight.w700,
-                        color: AppColors.textMuted,
-                        letterSpacing: 0.6)),
-                Text(ar,
-                    style: const TextStyle(
-                        fontSize: 11,
-                        fontWeight: FontWeight.w700,
-                        color: AppColors.textMuted)),
-              ],
-            ),
+      child: Text(
+        context.t(key),
+        style: const TextStyle(
+            fontSize: 11,
+            fontWeight: FontWeight.w700,
+            color: AppColors.textMuted,
+            letterSpacing: 0.6),
+      ),
     );
   }
 }
