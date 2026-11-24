@@ -10,6 +10,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../core/locale_state.dart';
+import '../../core/perf_log.dart';
 import '../../core/strings.dart';
 import '../../core/theme.dart';
 import '../../data/api/report_api.dart';
@@ -39,12 +40,11 @@ class _MyReportsScreenState extends State<MyReportsScreen>
   final Set<String> _pendingDeletes = {};
   List<Report>? _cached;
 
-  // F4/FR-11, NFR-6: poll every 3s so admin status changes appear in the
-  // app within ~5s without a restart. Only setState when something changed.
-  // The timer is paused whenever this screen isn't the visible route or the
-  // app is backgrounded (RouteAwarePolling).
-  @override
-  Duration get pollInterval => const Duration(seconds: 5);
+  // F4/FR-11, NFR-6: RouteAwarePolling's 3s default (plus an immediate
+  // refresh on a status push) shows admin status changes within the 5s
+  // budget without a restart. Only setState when something changed. The
+  // timer is paused whenever this screen isn't the visible route or the app
+  // is backgrounded.
 
   @override
   void initState() {
@@ -79,14 +79,36 @@ class _MyReportsScreenState extends State<MyReportsScreen>
   @override
   Future<void> poll() async {
     try {
+      // Snapshot before _load(): it overwrites _cached, and comparing the new
+      // list with itself meant polling never refreshed this screen.
+      final previous = _cached;
       final list = await _load();
       if (!mounted) return;
-      final changed = _cached == null || !Report.sameStatusList(_cached!, list);
+      final changed =
+          previous == null || !Report.sameStatusList(previous, list);
       if (changed) {
+        if (previous != null) _logStatusChanges(previous, list);
         setState(() => _future = Future.value(list));
       }
     } catch (_) {
       // Keep showing the last good data on transient network errors.
+    }
+  }
+
+  // NFR-6 client-side log: one line per report whose status changed.
+  void _logStatusChanges(List<Report> before, List<Report> after) {
+    final old = {for (final r in before) r.id: r.status};
+    for (final r in after) {
+      final was = old[r.id];
+      if (was != null && was != r.status) {
+        PerfLog.event('status_seen', {
+          'screen': 'my_reports',
+          'report': r.reportId,
+          'status': r.status.apiValue,
+          'serverChangedAt': r.statusChangedAt?.toUtc().toIso8601String(),
+          'latencyMs': PerfLog.msSince(r.statusChangedAt),
+        });
+      }
     }
   }
 

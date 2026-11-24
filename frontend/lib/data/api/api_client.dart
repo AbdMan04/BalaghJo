@@ -65,6 +65,12 @@ class ApiClient {
   // the session owner can clear persisted state. Wired to AuthState.
   Future<void> Function()? onSessionExpired;
 
+  // Fired after a successful silent refresh with the rotated pair. The
+  // backend kills the old refresh token on rotation, so the session owner
+  // must persist the new pair or the next cold start would load a dead token
+  // and sign the user out. Wired to AuthState.
+  Future<void> Function(String token, String refreshToken)? onTokensRefreshed;
+
   Future<bool>? _refreshing;
 
   void setTokens(String? token, String? refreshToken) {
@@ -202,8 +208,16 @@ class ApiClient {
       return false;
     }
     final body = jsonDecode(res.body) as Map<String, dynamic>;
-    _token = body['token'] as String?;
-    _refreshToken = body['refreshToken'] as String?;
+    final token = body['token'] as String?;
+    final newRefresh = body['refreshToken'] as String?;
+    // Logged out while the refresh was in flight: don't resurrect the session.
+    if (_refreshToken != rt) return false;
+    _token = token;
+    _refreshToken = newRefresh;
+    if (token != null && newRefresh != null) {
+      final cb = onTokensRefreshed;
+      if (cb != null) await cb(token, newRefresh);
+    }
     return _token != null;
   }
 

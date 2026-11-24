@@ -131,9 +131,14 @@ class _SubmitReportScreenState extends State<SubmitReportScreen> {
       );
       _description.clear();
       _address.clear();
+      // Reset the location too, so the next report can't silently reuse this
+      // report's GPS point and nearby-duplicate warning.
       setState(() {
         _photo = null;
         _category = 'pothole';
+        _lat = null;
+        _lng = null;
+        _nearby = null;
         _success = false;
       });
     } catch (e) {

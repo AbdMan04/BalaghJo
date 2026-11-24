@@ -6,11 +6,13 @@
 // (GET /api/admin/users + role changes) and broadcasts
 // (GET/POST /api/admin/announcements). Every call requires a Bearer
 // token whose role claim is 'admin'.
+import 'package:flutter_map/flutter_map.dart' show LatLngBounds;
 import '../models/admin_stats.dart';
 import '../models/admin_user.dart';
 import '../models/announcement.dart';
 import '../models/report.dart';
 import 'api_client.dart';
+import 'report_api.dart';
 
 class AdminReportPage {
   final List<Report> reports;
@@ -21,10 +23,13 @@ class AdminReportPage {
 class AdminApi {
   final ApiClient _api = ApiClient.instance;
 
+  // FR-14: [area] limits the feed to reports inside a map box; the backend
+  // ANDs it with the status/category/search filters.
   Future<AdminReportPage> listReports({
     String? status,
     String? category,
     String? query,
+    LatLngBounds? area,
     String? before,
     int limit = 50,
   }) async {
@@ -33,6 +38,7 @@ class AdminApi {
       if (status != null) 'status': status,
       if (category != null) 'category': category,
       if (query != null && query.isNotEmpty) 'q': query,
+      if (area != null) ...ReportApi.boundsQuery(area),
       if (before != null) 'before': before,
     };
     final res = await _api.get('/api/admin/reports', query: q);

@@ -15,6 +15,7 @@ import 'package:share_plus/share_plus.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../../core/config.dart';
 import '../../core/date_format.dart';
+import '../../core/perf_log.dart';
 import '../../core/strings.dart';
 import '../../core/theme.dart';
 import '../../data/api/api_client.dart';
@@ -41,9 +42,6 @@ class _ReportDetailScreenState extends State<ReportDetailScreen>
   Report? _last;
 
   @override
-  Duration get pollInterval => const Duration(seconds: 5);
-
-  @override
   void initState() {
     super.initState();
     _future = _load();
@@ -61,6 +59,9 @@ class _ReportDetailScreenState extends State<ReportDetailScreen>
       final fresh = await ReportApi().get(widget.reportId);
       if (!mounted) return;
       final changed = _last == null || _last!.pollKey != fresh.pollKey;
+      if (_last != null && _last!.status != fresh.status) {
+        _logStatusSeen(fresh, 'detail');
+      }
       _last = fresh;
       if (changed) {
         setState(() => _future = Future.value(fresh));
@@ -68,6 +69,17 @@ class _ReportDetailScreenState extends State<ReportDetailScreen>
     } catch (_) {
       // Keep showing the last good report on transient network errors.
     }
+  }
+
+  // NFR-6 client-side log, paired with the server's [status-update] line.
+  void _logStatusSeen(Report r, String screen) {
+    PerfLog.event('status_seen', {
+      'screen': screen,
+      'report': r.reportId,
+      'status': r.status.apiValue,
+      'serverChangedAt': r.statusChangedAt?.toUtc().toIso8601String(),
+      'latencyMs': PerfLog.msSince(r.statusChangedAt),
+    });
   }
 
   String _shareText(Report r) => 'Report ${r.reportId}\n'

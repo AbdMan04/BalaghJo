@@ -12,7 +12,9 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:balaghjo/core/locale_state.dart';
 import 'package:balaghjo/core/strings.dart';
 import 'package:balaghjo/state/auth_state.dart';
+import 'package:balaghjo/ui/admin/admin_map_screen.dart';
 import 'package:balaghjo/ui/admin/admin_shell.dart';
+import 'package:balaghjo/ui/reports/widgets/report_cluster_layer.dart';
 
 const _sidebar = Key('admin_sidebar');
 const _bottomNav = Key('admin_bottom_nav');
@@ -61,6 +63,36 @@ void main() {
     expect(tester.takeException(), isNull);
 
     await tester.pumpWidget(const SizedBox());
+  });
+
+  testWidgets('the Map tab is only built once an admin opens it',
+      (tester) async {
+    SharedPreferences.setMockInitialValues({});
+    // Map tiles can't load offline; flutter_map reports each failure via
+    // debugPrint. Silence that noise for this test only.
+    // Restored inside the body: Flutter checks debug vars before tear-downs.
+    final originalDebugPrint = debugPrint;
+    debugPrint = (String? message, {int? wrapWidth}) {};
+    try {
+      await _pump(tester, 1280);
+
+      // Not built on dashboard load (keeps NFR-8's first load lean).
+      expect(find.byType(AdminMapScreen), findsNothing);
+
+      await tester.tap(find.descendant(
+        of: find.byKey(_sidebar),
+        matching: find.byIcon(Icons.map_outlined),
+      ));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 100));
+
+      expect(find.byType(AdminMapScreen), findsOneWidget);
+      expect(find.byType(MapLegend), findsOneWidget);
+
+      await tester.pumpWidget(const SizedBox());
+    } finally {
+      debugPrint = originalDebugPrint;
+    }
   });
 
   testWidgets('tapping a bottom nav item switches the section title',

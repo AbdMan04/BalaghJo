@@ -30,12 +30,10 @@ class _HomeScreenState extends State<HomeScreen> with RouteAwarePolling {
   final Set<String> _pendingDeletes = {};
   List<Report>? _lastRecent;
 
-  // F4/FR-11, NFR-6: poll every 3s so status badges on recent reports
-  // refresh within ~5s without an app restart. The timer is paused
-  // whenever Home isn't the visible route or the app is backgrounded
-  // (RouteAwarePolling).
-  @override
-  Duration get pollInterval => const Duration(seconds: 5);
+  // F4/FR-11, NFR-6: RouteAwarePolling's 3s default (plus an immediate
+  // refresh on a status push) keeps the recent-report badges within the 5s
+  // budget. The timer is paused whenever Home isn't the visible route or the
+  // app is backgrounded.
 
   @override
   void initState() {

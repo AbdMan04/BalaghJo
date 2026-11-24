@@ -1,8 +1,9 @@
 // AdminShell — F5 (Admin Dashboard) landing shell for role=admin users
 // on the Flutter web build. Crafted as an "operations board": an asphalt
 // sidebar carries the brand, nav and the signed-in admin; the workspace
-// header titles the active section. The four tabs keep their own state
-// and polling behind an IndexedStack; role gating is enforced upstream
+// header titles the active section. The five tabs keep their own state
+// and polling behind an IndexedStack (the Map tab is built on first visit,
+// so its tiles and pins never load unless an admin opens it); role gating is enforced upstream
 // (splash/routing) and the backend rejects non-admin JWTs anyway.
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
@@ -14,6 +15,7 @@ import '../../state/auth_state.dart';
 import '../auth/onboarding_screen.dart';
 import '../widgets/animations.dart';
 import 'admin_announcements_screen.dart';
+import 'admin_map_screen.dart';
 import 'admin_overview_screen.dart';
 import 'admin_reports_screen.dart';
 import 'admin_users_screen.dart';
@@ -27,12 +29,16 @@ class AdminShell extends StatefulWidget {
 
 class _AdminShellState extends State<AdminShell> {
   int _index = 0;
+  bool _mapOpened = false;
   bool _wasAuthenticated = true;
   bool _manualLogout = false;
+
+  static const _mapTab = 2;
 
   static const _titles = [
     'admin.nav_overview',
     'admin.nav_reports',
+    'admin.nav_map',
     'admin.nav_announcements',
     'admin.nav_users'
   ];
@@ -44,6 +50,7 @@ class _AdminShellState extends State<AdminShell> {
       'admin.nav_overview'
     ),
     (Icons.assignment_outlined, Icons.assignment, 'admin.nav_reports'),
+    (Icons.map_outlined, Icons.map, 'admin.nav_map'),
     (Icons.campaign_outlined, Icons.campaign, 'admin.nav_announcements'),
     (Icons.people_outline, Icons.people_outlined, 'admin.nav_users'),
   ];
@@ -153,7 +160,10 @@ class _AdminShellState extends State<AdminShell> {
 
   void _setIndex(int i) {
     if (i == _index) return;
-    setState(() => _index = i);
+    setState(() {
+      _index = i;
+      if (i == _mapTab) _mapOpened = true;
+    });
   }
 
   @override
@@ -210,6 +220,7 @@ class _AdminShellState extends State<AdminShell> {
         children: [
           AdminOverviewScreen(active: _index == 0),
           AdminReportsScreen(active: _index == 1),
+          _mapOpened ? const AdminMapScreen() : const SizedBox.shrink(),
           const AdminAnnouncementsScreen(),
           const AdminUsersScreen(),
         ],
@@ -670,16 +681,7 @@ class _MobileNavBar extends StatelessWidget {
     required this.onTap,
   });
 
-  static const _items = <(IconData, IconData, String)>[
-    (
-      Icons.space_dashboard_outlined,
-      Icons.space_dashboard,
-      'admin.nav_overview'
-    ),
-    (Icons.assignment_outlined, Icons.assignment, 'admin.nav_reports'),
-    (Icons.campaign_outlined, Icons.campaign, 'admin.nav_announcements'),
-    (Icons.people_outline, Icons.people_outlined, 'admin.nav_users'),
-  ];
+  static const _items = _AdminShellState._nav;
 
   @override
   Widget build(BuildContext context) {
@@ -698,12 +700,14 @@ class _MobileNavBar extends StatelessWidget {
               mainAxisAlignment: MainAxisAlignment.spaceAround,
               children: [
                 for (var i = 0; i < _items.length; i++)
-                  _MobileNavItem(
-                    icon: _items[i].$1,
-                    selectedIcon: _items[i].$2,
-                    label: context.t(_items[i].$3),
-                    active: index == i,
-                    onTap: () => onTap(i),
+                  Expanded(
+                    child: _MobileNavItem(
+                      icon: _items[i].$1,
+                      selectedIcon: _items[i].$2,
+                      label: context.t(_items[i].$3),
+                      active: index == i,
+                      onTap: () => onTap(i),
+                    ),
                   ),
               ],
             ),
@@ -733,7 +737,7 @@ class _MobileNavItem extends StatelessWidget {
     return PressableScale(
       onTap: onTap,
       child: SizedBox(
-        width: 72,
+        width: double.infinity,
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [

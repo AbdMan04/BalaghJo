@@ -34,6 +34,9 @@ class AuthState extends ChangeNotifier {
     // Expired-session hook: ApiClient auto-refreshes on 401; if the refresh
     // token is itself dead it calls this so we clear persisted state.
     ApiClient.instance.onSessionExpired = () => _clearSession();
+    // Silent refreshes rotate the token pair; persist it so the session
+    // survives an app restart.
+    ApiClient.instance.onTokensRefreshed = _storeTokens;
 
     final prefs = await SharedPreferences.getInstance();
     _token = prefs.getString(_kToken);
@@ -138,6 +141,19 @@ class AuthState extends ChangeNotifier {
     await prefs.setString(_kRefreshToken, refreshToken);
     _syncPush();
     notifyListeners();
+  }
+
+  // Persists a pair rotated by ApiClient's silent refresh. Ignored once the
+  // session has been cleared (logout raced the refresh), so a late refresh
+  // can never write a signed-out user's tokens back to storage.
+  Future<void> _storeTokens(String token, String refreshToken) async {
+    if (_token == null) return;
+    _token = token;
+    _refreshToken = refreshToken;
+    final prefs = await SharedPreferences.getInstance();
+    if (_token == null) return;
+    await prefs.setString(_kToken, token);
+    await prefs.setString(_kRefreshToken, refreshToken);
   }
 
   Future<void> _clearRefreshToken() async {

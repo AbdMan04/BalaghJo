@@ -1,8 +1,8 @@
 // FR-10: statuses are carried as instance members (not an extension) so
 // they resolve reliably in every web compiler (DDC and dart2js).
 enum ReportStatus {
-  pending('pending', 'Sent', 'قيد الانتظار'),
-  inProgress('in_progress', 'Processing', 'قيد المعالجة'),
+  pending('pending', 'Pending', 'قيد الانتظار'),
+  inProgress('in_progress', 'In Progress', 'قيد المعالجة'),
   resolved('resolved', 'Resolved', 'تم الحل');
 
   final String apiValue;

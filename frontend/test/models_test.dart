@@ -24,9 +24,13 @@ void main() {
       expect(ReportStatus.pending.apiValue, 'pending');
       expect(ReportStatus.inProgress.apiValue, 'in_progress');
       expect(ReportStatus.resolved.apiValue, 'resolved');
-      expect(ReportStatus.pending.label, 'Sent');
-      expect(ReportStatus.inProgress.label, 'Processing');
+      // FR-10 names: Pending -> In Progress -> Resolved, in both languages.
+      expect(ReportStatus.pending.label, 'Pending');
+      expect(ReportStatus.inProgress.label, 'In Progress');
       expect(ReportStatus.resolved.label, 'Resolved');
+      expect(ReportStatus.pending.labelAr, 'قيد الانتظار');
+      expect(ReportStatus.inProgress.labelAr, 'قيد المعالجة');
+      expect(ReportStatus.resolved.labelAr, 'تم الحل');
     });
   });
 

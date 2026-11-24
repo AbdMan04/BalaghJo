@@ -5,6 +5,7 @@ import 'package:flutter/foundation.dart';
 import 'package:provider/provider.dart';
 import '../../core/strings.dart';
 import '../../core/locale_state.dart';
+import '../../core/report_events.dart';
 import '../../core/theme.dart';
 import '../../data/api/notification_api.dart';
 import '../../state/auth_state.dart';
@@ -12,6 +13,7 @@ import '../admin/admin_shell.dart';
 import '../notifications/notifications_screen.dart';
 import '../profile/profile_screen.dart';
 import '../reports/my_reports_screen.dart';
+import '../reports/report_detail_screen.dart';
 import '../reports/submit_report_screen.dart';
 import '../widgets/animations.dart';
 import 'home_screen.dart';
@@ -62,12 +64,26 @@ class _MainShellState extends State<MainShell> {
     _loadUnread();
     _unreadTimer =
         Timer.periodic(const Duration(seconds: 5), (_) => _loadUnread());
+    // FR-12: a tapped notification opens its report. Taps that happened
+    // before this shell existed (cold start from a notification) are
+    // waiting in openRequested, so check once after the first frame too.
+    ReportEvents.openRequested.addListener(_openRequestedReport);
+    WidgetsBinding.instance
+        .addPostFrameCallback((_) => _openRequestedReport());
   }
 
   @override
   void dispose() {
+    ReportEvents.openRequested.removeListener(_openRequestedReport);
     _unreadTimer?.cancel();
     super.dispose();
+  }
+
+  void _openRequestedReport() {
+    final id = ReportEvents.openRequested.value;
+    if (id == null || !mounted) return;
+    ReportEvents.openRequested.value = null;
+    Navigator.of(context).push(instantRoute(ReportDetailScreen(reportId: id)));
   }
 
   Future<void> _loadUnread() async {

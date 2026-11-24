@@ -1,11 +1,16 @@
-// ReportsMapScreen — feature F7 (Map View of Reports).
+// ReportsMapScreen / ReportsMapView — feature F7 (Map View of Reports).
 //
-// Full-screen flutter_map view that renders every report in the
-// system as a category-colored pin (FR-18) over OpenStreetMap tiles.
-// Tapping a pin shows a compact card with category, status, and
-// address. Backed by GET /api/reports/all, which deliberately omits
-// reporter PII so users cannot be deanonymized from the map.
-// Note: clustering (FR-19) is deferred to GP2.
+// Full-screen flutter_map view of the reports in the visible area:
+//  - FR-18: every report with valid coordinates is a category-coloured pin;
+//    reports without coordinates (0,0) are left out. The view loads every
+//    page of the viewport's reports (not just the first 500).
+//  - FR-19: above 50 pins in the viewport, nearby pins merge into numbered
+//    clusters (ReportClusterLayer), and a legend shows each category colour.
+//    The same view backs the citizen map (ReportsMapScreen) and the admin
+//    dashboard's Map tab, which passes its own [onOpenReport].
+//  - NFR-10: the first render is timed into the perf log ("map_render").
+// Tapping a pin shows a compact card; the data comes from GET
+// /api/reports/public, which omits reporter PII.
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_map/flutter_map.dart';
@@ -14,6 +19,7 @@ import '../../core/config.dart';
 import '../../core/date_format.dart';
 import '../../core/location_helper.dart';
 import '../../core/map_config.dart';
+import '../../core/perf_log.dart';
 import '../../core/strings.dart';
 import '../../core/theme.dart';
 import '../../data/api/report_api.dart';
@@ -23,17 +29,44 @@ import '../widgets/category_icon.dart';
 import '../widgets/location_snackbars.dart';
 import '../widgets/status_badge.dart';
 import 'report_detail_screen.dart';
+import 'widgets/report_cluster_layer.dart';
 
-class ReportsMapScreen extends StatefulWidget {
+/// Called when the user opens a report from the map's marker card.
+typedef OpenReportCallback = Future<void> Function(
+    BuildContext context, Report report);
+
+class ReportsMapScreen extends StatelessWidget {
   const ReportsMapScreen({super.key});
 
   @override
-  State<ReportsMapScreen> createState() => _ReportsMapScreenState();
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: Text(context.t('map.title'),
+            style: const TextStyle(fontWeight: FontWeight.w800)),
+      ),
+      body: ReportsMapView(
+        onOpenReport: (ctx, report) => Navigator.of(ctx).push(
+          instantRoute(ReportDetailScreen(reportId: report.id)),
+        ),
+      ),
+    );
+  }
 }
 
-class _ReportsMapScreenState extends State<ReportsMapScreen> {
+class ReportsMapView extends StatefulWidget {
+  final OpenReportCallback onOpenReport;
+  const ReportsMapView({super.key, required this.onOpenReport});
+
+  @override
+  State<ReportsMapView> createState() => _ReportsMapViewState();
+}
+
+class _ReportsMapViewState extends State<ReportsMapView> {
   final MapController _map = MapController();
   final _api = ReportApi();
+  final Stopwatch _renderClock = Stopwatch()..start();
+  bool _renderLogged = false;
   late Future<List<Report>> _future;
   String? _categoryFilter;
   String? _statusFilter;
@@ -63,11 +96,27 @@ class _ReportsMapScreenState extends State<ReportsMapScreen> {
     } catch (_) {
       bounds = null;
     }
-    return _api.publicList(
-      category: _categoryFilter,
-      status: _statusFilter,
-      bounds: bounds,
-    );
+    return _api
+        .publicList(
+          category: _categoryFilter,
+          status: _statusFilter,
+          bounds: bounds,
+        )
+        .then(_logFirstRender);
+  }
+
+  // NFR-10: time from opening the map to the first frame showing its pins.
+  List<Report> _logFirstRender(List<Report> reports) {
+    if (!_renderLogged) {
+      _renderLogged = true;
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        PerfLog.event('map_render', {
+          'ms': _renderClock.elapsedMilliseconds,
+          'pins': reports.where(_hasCoords).length,
+        });
+      });
+    }
+    return reports;
   }
 
   void _refilter({bool keepSelection = false}) {
@@ -77,9 +126,16 @@ class _ReportsMapScreenState extends State<ReportsMapScreen> {
     });
   }
 
+  // Refetch the viewport once the camera settles after any pan, zoom
+  // (pinch, wheel, double tap, cluster tap) or fling. Debounced so a gesture
+  // does not fire a refetch per frame.
   void _onMapEvent(MapEvent e) {
-    if (e is! MapEventMoveEnd) return;
-    // Debounce so a fling or pinch doesn't fire a refetch per frame.
+    final settled = e is MapEventWithMove ||
+        e is MapEventMoveEnd ||
+        e is MapEventFlingAnimationEnd ||
+        e is MapEventDoubleTapZoomEnd ||
+        e is MapEventRotateEnd;
+    if (!settled) return;
     _viewportTimer?.cancel();
     _viewportTimer = Timer(const Duration(milliseconds: 300), () {
       if (!mounted) return;
@@ -110,141 +166,133 @@ class _ReportsMapScreenState extends State<ReportsMapScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: Text(context.t('map.title'),
-            style: const TextStyle(fontWeight: FontWeight.w800)),
-      ),
-      body: FutureBuilder<List<Report>>(
-        future: _future,
-        builder: (_, snap) {
-          final loading = snap.connectionState == ConnectionState.waiting;
-          final reports =
-              (snap.data ?? const <Report>[]).where(_hasCoords).toList();
-          return Stack(
-            children: [
-              FlutterMap(
-                mapController: _map,
-                options: MapOptions(
-                  initialCenter: MapConfig.irbidCenter,
-                  initialZoom: MapConfig.initialZoom,
-                  minZoom: MapConfig.minZoom,
-                  maxZoom: MapConfig.maxZoom,
-                  cameraConstraint: MapConfig.cameraConstraint(),
-                  onMapEvent: _onMapEvent,
-                ),
-                children: [
-                  MapConfig.tileLayer(),
-                  const SimpleAttributionWidget(
-                    source: Text(
-                      MapConfig.attribution,
-                      style: TextStyle(fontSize: 9, color: AppColors.textMuted),
-                    ),
-                    alignment: Alignment.bottomLeft,
+    return FutureBuilder<List<Report>>(
+      future: _future,
+      builder: (_, snap) {
+        final loading = snap.connectionState == ConnectionState.waiting;
+        final reports =
+            (snap.data ?? const <Report>[]).where(_hasCoords).toList();
+        return Stack(
+          children: [
+            FlutterMap(
+              mapController: _map,
+              options: MapOptions(
+                initialCenter: MapConfig.irbidCenter,
+                initialZoom: MapConfig.initialZoom,
+                minZoom: MapConfig.minZoom,
+                maxZoom: MapConfig.maxZoom,
+                cameraConstraint: MapConfig.cameraConstraint(),
+                onMapEvent: _onMapEvent,
+              ),
+              children: [
+                MapConfig.tileLayer(),
+                const SimpleAttributionWidget(
+                  source: Text(
+                    MapConfig.attribution,
+                    style: TextStyle(fontSize: 9, color: AppColors.textMuted),
                   ),
+                  alignment: Alignment.bottomLeft,
+                ),
+                ReportClusterLayer(
+                  reports: reports,
+                  selectedId: _selected?.id,
+                  onSelect: (r) => setState(() => _selected = r),
+                ),
+                if (_myLocation != null)
                   MarkerLayer(
                     markers: [
-                      if (_myLocation != null)
-                        Marker(
-                          point: _myLocation!,
-                          width: 26,
-                          height: 26,
-                          alignment: Alignment.center,
-                          child: const _YouAreHereDot(),
-                        ),
-                      ...reports.map((r) => Marker(
-                            point: LatLng(r.lat, r.lng),
-                            width: 44,
-                            height: 44,
-                            alignment: Alignment.topCenter,
-                            child: GestureDetector(
-                              onTap: () => setState(() => _selected = r),
-                              child: _Pin(
-                                category: r.category,
-                                active: _selected?.id == r.id,
-                              ),
-                            ),
-                          )),
+                      Marker(
+                        point: _myLocation!,
+                        width: 26,
+                        height: 26,
+                        alignment: Alignment.center,
+                        child: const _YouAreHereDot(),
+                      ),
                     ],
                   ),
-                ],
+              ],
+            ),
+            Positioned(
+              top: 8,
+              left: 12,
+              right: 12,
+              child: _FilterBar(
+                category: _categoryFilter,
+                status: _statusFilter,
+                onCategory: (c) {
+                  _categoryFilter = c;
+                  _refilter();
+                },
+                onStatus: (s) {
+                  _statusFilter = s;
+                  _refilter();
+                },
               ),
-              Positioned(
-                top: 8,
-                left: 12,
-                right: 12,
-                child: _FilterBar(
-                  category: _categoryFilter,
-                  status: _statusFilter,
-                  onCategory: (c) {
-                    _categoryFilter = c;
-                    _refilter();
-                  },
-                  onStatus: (s) {
-                    _statusFilter = s;
-                    _refilter();
-                  },
-                ),
+            ),
+            const PositionedDirectional(
+              top: 94,
+              start: 12,
+              child: MapLegend(),
+            ),
+            if (loading && reports.isEmpty)
+              const Positioned(
+                top: 100,
+                left: 0,
+                right: 0,
+                child: Center(child: _LoadingChip()),
               ),
-              if (loading && reports.isEmpty)
-                const Positioned(
-                  top: 100,
-                  left: 0,
-                  right: 0,
-                  child: Center(child: _LoadingChip()),
-                ),
-              if (!loading && reports.isEmpty)
-                const Positioned(
-                  bottom: 32,
-                  left: 0,
-                  right: 0,
-                  child: Center(child: _EmptyChip()),
-                ),
-              if (_selected != null)
-                Positioned(
-                  left: 16,
-                  right: 16,
-                  bottom: 24,
-                  child: _MarkerCard(
-                    report: _selected!,
-                    onClose: () => setState(() => _selected = null),
-                  ),
-                ),
+            if (!loading && reports.isEmpty)
+              const Positioned(
+                bottom: 32,
+                left: 0,
+                right: 0,
+                child: Center(child: _EmptyChip()),
+              ),
+            if (_selected != null)
               Positioned(
+                left: 16,
                 right: 16,
-                bottom: _selected != null ? 188 : 24,
-                child: Tooltip(
-                  message: context.t('map.locate'),
-                  child: PressableScale(
-                    onTap: _locating ? null : _locate,
-                    child: Container(
-                      width: 48,
-                      height: 48,
-                      decoration: BoxDecoration(
-                        color: Colors.white,
-                        shape: BoxShape.circle,
-                        boxShadow: [
-                          BoxShadow(
-                              color: Colors.black.withValues(alpha: 0.15),
-                              blurRadius: 10),
-                        ],
-                      ),
-                      child: _locating
-                          ? const Padding(
-                              padding: EdgeInsets.all(14),
-                              child: CircularProgressIndicator(
-                                  strokeWidth: 2, color: AppColors.blue),
-                            )
-                          : const Icon(Icons.my_location,
-                              color: AppColors.blue),
+                bottom: 24,
+                child: _MarkerCard(
+                  report: _selected!,
+                  onOpen: () => widget.onOpenReport(context, _selected!),
+                  onClose: () => setState(() => _selected = null),
+                ),
+              ),
+            Positioned(
+              right: 16,
+              bottom: _selected != null ? 188 : 24,
+              child: Tooltip(
+                message: context.t('map.locate'),
+                child: PressableScale(
+                  onTap: _locating ? null : _locate,
+                  child: Container(
+                    width: 48,
+                    height: 48,
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      shape: BoxShape.circle,
+                      boxShadow: [
+                        BoxShadow(
+                            color: Colors.black.withValues(alpha: 0.15),
+                            blurRadius: 10),
+                      ],
                     ),
+                    child: _locating
+                        ? const Padding(
+                            padding: EdgeInsets.all(14),
+                            child: CircularProgressIndicator(
+                                strokeWidth: 2, color: AppColors.blue),
+                          )
+                        : const Icon(Icons.my_location,
+                            color: AppColors.blue),
                   ),
                 ),
               ),
-            ],
-          );
-        },
-      ),
+            ),
+          ],
+        );
+      },
     );
   }
 }
@@ -264,36 +312,6 @@ class _YouAreHereDot extends StatelessWidget {
               color: AppColors.blue.withValues(alpha: 0.5), blurRadius: 12),
         ],
       ),
-    );
-  }
-}
-
-class _Pin extends StatelessWidget {
-  final String category;
-  final bool active;
-  const _Pin({required this.category, required this.active});
-
-  @override
-  Widget build(BuildContext context) {
-    final tint = colorForCategory(category);
-    return AnimatedContainer(
-      duration: const Duration(milliseconds: 220),
-      width: active ? 40 : 32,
-      height: active ? 40 : 32,
-      decoration: BoxDecoration(
-        color: tint,
-        shape: BoxShape.circle,
-        border: Border.all(color: Colors.white, width: active ? 3 : 2),
-        boxShadow: [
-          BoxShadow(
-            color: tint.withValues(alpha: active ? 0.6 : 0.35),
-            blurRadius: active ? 14 : 8,
-            offset: const Offset(0, 3),
-          ),
-        ],
-      ),
-      child: Icon(iconForCategory(category),
-          color: Colors.white, size: active ? 20 : 16),
     );
   }
 }
@@ -482,8 +500,10 @@ class _EmptyChip extends StatelessWidget {
 
 class _MarkerCard extends StatelessWidget {
   final Report report;
+  final VoidCallback onOpen;
   final VoidCallback onClose;
-  const _MarkerCard({required this.report, required this.onClose});
+  const _MarkerCard(
+      {required this.report, required this.onOpen, required this.onClose});
 
   @override
   Widget build(BuildContext context) {
@@ -580,9 +600,7 @@ class _MarkerCard extends StatelessWidget {
             ),
             const SizedBox(height: 10),
             PressableScale(
-              onTap: () => Navigator.of(context).push(
-                instantRoute(ReportDetailScreen(reportId: report.id)),
-              ),
+              onTap: onOpen,
               child: Container(
                 height: 42,
                 alignment: Alignment.center,

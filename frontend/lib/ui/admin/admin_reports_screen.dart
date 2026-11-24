@@ -2,13 +2,18 @@
 //
 // FR-13: paginated at 50 reports per page (server-side cursor), each row
 // shows category, date, status, submitter, and a photo thumbnail.
-// FR-14: status / category filters (and a free-text search) reduce the
-// visible set; the backend applies the same filters to the query.
+// FR-14: status / category / map-area filters (and a free-text search)
+// reduce the visible set; the backend ANDs the same filters in the query.
+// NFR-8: the first page load is timed into the perf log ("dashboard_load").
 // Rows open AdminReportDetailScreen for the photo + GPS + status workflow.
 import 'package:flutter/material.dart';
+import 'package:flutter_map/flutter_map.dart' show LatLngBounds;
+import 'package:provider/provider.dart';
 import '../../core/config.dart';
 import '../../core/date_format.dart';
 import '../../core/debounced_search.dart';
+import '../../core/locale_state.dart';
+import '../../core/perf_log.dart';
 import '../../core/strings.dart';
 import '../../core/theme.dart';
 import '../../data/api/admin_api.dart';
@@ -20,6 +25,7 @@ import '../widgets/remote_view.dart';
 import '../widgets/route_aware_polling.dart';
 import '../widgets/status_badge.dart';
 import 'admin_report_detail_screen.dart';
+import 'area_picker_dialog.dart';
 
 class AdminReportsScreen extends StatefulWidget {
   /// True while this tab is the selected dashboard tab; polling is gated on
@@ -40,7 +46,10 @@ class _AdminReportsScreenState extends State<AdminReportsScreen>
   String? _nextCursor;
   String? _statusFilter;
   String? _categoryFilter;
+  LatLngBounds? _area;
   DateTime? _lastUpdated;
+  final Stopwatch _loadClock = Stopwatch()..start();
+  bool _loadLogged = false;
 
   @override
   Duration get pollInterval => const Duration(seconds: 30);
@@ -75,6 +84,25 @@ class _AdminReportsScreenState extends State<AdminReportsScreen>
     _listKey.currentState?.reload();
   }
 
+  Future<void> _pickArea() async {
+    final picked = await showAreaPicker(context, initial: _area);
+    if (picked == null || !mounted) return;
+    setState(() => _area = picked);
+    _reload();
+  }
+
+  // NFR-8: time from opening the dashboard feed to its first rendered page.
+  void _logFirstLoad(AdminReportPage page) {
+    if (_loadLogged) return;
+    _loadLogged = true;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      PerfLog.event('dashboard_load', {
+        'ms': _loadClock.elapsedMilliseconds,
+        'rows': page.reports.length,
+      });
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
     return Column(
@@ -83,6 +111,12 @@ class _AdminReportsScreenState extends State<AdminReportsScreen>
         _FilterBar(
           statusFilter: _statusFilter,
           categoryFilter: _categoryFilter,
+          area: _area,
+          onPickArea: _pickArea,
+          onClearArea: () {
+            setState(() => _area = null);
+            _reload();
+          },
           searchController: _search.controller,
           lastUpdated: _lastUpdated,
           onRefresh: poll,
@@ -100,12 +134,14 @@ class _AdminReportsScreenState extends State<AdminReportsScreen>
             key: _listKey,
             onData: (page) {
               _nextCursor = page.nextCursor;
+              _logFirstLoad(page);
               if (mounted) setState(() => _lastUpdated = DateTime.now());
             },
             load: () => _api.listReports(
               status: _statusFilter,
               category: _categoryFilter,
               query: _search.query.isEmpty ? null : _search.query,
+              area: _area,
               before: _pageCursor,
             ),
             isEmpty: (page) => page.reports.isEmpty,
@@ -154,6 +190,9 @@ class _AdminReportsScreenState extends State<AdminReportsScreen>
 class _FilterBar extends StatelessWidget {
   final String? statusFilter;
   final String? categoryFilter;
+  final LatLngBounds? area;
+  final VoidCallback onPickArea;
+  final VoidCallback onClearArea;
   final TextEditingController searchController;
   final DateTime? lastUpdated;
   final VoidCallback onRefresh;
@@ -163,6 +202,9 @@ class _FilterBar extends StatelessWidget {
   const _FilterBar({
     required this.statusFilter,
     required this.categoryFilter,
+    required this.area,
+    required this.onPickArea,
+    required this.onClearArea,
     required this.searchController,
     required this.lastUpdated,
     required this.onRefresh,
@@ -172,6 +214,7 @@ class _FilterBar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isArabic = context.watch<LocaleState>().isArabic;
     return Container(
       padding: const EdgeInsets.fromLTRB(16, 12, 16, 8),
       decoration: const BoxDecoration(
@@ -195,23 +238,56 @@ class _FilterBar extends StatelessWidget {
             child: ListView(
               scrollDirection: Axis.horizontal,
               children: [
+                _areaChip(context),
+                const SizedBox(width: 8),
                 _filterChip(context, context.t('status.all'), null,
                     statusFilter, onStatus),
                 for (final s in ReportStatus.values)
-                  _filterChip(
-                      context, s.label, s.apiValue, statusFilter, onStatus),
+                  _filterChip(context, s.localizedLabel(isArabic), s.apiValue,
+                      statusFilter, onStatus),
                 const SizedBox(width: 8),
                 _filterChip(context, context.t('cat.all'), null, categoryFilter,
                     onCategory),
                 for (final c in ReportCategory.values)
-                  _filterChip(
-                      context, c.label, c.apiValue, categoryFilter, onCategory),
+                  _filterChip(context, c.localizedLabel(isArabic), c.apiValue,
+                      categoryFilter, onCategory),
               ],
             ),
           ),
           const SizedBox(height: 6),
           FreshnessBar(lastUpdated: lastUpdated, onRefresh: onRefresh),
         ],
+      ),
+    );
+  }
+
+  // FR-14 area filter: opens the map picker; when an area is set the chip
+  // shows it as active with a clear (x) action.
+  Widget _areaChip(BuildContext context) {
+    final active = area != null;
+    return Padding(
+      padding: const EdgeInsets.only(right: 6),
+      child: InputChip(
+        key: const Key('area_filter_chip'),
+        avatar: Icon(Icons.map_outlined,
+            size: 16, color: active ? Colors.white : AppColors.navy),
+        label: Text(active
+            ? context.t('admin.area_selected')
+            : context.t('admin.area_any')),
+        selected: active,
+        showCheckmark: false,
+        onPressed: onPickArea,
+        onDeleted: active ? onClearArea : null,
+        deleteIcon: const Icon(Icons.close, size: 16, color: Colors.white),
+        deleteButtonTooltipMessage: context.t('admin.area_clear'),
+        labelStyle: TextStyle(
+          fontSize: 12,
+          fontWeight: FontWeight.w700,
+          color: active ? Colors.white : AppColors.navy,
+        ),
+        selectedColor: AppColors.navy,
+        backgroundColor: AppColors.surface,
+        side: const BorderSide(color: AppColors.border),
       ),
     );
   }

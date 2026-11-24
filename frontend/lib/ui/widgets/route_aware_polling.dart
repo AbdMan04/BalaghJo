@@ -7,8 +7,15 @@
 //
 // Screens that mix this in must implement `poll()`. Each screen keeps its
 // own initial load in initState; the mixin only manages the repeating timer.
+//
+// FR-11 / NFR-6 (status visible within 5s): a status push arriving while the
+// app is open (ReportEvents.changed) triggers an immediate poll on the
+// visible screen, so updates normally land as soon as the push does; the 3s
+// timer is the fallback when push is unavailable (3s + network stays under
+// the 5s budget, where 5s + network did not).
 import 'dart:async';
 import 'package:flutter/material.dart';
+import '../../core/report_events.dart';
 import '../../core/route_observer.dart';
 
 mixin RouteAwarePolling<T extends StatefulWidget> on State<T>
@@ -19,9 +26,9 @@ mixin RouteAwarePolling<T extends StatefulWidget> on State<T>
   bool _subscribed = false;
   final _LifecycleForwarder _lifecycle = _LifecycleForwarder();
 
-  // Single-device latency between server cache refresh (5s public, 15s
-  // summary) and visibility is imperceptible; 5s cuts poll traffic ~40%.
-  Duration get pollInterval => const Duration(seconds: 5);
+  // Status-bearing screens need the 3s default to meet the 5s budget; screens
+  // without status data (admin feed, notifications) override it upward.
+  Duration get pollInterval => const Duration(seconds: 3);
 
   Future<void> poll();
 
@@ -30,10 +37,15 @@ mixin RouteAwarePolling<T extends StatefulWidget> on State<T>
     super.initState();
     _lifecycle.host = this;
     WidgetsBinding.instance.addObserver(_lifecycle);
+    ReportEvents.changed.addListener(_onReportChanged);
     // Newly mounted screens run their own initial load, so just arm the
     // timer instead of issuing a redundant fetch here.
     _screenActive = true;
     _pollTimer = Timer.periodic(pollInterval, (_) => _poll());
+  }
+
+  void _onReportChanged() {
+    if (_screenActive && mounted) _poll();
   }
 
   // ModalRoute.of resolves through an inherited widget, which is illegal
@@ -54,6 +66,7 @@ mixin RouteAwarePolling<T extends StatefulWidget> on State<T>
   void dispose() {
     _pollTimer?.cancel();
     _pollTimer = null;
+    ReportEvents.changed.removeListener(_onReportChanged);
     appRouteObserver.unsubscribe(this);
     WidgetsBinding.instance.removeObserver(_lifecycle);
     super.dispose();

@@ -34,24 +34,40 @@ class ReportApi {
     return ApiClient.parseList(res, 'reports', Report.fromJson);
   }
 
+  // FR-18: the server pages this list (500 per page), so follow nextCursor
+  // until every report in the area is loaded. [maxPages] caps a runaway
+  // load at 5000 pins.
   Future<List<Report>> publicList({
     String? status,
     String? category,
     LatLngBounds? bounds,
+    int maxPages = 10,
   }) async {
     final query = <String, String>{};
     if (status != null) query['status'] = status;
     if (category != null) query['category'] = category;
-    if (bounds != null) {
-      query['swLat'] = bounds.southWest.latitude.toString();
-      query['swLng'] = bounds.southWest.longitude.toString();
-      query['neLat'] = bounds.northEast.latitude.toString();
-      query['neLng'] = bounds.northEast.longitude.toString();
+    if (bounds != null) query.addAll(boundsQuery(bounds));
+    final all = <Report>[];
+    String? cursor;
+    for (var page = 0; page < maxPages; page++) {
+      final res = await _api.get('/api/reports/public', query: {
+        ...query,
+        if (cursor != null) 'before': cursor,
+      });
+      all.addAll(ApiClient.parseList(res, 'reports', Report.fromJson));
+      cursor = res is Map ? res['nextCursor'] as String? : null;
+      if (cursor == null) break;
     }
-    final res = await _api.get('/api/reports/public',
-        query: query.isEmpty ? null : query);
-    return ApiClient.parseList(res, 'reports', Report.fromJson);
+    return all;
   }
+
+  /// Viewport/area box in the query-parameter shape the API expects.
+  static Map<String, String> boundsQuery(LatLngBounds b) => {
+        'swLat': b.southWest.latitude.toString(),
+        'swLng': b.southWest.longitude.toString(),
+        'neLat': b.northEast.latitude.toString(),
+        'neLng': b.northEast.longitude.toString(),
+      };
 
   Future<Report> get(String id) async {
     final res = await _api.get('/api/reports/$id');

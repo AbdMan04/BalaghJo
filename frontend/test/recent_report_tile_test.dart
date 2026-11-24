@@ -40,7 +40,8 @@ void main() {
     expect(find.text('BAL-000123'), findsNothing);
     expect(find.text('Deep pothole'), findsOneWidget);
     expect(find.text('Al-Yarmouk St'), findsOneWidget);
-    expect(find.text(' · Processing'), findsOneWidget);
+    // Status is rendered by the StatusBadge (FR-10 label).
+    expect(find.text('In Progress'), findsOneWidget);
   });
 
   testWidgets('falls back to the category label when title and address are empty',
@@ -67,6 +68,6 @@ void main() {
 
     expect(find.text('Waste'), findsOneWidget);
     expect(find.text('Location pending'), findsOneWidget);
-    expect(find.text(' · Sent'), findsOneWidget);
+    expect(find.text('Pending'), findsOneWidget);
   });
 }

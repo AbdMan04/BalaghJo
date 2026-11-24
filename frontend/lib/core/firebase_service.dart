@@ -14,6 +14,12 @@
 //     a web token with the backend so the API can push to the browser.
 // Everything is guarded: on platforms without a google-services.json or
 // when the API has push disabled, these calls are safe no-ops.
+//
+// FR-12: tapping a notification opens the report it is about, whichever way
+// the app was opened — FCM tray notification with the app in the background
+// (onMessageOpenedApp) or killed (getInitialMessage), or a local notification
+// (tap callback / launch details). The id goes to ReportEvents.openRequested,
+// which the citizen shell turns into a ReportDetailScreen push.
 import 'dart:ui' show Color;
 
 import 'package:firebase_core/firebase_core.dart';
@@ -22,6 +28,8 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import '../data/api/notification_api.dart';
 import '../firebase_options.dart';
+import 'perf_log.dart';
+import 'report_events.dart';
 
 const _channelId = 'balaghjo';
 const _channelName = 'BalaghJo';
@@ -40,18 +48,44 @@ final _localNotifications = FlutterLocalNotificationsPlugin();
 // Runs in a separate isolate when the app is backgrounded or terminated.
 @pragma('vm:entry-point')
 Future<void> firebaseMessagingBackgroundHandler(RemoteMessage message) async {
+  _logPushReceived(message, appState: 'background');
   try {
     await Firebase.initializeApp();
     await _showLocalNotification(message);
   } catch (_) {}
 }
 
+// NFR-7 / NFR-9: device-side arrival time. latencyMs is measured from the
+// server's status-save time (changedAt) when present, else from send time.
+void _logPushReceived(RemoteMessage message, {required String appState}) {
+  final data = message.data;
+  final changedAt = DateTime.tryParse(data['changedAt'] ?? '');
+  final sentAt = DateTime.tryParse(data['sentAt'] ?? '');
+  PerfLog.event('push_received', {
+    'app': appState,
+    'type': data['type'],
+    'report': data['reportId'],
+    'status': data['status'],
+    'serverChangedAt': changedAt?.toUtc().toIso8601String(),
+    'latencyMs': PerfLog.msSince(changedAt ?? sentAt),
+  });
+}
+
 Future<void> _initLocalNotifications() async {
   // Transparent brand pin (drawable/ic_notification.xml) instead of the
   // full-color launcher icon, so the status bar shows a clean silhouette.
   const android = AndroidInitializationSettings('ic_notification');
-  await _localNotifications
-      .initialize(const InitializationSettings(android: android));
+  await _localNotifications.initialize(
+    const InitializationSettings(android: android),
+    // Tap on a local notification while the app process is alive.
+    onDidReceiveNotificationResponse: (response) =>
+        ReportEvents.requestOpen(response.payload),
+  );
+  // Tap on a local notification that launched the app from a killed state.
+  final launch = await _localNotifications.getNotificationAppLaunchDetails();
+  if (launch?.didNotificationLaunchApp ?? false) {
+    ReportEvents.requestOpen(launch!.notificationResponse?.payload);
+  }
 }
 
 Future<void> _showLocalNotification(RemoteMessage message) async {
@@ -106,7 +140,22 @@ class FirebaseService {
       await messaging.requestPermission(alert: true, badge: true, sound: true);
       await messaging.getToken();
       FirebaseMessaging.onBackgroundMessage(firebaseMessagingBackgroundHandler);
-      FirebaseMessaging.onMessage.listen(_showLocalNotification);
+      FirebaseMessaging.onMessage.listen((message) {
+        _logPushReceived(message, appState: 'foreground');
+        // Refresh the visible report screens right away (FR-11 / NFR-6).
+        if (message.data['type'] == 'report_status') {
+          ReportEvents.notifyChanged();
+        }
+        _showLocalNotification(message);
+      });
+      // Tray notification tapped while the app was in the background.
+      FirebaseMessaging.onMessageOpenedApp.listen(
+          (message) => ReportEvents.requestOpen(message.data['reportId']));
+      // Tray notification tapped while the app was killed.
+      final initial = await messaging.getInitialMessage();
+      if (initial != null) {
+        ReportEvents.requestOpen(initial.data['reportId']);
+      }
       messaging.onTokenRefresh.listen((token) {
         // Best-effort: only succeeds when an authenticated session exists.
         NotificationApi().registerDeviceToken(token).catchError((_) {});
