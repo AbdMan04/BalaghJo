@@ -48,6 +48,9 @@ describe('admin dashboard (stats, users, announcements)', () => {
     const admin = await adminTokenFor(agent, '0791001001');
     const u1 = await userTokenFor('0771002001');
     const u2 = await userTokenFor('0771003001');
+    // A registered user with no reports: keeps the user count (4) distinct
+    // from the report count (3) so a users stat that counted reports fails.
+    await userTokenFor('0771004001');
     await createReport(agent, u1);
     await createReport(agent, u1, { category: 'waste' });
     await createReport(agent, u2);
@@ -61,7 +64,7 @@ describe('admin dashboard (stats, users, announcements)', () => {
     expect(s.pending).toBe(3);
     expect(s.resolved).toBe(0);
     expect(s.active).toBe(3);
-    expect(s.users).toBe(3);
+    expect(s.users).toBe(4);
     const cats = Object.fromEntries(s.categories.map((c) => [c.category, c.count]));
     expect(cats.pothole).toBe(2);
     expect(cats.waste).toBe(1);

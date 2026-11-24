@@ -25,22 +25,23 @@ app.use(helmet());
 app.use(compression());
 
 // NFR: global fallback limiter (per-route auth limiters are stricter).
-// Read-only endpoints that back the app's foreground polling are exempt
-// here (they're still auth-protected at the route level); otherwise a
-// single device polling every few seconds would exhaust a per-IP bucket
-// and lock real users out.
-const readOnlyPaths = [
-  '/health',
-  '/api/reports/summary',
-  '/api/reports/public',
-  '/api/notifications',
-];
+// The citizen app polls its report and notification reads every few
+// seconds (FR-11 / NFR-6), so those GETs are exempt here — they're
+// auth-protected at the route level and mostly served from cache. Without
+// the exemption one device uses most of a 600/15min per-IP bucket, and
+// several users behind one carrier/office IP would lock each other out.
+// Writes and every other route stay limited.
+const pollingReadPrefixes = ['/api/reports', '/api/notifications'];
+const isPollingRead = (req) =>
+  req.method === 'GET' &&
+  (req.path === '/health' ||
+    pollingReadPrefixes.some((p) => req.path === p || req.path.startsWith(`${p}/`)));
 const globalLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
   max: 600,
   standardHeaders: true,
   legacyHeaders: false,
-  skip: (req) => readOnlyPaths.includes(req.path),
+  skip: isPollingRead,
   message: { error: 'Too many requests, please try again later.' },
 });
 // Skip the global limiter under tests (the auth/report suites hammer the

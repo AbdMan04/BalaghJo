@@ -1,8 +1,8 @@
 /*
 - Admin controller — dashboard-wide aggregates and user management.
 - stats(): admin counterpart of the citizen summary, computed over every
-  report in one $facet pipeline (single round-trip): totals, per-status
-  buckets, per-category counts, and a 14-day creation trend.
+  report in one $facet pipeline: totals, per-status buckets, per-category
+  counts, and a 14-day creation trend; the user count runs in parallel.
 - listUsers(): paginated, searchable user directory (no auth material).
 - updateRole(): promote/demote an admin with two safety guards — an admin
   can't change their own role, and the last admin can't be demoted.
@@ -17,30 +17,35 @@ const MAX_PAGE_SIZE = 100;
 
 exports.stats = wrap(async (_req, res) => {
   const since = new Date(Date.now() - 13 * 24 * 60 * 60 * 1000);
-  const [agg] = await Report.aggregate([
-    {
-      $facet: {
-        total: [{ $count: 'n' }],
-        pending: [{ $match: { status: 'pending' } }, { $count: 'n' }],
-        inProgress: [{ $match: { status: 'in_progress' } }, { $count: 'n' }],
-        resolved: [{ $match: { status: 'resolved' } }, { $count: 'n' }],
-        byCategory: [
-          { $group: { _id: '$category', count: { $sum: 1 } } },
-          { $sort: { count: -1 } },
-        ],
-        daily: [
-          { $match: { createdAt: { $gte: since } } },
-          {
-            $group: {
-              _id: { $dateToString: { format: '%Y-%m-%d', date: '$createdAt' } },
-              count: { $sum: 1 },
+  // The user count lives in a different collection, so it can't ride in the
+  // Report $facet (a facet there would count reports, not users); run it in
+  // parallel with the aggregate instead.
+  const [[agg], userCount] = await Promise.all([
+    Report.aggregate([
+      {
+        $facet: {
+          total: [{ $count: 'n' }],
+          pending: [{ $match: { status: 'pending' } }, { $count: 'n' }],
+          inProgress: [{ $match: { status: 'in_progress' } }, { $count: 'n' }],
+          resolved: [{ $match: { status: 'resolved' } }, { $count: 'n' }],
+          byCategory: [
+            { $group: { _id: '$category', count: { $sum: 1 } } },
+            { $sort: { count: -1 } },
+          ],
+          daily: [
+            { $match: { createdAt: { $gte: since } } },
+            {
+              $group: {
+                _id: { $dateToString: { format: '%Y-%m-%d', date: '$createdAt' } },
+                count: { $sum: 1 },
+              },
             },
-          },
-          { $sort: { _id: 1 } },
-        ],
-        users: [{ $count: 'n' }],
+            { $sort: { _id: 1 } },
+          ],
+        },
       },
-    },
+    ]),
+    User.countDocuments(),
   ]);
   const count = (arr) => (arr && arr.length ? arr[0].n : 0);
   res.json({
@@ -50,7 +55,7 @@ exports.stats = wrap(async (_req, res) => {
       inProgress: count(agg.inProgress),
       resolved: count(agg.resolved),
       active: count(agg.pending) + count(agg.inProgress),
-      users: count(agg.users),
+      users: userCount,
       categories: (agg.byCategory || []).map((c) => ({
         category: c._id,
         count: c.count,

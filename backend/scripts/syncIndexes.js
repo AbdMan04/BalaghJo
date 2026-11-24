@@ -11,8 +11,9 @@ const mongoose = require('mongoose');
 const Report = require('../src/models/Report');
 const User = require('../src/models/User');
 const Notification = require('../src/models/Notification');
+const PushLog = require('../src/models/PushLog');
 
-const models = [Report, User, Notification];
+const models = [Report, User, Notification, PushLog];
 
 async function run() {
   const MONGO_URI = process.env.MONGO_URI || 'mongodb://127.0.0.1:27017/balaghjo';

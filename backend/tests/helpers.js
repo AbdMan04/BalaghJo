@@ -24,11 +24,13 @@ async function cleanDb() {
     const User = require('../src/models/User');
     const Notification = require('../src/models/Notification');
     const Announcement = require('../src/models/Announcement');
+    const PushLog = require('../src/models/PushLog');
     await Promise.all([
       Report.deleteMany({}),
       User.deleteMany({}),
       Notification.deleteMany({}),
       Announcement.deleteMany({}),
+      PushLog.deleteMany({}),
     ]);
   }
 }

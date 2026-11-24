@@ -1,5 +1,6 @@
 const User = require('../src/models/User');
 const Notification = require('../src/models/Notification');
+const PushLog = require('../src/models/PushLog');
 const { startDb, stopDb, cleanDb } = require('./helpers');
 
 jest.mock('../src/config/firebase', () => ({ sendPush: jest.fn() }));
@@ -48,6 +49,44 @@ describe('notifyService', () => {
     expect(await Notification.countDocuments()).toBe(2);
     expect((await User.findById(u1._id)).deviceTokens).toEqual(['tok-live']);
     expect((await User.findById(u2._id)).deviceTokens).toEqual(['tok-other']);
+  });
+
+  test('records one delivery log per fan-out and stamps sentAt on the push', async () => {
+    const u1 = await User.create({
+      firstName: 'A',
+      lastName: 'B',
+      phone: '0771005005',
+      passwordHash: 'x',
+      deviceTokens: ['tok-a', 'tok-b', 'tok-c'],
+    });
+    sendPush.mockResolvedValue({ sent: 2, deadTokens: ['tok-c'] });
+    const eventAt = new Date(Date.now() - 1000);
+
+    await notifyUsers({
+      recipients: [u1._id],
+      type: 'report_status',
+      reportId: 'mongo-id',
+      title: 't',
+      body: 'b',
+      data: { type: 'report_status', reportId: 'RPT-0042', status: 'resolved' },
+      eventAt,
+    });
+
+    expect(sendPush.mock.calls[0][0].data.sentAt).toEqual(expect.any(String));
+    const logs = await PushLog.find();
+    expect(logs).toHaveLength(1);
+    expect(logs[0]).toMatchObject({
+      type: 'report_status',
+      reportId: 'RPT-0042',
+      status: 'resolved',
+      recipients: 1,
+      notificationsCreated: 1,
+      tokens: 3,
+      sent: 2,
+      failed: 1,
+      deadTokens: 1,
+    });
+    expect(logs[0].eventAt.getTime()).toBe(eventAt.getTime());
   });
 
   test('skips push entirely when no recipient has device tokens', async () => {

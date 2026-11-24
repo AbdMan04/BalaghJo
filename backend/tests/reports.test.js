@@ -231,6 +231,44 @@ describe('reports', () => {
     expect(byTicket.body.report.id).toBe(created.body.report.id);
   });
 
+  test('GET detail shows full reporter details to the owner only', async () => {
+    const owner = await registerUser(agent, '0785016018');
+    const other = await registerUser(agent, '0785016019');
+    const created = await createReport(agent, owner.token);
+    const id = created.body.report.id;
+
+    const asOwner = await agent
+      .get(`/api/reports/${id}`)
+      .set('Authorization', `Bearer ${owner.token}`);
+    expect(asOwner.status).toBe(200);
+    expect(asOwner.body.report.reporter).toEqual({
+      fullName: 'Test User',
+      phone: '0785016018',
+    });
+    expect(asOwner.body.report.userId).toBe(owner.user.id);
+
+    const asOther = await agent
+      .get(`/api/reports/${id}`)
+      .set('Authorization', `Bearer ${other.token}`);
+    expect(asOther.status).toBe(200);
+    expect(asOther.body.report.reporter).toEqual({ fullName: 'T. User', phone: '' });
+  });
+
+  test('GET detail still resolves when the owner account was deleted', async () => {
+    const owner = await registerUser(agent, '0785016020');
+    const viewer = await registerUser(agent, '0785016021');
+    const created = await createReport(agent, owner.token);
+
+    const User = require('../src/models/User');
+    await User.deleteOne({ _id: owner.user.id });
+
+    const res = await agent
+      .get(`/api/reports/${created.body.report.id}`)
+      .set('Authorization', `Bearer ${viewer.token}`);
+    expect(res.status).toBe(200);
+    expect(res.body.report.reporter).toEqual({ fullName: 'Unknown', phone: '' });
+  });
+
   test('admin report feed requires the admin role', async () => {
     const { token } = await registerUser(agent, '0782013014');
     const asUser = await agent
@@ -274,6 +312,69 @@ describe('reports', () => {
       .query({ status: 'resolved' })
       .set('Authorization', `Bearer ${admin}`);
     expect(resolved.body.reports).toHaveLength(0);
+  });
+
+  test('admin report feed combines area and category filters as AND (FR-14)', async () => {
+    const token = (await registerUser(agent, '0783014019')).token;
+    // Two points inside a small box around the city centre, one far outside.
+    await createReport(agent, token, { category: 'pothole', lat: 32.556, lng: 35.85 });
+    await createReport(agent, token, { category: 'waste', lat: 32.557, lng: 35.851 });
+    await createReport(agent, token, { category: 'pothole', lat: 32.64, lng: 35.99 });
+
+    const admin = await adminTokenFor(agent, '0784014020');
+    const box = { swLat: 32.55, swLng: 35.84, neLat: 32.56, neLng: 35.86 };
+
+    const inArea = await agent
+      .get('/api/admin/reports')
+      .query(box)
+      .set('Authorization', `Bearer ${admin}`);
+    expect(inArea.status).toBe(200);
+    expect(inArea.body.reports).toHaveLength(2);
+
+    const both = await agent
+      .get('/api/admin/reports')
+      .query({ ...box, category: 'pothole' })
+      .set('Authorization', `Bearer ${admin}`);
+    expect(both.body.reports).toHaveLength(1);
+    expect(both.body.reports[0].category).toBe('pothole');
+    expect(both.body.reports[0].location.coordinates).toEqual([35.85, 32.556]);
+  });
+
+  test('each status change creates exactly one notification and delivery log (FR-12/FR-17)', async () => {
+    const Notification = require('../src/models/Notification');
+    const PushLog = require('../src/models/PushLog');
+    const { token, user } = await registerUser(agent, '0777008021');
+    const created = await createReport(agent, token);
+    const { id, reportId } = created.body.report;
+    const admin = await adminTokenFor(agent, '0778009022');
+
+    for (const status of ['in_progress', 'resolved']) {
+      const res = await agent
+        .patch(`/api/reports/${id}/status`)
+        .set('Authorization', `Bearer ${admin}`)
+        .send({ status });
+      expect(res.status).toBe(200);
+    }
+
+    // The fan-out is fire-and-forget; give it a moment to land.
+    const waitFor = async (fn) => {
+      for (let i = 0; i < 40; i += 1) {
+        if (await fn()) return;
+        await new Promise((r) => setTimeout(r, 50));
+      }
+    };
+    await waitFor(async () => (await PushLog.countDocuments({ reportId })) >= 2);
+
+    const notes = await Notification.find({ user: user.id, type: 'report_status' });
+    expect(notes).toHaveLength(2);
+    const logs = await PushLog.find({ reportId }).sort({ createdAt: 1 });
+    expect(logs.map((l) => l.status)).toEqual(['in_progress', 'resolved']);
+    for (const log of logs) {
+      expect(log.type).toBe('report_status');
+      expect(log.notificationsCreated).toBe(1);
+      expect(log.eventAt).toBeInstanceOf(Date);
+      expect(log.finishedAt.getTime()).toBeGreaterThanOrEqual(log.startedAt.getTime());
+    }
   });
 
   test('admin report feed searches by text and keeps the term across pages', async () => {

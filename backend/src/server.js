@@ -5,6 +5,7 @@ const cluster = require('cluster');
 const os = require('os');
 const app = require('./app');
 const { connectDB } = require('./config/db');
+const { attachPrimaryRelay } = require('./utils/cacheBus');
 
 process.on('unhandledRejection', (reason) => {
   console.error('[unhandledRejection]', reason);
@@ -74,6 +75,8 @@ const workerCount = Number(process.env.WEB_CONCURRENCY) || defaultWorkers;
 if (cluster.isPrimary && !process.env.DISABLE_CLUSTER && workerCount > 1) {
   console.log(`[cluster] primary ${process.pid} forking ${workerCount} workers`);
   for (let i = 0; i < workerCount; i += 1) cluster.fork();
+  // Relay cache invalidations between workers (see utils/cacheBus.js).
+  attachPrimaryRelay(cluster);
   cluster.on('exit', (worker, code, signal) => {
     console.error(`[cluster] worker ${worker.process.pid} exited (${signal || code}); restarting`);
     cluster.fork();
@@ -84,7 +87,10 @@ if (cluster.isPrimary && !process.env.DISABLE_CLUSTER && workerCount > 1) {
     try {
       await connectDB(MONGO_URI);
       app.listen(PORT, () => console.log(`[api] listening on http://localhost:${PORT}`));
-      startKeepAlive();
+      // In cluster mode the primary already runs the pinger; only a
+      // single-process server (where this branch IS the primary) starts one,
+      // so there's exactly one pinger instead of one per worker.
+      if (cluster.isPrimary) startKeepAlive();
     } catch (err) {
       console.error('[startup] failed:', err);
       process.exit(1);

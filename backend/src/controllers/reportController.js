@@ -15,6 +15,7 @@ const wrap = require('../utils/asyncHandler');
 const { publicIdFromUrl } = require('../utils/cloudinary');
 const { notifyUsers } = require('../services/notifyService');
 const { TtlCache } = require('../utils/ttlCache');
+const cacheBus = require('../utils/cacheBus');
 const { parsePageSize } = require('../utils/pagination');
 const { STATUSES, CATEGORIES, STATUS_TRANSITIONS } = require('../config/constants');
 
@@ -36,11 +37,18 @@ const MY_LIST_TTL_MS = 5_000;
 // Any write that changes a report (create/delete/status update) makes all
 // three read caches stale for that owner and globally. Collapsing the three
 // calls into one helper means adding a new cache type (or a write path) is
-// a single edit instead of three.
-function invalidateReadCaches(userId) {
-  summaryCache.delete(`summary:${userId.toString()}`);
+// a single edit instead of three. The caches are per cluster worker, so the
+// invalidation goes through cacheBus, which also clears the sibling workers'
+// copies (otherwise a poll served by another worker could lag by a full TTL).
+function clearReadCaches(userId) {
+  summaryCache.delete(`summary:${userId}`);
   publicCache.clear();
   myListCache.clear();
+}
+cacheBus.subscribe('report-caches', ({ userId }) => clearReadCaches(userId));
+
+function invalidateReadCaches(userId) {
+  cacheBus.publish('report-caches', { userId: userId.toString() });
 }
 
 // Ownership/role guard shared by the detail and delete handlers.
@@ -328,10 +336,20 @@ exports.getReport = wrap(async (req, res) => {
     : { reportId: req.params.id };
   const report = await Report.findOne(query).populate('userId', 'firstName lastName phone');
   if (!report) return res.status(404).json({ error: 'Not found' });
-  const allowed = isOwnerOrAdmin(report.userId, req.user);
-  const reporter = report.userId;
   const json = report.toPublicJSON();
-  json.userId = reporter._id;
+  // After populate, userId is the owner document (or null when the owner
+  // account was deleted). Compare by its _id: toString() on a populated
+  // document returns its inspect output, not the id, so owners would never
+  // match.
+  const reporter = report.userId;
+  if (!reporter) {
+    json.userId = null;
+    json.reporter = { fullName: 'Unknown', phone: '' };
+    return res.json({ report: json });
+  }
+  const ownerId = reporter._id ?? reporter;
+  const allowed = isOwnerOrAdmin(ownerId, req.user);
+  json.userId = ownerId;
   json.reporter = allowed
     ? {
         fullName: `${reporter.firstName ?? ''} ${reporter.lastName ?? ''}`.trim(),
@@ -484,6 +502,7 @@ exports.updateStatus = wrap(async (req, res) => {
       : 'تم حل المشكلة!'
     : 'جارٍ العمل على حل المشكلة';
   const body = isResolved ? 'سعدنا بخدمتك، استمتع بوقتك!' : 'تحقق من التقدم';
+  const changedAt = report.statusChangedAt || new Date();
   void (async () => {
     try {
       await notifyUsers({
@@ -494,16 +513,25 @@ exports.updateStatus = wrap(async (req, res) => {
         body,
         pushTitle: title,
         pushBody: body,
-        data: { type: 'report_status', reportId: report.reportId, status },
+        // changedAt: server time of the status save, so the device log can
+        // compute end-to-end delivery latency (NFR-7 / NFR-9).
+        data: {
+          type: 'report_status',
+          reportId: report.reportId,
+          status,
+          changedAt: changedAt.toISOString(),
+        },
+        eventAt: changedAt,
       });
     } catch (err) {
       console.error('[notif] failed to create notification:', err.message);
     }
   })();
 
-  // NFR-6 measurement: timestamped status-change log (server side).
+  // NFR-6 measurement: timestamped status-change log (server side). Pair it
+  // with the app's "[perf] status_seen" line for the same report.
   console.log(
-    `[status-update] ${new Date().toISOString()} report=${report.reportId} -> ${status} by=${req.user.phone || req.user.id}`
+    `[status-update] ${changedAt.toISOString()} report=${report.reportId} -> ${status} by=${req.user.phone || req.user.id}`
   );
 
   res.json({ report: report.toPublicJSON() });
