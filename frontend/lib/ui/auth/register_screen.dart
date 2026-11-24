@@ -65,230 +65,251 @@ class _RegisterScreenState extends State<RegisterScreen> {
   Widget build(BuildContext context) {
     final loading = context.watch<AuthState>().loading;
     return Scaffold(
+      resizeToAvoidBottomInset: false,
       appBar: AppBar(
         backgroundColor: Colors.transparent,
         surfaceTintColor: Colors.transparent,
         scrolledUnderElevation: 0,
-        actions: [
-          Padding(
-            padding: const EdgeInsets.only(right: 4),
-            child: LanguagePickerButton(
-              title: context.t('login.choose_language'),
-              enLabel: context.t('login.language_english'),
-              arLabel: context.t('login.language_arabic'),
-            ),
-          ),
-        ],
       ),
-      body: SafeArea(
-        child: ShakeWidget(
-          trigger: _shake,
-          child: SingleChildScrollView(
-            padding: const EdgeInsets.fromLTRB(24, 0, 24, 24),
-            child: Form(
-              key: _form,
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  FadeSlideIn(
-                    child: Text(context.t('register.create_account'),
-                        style: const TextStyle(
-                            fontSize: 28, fontWeight: FontWeight.w800)),
-                  ),
-                  const SizedBox(height: 4),
-                  FadeSlideIn(
-                    delay: const Duration(milliseconds: 80),
-                    child: Text(context.t('register.subtitle'),
-                        style: const TextStyle(color: AppColors.textMuted)),
-                  ),
-                  const SizedBox(height: 24),
-                  FadeSlideIn(
-                    delay: const Duration(milliseconds: 140),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        _label('register.phone_label'),
-                        // A3: cap text scaling on the small hint.
-                        MediaQuery.withClampedTextScaling(
-                          maxScaleFactor: 1.3,
-                          child: TextFormField(
-                            controller: _phone,
-                            decoration: InputDecoration(
-                              hintText: context.t('register.phone_hint'),
-                              hintStyle: const TextStyle(fontSize: 13),
-                              prefixIcon: const Icon(Icons.phone_android,
-                                  color: AppColors.textMuted),
-                            ),
-                            keyboardType: TextInputType.number,
-                            inputFormatters: [
-                              FilteringTextInputFormatter.digitsOnly,
-                              LengthLimitingTextInputFormatter(10),
-                            ],
-                            validator: (v) =>
-                                (v == null || !joPhoneRegex.hasMatch(v.trim()))
+      body: Stack(
+        children: [
+          // The scrollable form fills the whole screen. The bottom padding
+          // grows by the keyboard height so fields stay scrollable above the
+          // keyboard while the screen itself doesn't resize.
+          SafeArea(
+            child: ShakeWidget(
+              trigger: _shake,
+              child: SingleChildScrollView(
+                padding: EdgeInsets.fromLTRB(
+                    24, 0, 24, 88 + MediaQuery.viewInsetsOf(context).bottom),
+                child: Form(
+                  key: _form,
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      FadeSlideIn(
+                        child: Text(context.t('register.create_account'),
+                            style: const TextStyle(
+                                fontSize: 28, fontWeight: FontWeight.w800)),
+                      ),
+                      const SizedBox(height: 4),
+                      FadeSlideIn(
+                        delay: const Duration(milliseconds: 80),
+                        child: Text(context.t('register.subtitle'),
+                            style: const TextStyle(color: AppColors.textMuted)),
+                      ),
+                      const SizedBox(height: 24),
+                      FadeSlideIn(
+                        delay: const Duration(milliseconds: 140),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            _label('register.phone_label'),
+                            // A3: cap text scaling on the small hint.
+                            MediaQuery.withClampedTextScaling(
+                              maxScaleFactor: 1.3,
+                              child: TextFormField(
+                                controller: _phone,
+                                decoration: InputDecoration(
+                                  hintText: context.t('register.phone_hint'),
+                                  hintStyle: const TextStyle(fontSize: 13),
+                                  prefixIcon: const Icon(Icons.phone_android,
+                                      color: AppColors.textMuted),
+                                ),
+                                keyboardType: TextInputType.number,
+                                inputFormatters: [
+                                  FilteringTextInputFormatter.digitsOnly,
+                                  LengthLimitingTextInputFormatter(10),
+                                ],
+                                validator: (v) => (v == null ||
+                                        !joPhoneRegex.hasMatch(v.trim()))
                                     ? context.t('login.invalid_phone')
                                     : null,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                  FadeSlideIn(
-                    delay: const Duration(milliseconds: 260),
-                    child: Row(
-                      children: [
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              _label('register.first_name'),
-                              TextFormField(
-                                controller: _first,
-                                decoration: InputDecoration(
-                                    hintText: context.t('register.first_hint')),
-                                validator: (v) =>
-                                    (v == null || v.trim().isEmpty)
-                                        ? context.t('common.required')
-                                        : null,
                               ),
-                            ],
-                          ),
-                        ),
-                        const SizedBox(width: 12),
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              _label('register.last_name'),
-                              TextFormField(
-                                controller: _last,
-                                decoration: InputDecoration(
-                                    hintText: context.t('register.last_hint')),
-                                validator: (v) =>
-                                    (v == null || v.trim().isEmpty)
-                                        ? context.t('common.required')
-                                        : null,
-                              ),
-                            ],
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                  FadeSlideIn(
-                    delay: const Duration(milliseconds: 320),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        _label('register.password'),
-                        TextFormField(
-                          controller: _pass,
-                          decoration: InputDecoration(
-                            hintText: context.t('register.password_hint'),
-                            prefixIcon: const Icon(Icons.lock_outline,
-                                color: AppColors.textMuted),
-                            suffixIcon: PasswordVisibilityToggle(
-                              obscure: _obscure,
-                              onPressed: () =>
-                                  setState(() => _obscure = !_obscure),
                             ),
-                          ),
-                          obscureText: _obscure,
-                          validator: (v) => (v == null || v.length < 6)
-                              ? context.t('register.password_min')
-                              : null,
+                          ],
                         ),
-                      ],
-                    ),
-                  ),
-                  AnimatedSwitcher(
-                    duration: const Duration(milliseconds: 250),
-                    child: _error == null
-                        ? const SizedBox.shrink()
-                        : Padding(
-                            padding: const EdgeInsets.only(top: 12),
-                            child: Container(
-                              padding: const EdgeInsets.all(12),
-                              decoration: BoxDecoration(
-                                color: AppColors.danger.withValues(alpha: 0.08),
-                                borderRadius:
-                                    BorderRadius.circular(AppRadius.sm),
-                                border: Border.all(
-                                    color: AppColors.danger
-                                        .withValues(alpha: 0.3)),
-                              ),
-                              child: Row(
+                      ),
+                      FadeSlideIn(
+                        delay: const Duration(milliseconds: 260),
+                        child: Row(
+                          children: [
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
-                                  const Icon(Icons.error_outline,
-                                      color: AppColors.danger, size: 18),
-                                  const SizedBox(width: 8),
-                                  Expanded(
-                                      child: Text(_error!,
-                                          style: const TextStyle(
-                                              color: AppColors.danger,
-                                              fontSize: 12))),
+                                  _label('register.first_name'),
+                                  TextFormField(
+                                    controller: _first,
+                                    decoration: InputDecoration(
+                                        hintText:
+                                            context.t('register.first_hint')),
+                                    validator: (v) =>
+                                        (v == null || v.trim().isEmpty)
+                                            ? context.t('common.required')
+                                            : null,
+                                  ),
                                 ],
                               ),
                             ),
-                          ),
-                  ),
-                  const SizedBox(height: 24),
-                  FadeSlideIn(
-                    delay: const Duration(milliseconds: 400),
-                    child: PressableScale(
-                      onTap: loading ? null : _submit,
-                      child: AnimatedContainer(
-                        duration: const Duration(milliseconds: 250),
-                        height: 52,
-                        alignment: Alignment.center,
-                        decoration: BoxDecoration(
-                          color: AppColors.navy,
-                          borderRadius: BorderRadius.circular(AppRadius.md),
-                        ),
-                        child: AnimatedSwitcher(
-                          duration: const Duration(milliseconds: 250),
-                          child: loading
-                              ? const SizedBox(
-                                  key: ValueKey('l'),
-                                  height: 20,
-                                  width: 20,
-                                  child: CircularProgressIndicator(
-                                      strokeWidth: 2, color: Colors.white),
-                                )
-                              : Text(
-                                  context.t('register.sign_up'),
-                                  key: const ValueKey('t'),
-                                  style: const TextStyle(
-                                      color: Colors.white,
-                                      fontWeight: FontWeight.w800,
-                                      fontSize: 15),
-                                ),
+                            const SizedBox(width: 12),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  _label('register.last_name'),
+                                  TextFormField(
+                                    controller: _last,
+                                    decoration: InputDecoration(
+                                        hintText:
+                                            context.t('register.last_hint')),
+                                    validator: (v) =>
+                                        (v == null || v.trim().isEmpty)
+                                            ? context.t('common.required')
+                                            : null,
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ],
                         ),
                       ),
-                    ),
+                      FadeSlideIn(
+                        delay: const Duration(milliseconds: 320),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            _label('register.password'),
+                            TextFormField(
+                              controller: _pass,
+                              decoration: InputDecoration(
+                                hintText: context.t('register.password_hint'),
+                                prefixIcon: const Icon(Icons.lock_outline,
+                                    color: AppColors.textMuted),
+                                suffixIcon: PasswordVisibilityToggle(
+                                  obscure: _obscure,
+                                  onPressed: () =>
+                                      setState(() => _obscure = !_obscure),
+                                ),
+                              ),
+                              obscureText: _obscure,
+                              validator: (v) => (v == null || v.length < 6)
+                                  ? context.t('register.password_min')
+                                  : null,
+                            ),
+                          ],
+                        ),
+                      ),
+                      AnimatedSwitcher(
+                        duration: const Duration(milliseconds: 250),
+                        child: _error == null
+                            ? const SizedBox.shrink()
+                            : Padding(
+                                padding: const EdgeInsets.only(top: 12),
+                                child: Container(
+                                  padding: const EdgeInsets.all(12),
+                                  decoration: BoxDecoration(
+                                    color: AppColors.danger
+                                        .withValues(alpha: 0.08),
+                                    borderRadius:
+                                        BorderRadius.circular(AppRadius.sm),
+                                    border: Border.all(
+                                        color: AppColors.danger
+                                            .withValues(alpha: 0.3)),
+                                  ),
+                                  child: Row(
+                                    children: [
+                                      const Icon(Icons.error_outline,
+                                          color: AppColors.danger, size: 18),
+                                      const SizedBox(width: 8),
+                                      Expanded(
+                                          child: Text(_error!,
+                                              style: const TextStyle(
+                                                  color: AppColors.danger,
+                                                  fontSize: 12))),
+                                    ],
+                                  ),
+                                ),
+                              ),
+                      ),
+                      const SizedBox(height: 24),
+                      FadeSlideIn(
+                        delay: const Duration(milliseconds: 400),
+                        child: PressableScale(
+                          onTap: loading ? null : _submit,
+                          child: AnimatedContainer(
+                            duration: const Duration(milliseconds: 250),
+                            height: 52,
+                            alignment: Alignment.center,
+                            decoration: BoxDecoration(
+                              color: AppColors.navy,
+                              borderRadius: BorderRadius.circular(AppRadius.md),
+                            ),
+                            child: AnimatedSwitcher(
+                              duration: const Duration(milliseconds: 250),
+                              child: loading
+                                  ? const SizedBox(
+                                      key: ValueKey('l'),
+                                      height: 20,
+                                      width: 20,
+                                      child: CircularProgressIndicator(
+                                          strokeWidth: 2, color: Colors.white),
+                                    )
+                                  : Text(
+                                      context.t('register.sign_up'),
+                                      key: const ValueKey('t'),
+                                      style: const TextStyle(
+                                          color: Colors.white,
+                                          fontWeight: FontWeight.w800,
+                                          fontSize: 15),
+                                    ),
+                            ),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 14),
+                      Center(
+                        child: GestureDetector(
+                          onTap: () => Navigator.of(context).pushReplacement(
+                              subtleRoute(const LoginScreen())),
+                          child: Text.rich(TextSpan(children: [
+                            TextSpan(
+                                text: context.t('register.have_account'),
+                                style: const TextStyle(
+                                    color: AppColors.textMuted)),
+                            TextSpan(
+                                text: context.t('register.sign_in_link'),
+                                style: const TextStyle(
+                                    color: AppColors.blue,
+                                    fontWeight: FontWeight.w700)),
+                          ])),
+                        ),
+                      ),
+                    ],
                   ),
-                  const SizedBox(height: 14),
-                  Center(
-                    child: GestureDetector(
-                      onTap: () => Navigator.of(context)
-                          .pushReplacement(subtleRoute(const LoginScreen())),
-                      child: Text.rich(TextSpan(children: [
-                        TextSpan(
-                            text: context.t('register.have_account'),
-                            style: const TextStyle(color: AppColors.textMuted)),
-                        TextSpan(
-                            text: context.t('register.sign_in_link'),
-                            style: const TextStyle(
-                                color: AppColors.blue,
-                                fontWeight: FontWeight.w700)),
-                      ])),
-                    ),
-                  ),
-                ],
+                ),
               ),
             ),
           ),
-        ),
+          Positioned(
+            left: 0,
+            right: 0,
+            bottom: 0,
+            child: SafeArea(
+              top: false,
+              child: Padding(
+                padding: const EdgeInsets.only(bottom: 8),
+                child: Center(
+                  child: LanguagePickerButton(
+                    title: context.t('login.choose_language'),
+                    enLabel: context.t('login.language_english'),
+                    arLabel: context.t('login.language_arabic'),
+                  ),
+                ),
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }
